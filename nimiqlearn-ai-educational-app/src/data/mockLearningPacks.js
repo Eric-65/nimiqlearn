@@ -1,7 +1,9 @@
 /* ============================================================
    NimiqLearn — Learning Economy packs
-   Paid via Nimiq Pay (NIM natively; USDT on supported EVM env).
-   Recipients are educator addresses configured by the creator.
+   Paid via Nimiq Pay. NIM is supported natively; USDT is not
+   available in the current Mini App SDK (see
+   docs/nimiq-pay-integration.md). Recipients are educator
+   addresses configured by the creator.
    ============================================================ */
 
 export const EDU_RECIPIENT = "NQ07 0000 0000 0000 0000 0000 0000 0000 0000";

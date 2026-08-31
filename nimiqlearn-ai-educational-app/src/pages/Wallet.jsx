@@ -20,15 +20,15 @@ export default function Wallet() {
           <h1 className="page-title">Wallet & Learning Economy</h1>
           <p className="page-sub">Your connection to Nimiq Pay, the assets supported by this environment, and your unlock history.</p>
         </div>
-        {nimiq.mode === "miniapp" ? (
-          <Badge tone="teal" dot>Real Mini App mode</Badge>
+        {nimiq.isConnected ? (
+          <Badge tone="teal" dot>Connected to Nimiq Pay</Badge>
         ) : (
           <Badge tone="amber" dot>DEMO MODE</Badge>
         )}
       </header>
 
       <div className="grid grid-2" style={{ alignItems: "start" }}>
-        <div style={{ display: "grid", gap: 18 }}>
+        <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
           <WalletStatus />
 
           <Card title="Supported assets" sub="Detected from the current environment — never hard-coded to an unsupported chain.">
@@ -46,15 +46,15 @@ export default function Wallet() {
           </Card>
         </div>
 
-        <div style={{ display: "grid", gap: 18 }}>
+        <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
           <PaymentHistory unlockedPacks={learner.unlockedPacks} />
 
           <Card title="How to run as a real Mini App">
             <div style={{ display: "grid", gap: 10 }}>
               <p className="small muted" style={{ margin: 0 }}>
                 <strong>1.</strong> Deploy this app to an HTTPS URL and open it inside <strong>Nimiq Pay</strong> via{" "}
-                <code>nimiqpay://miniapp?url=your-app.com</code> or{" "}
-                <code>https://nimpay.app/miniapps/open/your-app.com</code>.
+                <code style={{ wordBreak: "break-all" }}>nimiqpay://miniapp?url=your-app.com</code> or{" "}
+                <code style={{ wordBreak: "break-all" }}>https://nimpay.app/miniapps/open/your-app.com</code>.
               </p>
               <p className="small muted" style={{ margin: 0 }}>
                 <strong>2.</strong> The Mini App SDK <code>init()</code> resolves, real accounts load, and payments use Nimiq Pay's native confirmation dialogs.

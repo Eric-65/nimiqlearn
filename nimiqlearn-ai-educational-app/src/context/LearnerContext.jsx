@@ -21,6 +21,7 @@ import {
 import { buildReviewQueue, computeReviewRecommendation } from "../services/forgetMeNotService.js";
 import { decideNextActivity } from "../services/learnLoopService.js";
 import { logEvent } from "../services/eventLogService.js";
+import { createEntitlement, hasEntitlement } from "../services/entitlementService.js";
 
 const STORAGE_KEY = "nimiqlearn:learner:v1";
 
@@ -232,14 +233,12 @@ export function LearnerProvider({ children }) {
     }));
   }, []);
 
-  const unlockPackAction = useCallback(({ packId, simulated }) => {
+  const unlockPackAction = useCallback(({ productId, purchaserAddress, transactionId, simulated }) => {
     setLearner((l) => {
-      const already = (l.unlockedPacks || []).some((p) => p.packId === packId);
+      if (hasEntitlement(l.unlockedPacks, productId)) return l;
       return {
         ...l,
-        unlockedPacks: already
-          ? l.unlockedPacks
-          : [...(l.unlockedPacks || []), { packId, simulated, unlockedAt: Date.now() }],
+        unlockedPacks: [...(l.unlockedPacks || []), createEntitlement({ productId, purchaserAddress, transactionId, simulated })],
       };
     });
   }, []);

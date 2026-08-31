@@ -67,8 +67,8 @@ export default function Home() {
   const recommended = pickRecommended(knowledge, reviewQueue);
   const dueCount = reviewQueue.filter((r) => r.dueNow).length;
   const unlockedCount = (learner.unlockedPacks || []).length;
-  const recentUnlock = [...(learner.unlockedPacks || [])].sort((a, b) => (b.unlockedAt || 0) - (a.unlockedAt || 0))[0];
-  const recentPack = recentUnlock ? LEARNING_PACKS.find((p) => p.id === recentUnlock.packId) : null;
+  const recentUnlock = [...(learner.unlockedPacks || [])].sort((a, b) => (b.purchasedAt || 0) - (a.purchasedAt || 0))[0];
+  const recentPack = recentUnlock ? LEARNING_PACKS.find((p) => p.id === recentUnlock.productId) : null;
 
   return (
     <div>
@@ -213,10 +213,10 @@ export default function Home() {
                 Recent purchase: <strong>{recentPack.title}</strong> · {recentPack.price} {recentPack.asset}
               </p>
             )}
-            {!recentPack && <p className="tiny muted" style={{ margin: "0 0 14px" }}>Balance detected through Nimiq Pay where supported.</p>}
+            {!recentPack && <p className="tiny muted" style={{ margin: "0 0 14px" }}>Unlock packs with NIM through Nimiq Pay.</p>}
             <div className="flex gap-8 wrap">
               <Button variant="outline" size="sm" onClick={() => navigate("market")}>Explore Marketplace</Button>
-              {nimiq.mode === "demo" && <Badge tone="amber">DEMO MODE</Badge>}
+              {!nimiq.isConnected && <Badge tone="amber">DEMO MODE</Badge>}
             </div>
           </Card>
         </div>

@@ -218,6 +218,11 @@ button { font-family: inherit; }
 
 /* ---------------- Cards ---------------- */
 .card {
+  /* Cards are almost always grid/flex items. Without this, an unbreakable
+     long child (e.g. a URL in a <code> tag) can force the card's grid
+     track to grow past the viewport instead of letting the card's own
+     text wrap to fit — the standard CSS Grid/Flexbox min-content blowout. */
+  min-width: 0;
   background: linear-gradient(180deg, rgba(23, 32, 63, 0.65), rgba(17, 24, 49, 0.9));
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);

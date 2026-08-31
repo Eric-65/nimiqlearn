@@ -5,6 +5,7 @@ import { useNimiq } from "./hooks/useNimiq.js";
 import { startPrewarm } from "./services/aiService.js";
 import AIStatus from "./components/ai/AIStatus.jsx";
 import AIDiagnostics from "./components/ai/AIDiagnostics.jsx";
+import WalletDiagnostics from "./components/payments/WalletDiagnostics.jsx";
 // @ts-ignore - plain JavaScript/JSX in this phase
 import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 import Home from "./pages/Home.jsx";
@@ -116,11 +117,11 @@ function Shell() {
         ))}
         <div className="sidebar-footer">
           <div className="notice" style={{ padding: "10px 12px", fontSize: 12 }}>
-            <span aria-hidden="true">{nimiq.mode === "miniapp" ? "🟢" : nimiq.mode === "detecting" ? "⏳" : "🧪"}</span>
+            <span aria-hidden="true">{nimiq.isConnected ? "🟢" : nimiq.isConnecting ? "⏳" : "🧪"}</span>
             <span>
-              {nimiq.mode === "miniapp" ? (
-                <><strong>Live</strong> in Nimiq Pay</>
-              ) : nimiq.mode === "detecting" ? (
+              {nimiq.isConnected ? (
+                <><strong>Connected</strong> to Nimiq Pay</>
+              ) : nimiq.isConnecting ? (
                 "Detecting environment…"
               ) : (
                 <><strong>DEMO MODE</strong> — payments simulated</>
@@ -137,12 +138,12 @@ function Shell() {
           </div>
           <div className="topbar-spacer" />
           <AIStatus />
-          {nimiq.mode === "demo" && (
+          {!nimiq.isConnected && (
             <span className="badge badge-amber" aria-label="Demo mode active">
               🧪 DEMO
             </span>
           )}
-          {nimiq.mode === "miniapp" && (
+          {nimiq.isConnected && (
             <span className="badge badge-teal" aria-label="Connected to Nimiq Pay">
               ⚡ Nimiq Pay
             </span>
@@ -163,6 +164,7 @@ function Shell() {
 
       {/* Development-only diagnostics (no-op in production builds) */}
       <AIDiagnostics />
+      <WalletDiagnostics />
     </div>
   );
 }

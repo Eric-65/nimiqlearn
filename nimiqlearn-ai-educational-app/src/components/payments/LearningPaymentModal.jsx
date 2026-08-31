@@ -30,7 +30,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
 
   if (!pack) return null;
 
-  const demo = nimiq.mode === "demo" || nimiq.mode === "detecting";
+  const demo = !nimiq.isConnected;
   const request = { ...buildPaymentRequest(pack), asset: selectedAsset };
 
   const handleConfirm = async () => {
@@ -47,8 +47,6 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
       setStep(STEP.FAILED);
     }
   };
-
-  const shortRef = result?.reference ? `${result.reference.slice(0, 18)}…` : "";
 
   return (
     <Modal open={open} onClose={step === STEP.PENDING ? undefined : () => { setStep(STEP.CANCELLED); setTimeout(onClose, 350); }} title="Unlock learning pack">
@@ -82,8 +80,8 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                     aria-label="Select payment asset"
                   >
                     {assets.map((a) => (
-                      <option key={a.asset} value={a.asset} disabled={!a.real && nimiq.mode === "miniapp"}>
-                        {a.asset} — {a.network}{a.real ? "" : " (when supported)"}
+                      <option key={a.asset} value={a.asset} disabled={!a.real}>
+                        {a.asset} — {a.network}
                       </option>
                     ))}
                   </select>
@@ -119,8 +117,8 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
 
             <div className="flex gap-12" style={{ marginTop: 22 }}>
               <Button variant="ghost" onClick={() => { setStep(STEP.CANCELLED); setTimeout(onClose, 300); }}>Cancel</Button>
-              <Button variant={demo ? "amber" : "nimiq"} onClick={handleConfirm} style={{ flex: 1 }} disabled={nimiq.mode === "detecting"}>
-                {nimiq.mode === "detecting" ? "Checking environment…" : `Confirm with Nimiq Pay · ${request.amount} ${request.asset}`}
+              <Button variant={demo ? "amber" : "nimiq"} onClick={handleConfirm} style={{ flex: 1 }} disabled={nimiq.isConnecting}>
+                {nimiq.isConnecting ? "Checking environment…" : `Confirm with Nimiq Pay · ${request.amount} ${request.asset}`}
               </Button>
             </div>
           </div>
@@ -178,12 +176,22 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             </div>
-            <h3 style={{ margin: "0 0 8px" }}>Payment not confirmed</h3>
+            <h3 style={{ margin: "0 0 8px" }}>
+              {result?.status === "uncertain"
+                ? "Payment status unknown"
+                : result?.status === "rejected"
+                ? "Payment cancelled"
+                : "Payment not confirmed"}
+            </h3>
             <p className="small muted" style={{ margin: "0 0 18px" }}>
-              {result?.error || "The payment was cancelled or rejected. No charge was made."}
+              {result?.error || "Payment status could not be confirmed."}
             </p>
             <div className="flex gap-12">
-              <Button variant="outline" block onClick={() => setStep(STEP.REVIEW)}>Try again</Button>
+              {result?.status === "uncertain" ? (
+                <Button variant="outline" block onClick={onClose}>I'll check my wallet first</Button>
+              ) : (
+                <Button variant="outline" block onClick={() => setStep(STEP.REVIEW)}>Try again</Button>
+              )}
               <Button variant="ghost" block onClick={onClose}>Close</Button>
             </div>
           </div>

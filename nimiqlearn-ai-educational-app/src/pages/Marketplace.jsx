@@ -13,11 +13,16 @@ export default function Marketplace() {
   const [selectedPack, setSelectedPack] = useState(null);
   const [notice, setNotice] = useState(null);
 
-  const unlocked = (packId) => (learner.unlockedPacks || []).some((p) => p.packId === packId);
-  const unlockedEntry = (packId) => (learner.unlockedPacks || []).find((p) => p.packId === packId);
+  const unlocked = (productId) => (learner.unlockedPacks || []).some((p) => p.productId === productId);
+  const unlockedEntry = (productId) => (learner.unlockedPacks || []).find((p) => p.productId === productId);
 
   const handleSuccess = (result) => {
-    unlockPack({ packId: selectedPack.id, simulated: result.simulated });
+    unlockPack({
+      productId: selectedPack.id,
+      purchaserAddress: result.purchaserAddress || null,
+      transactionId: result.reference,
+      simulated: result.simulated,
+    });
     setNotice({
       kind: result.simulated ? "warn" : "success",
       text: result.simulated
@@ -33,7 +38,7 @@ export default function Marketplace() {
           <h1 className="page-title">Learning Economy</h1>
           <p className="page-sub">Courses and learning paths from independent educators. Unlock them directly with NIM through Nimiq Pay — creators receive payments instantly.</p>
         </div>
-        {nimiq.mode === "miniapp" ? (
+        {nimiq.isConnected ? (
           <Badge tone="teal" dot>Live Nimiq Pay</Badge>
         ) : (
           <Badge tone="amber" dot>DEMO MODE — payments simulated</Badge>
@@ -99,7 +104,7 @@ export default function Marketplace() {
       <div className="notice info" style={{ marginTop: 24 }}>
         <span aria-hidden="true">🛡️</span>
         <span>
-          <strong>Unlocks go through Nimiq Pay's native confirmation.</strong> Your keys never leave the wallet. NIM is supported natively; USDT is available where the Nimiq Pay EVM environment supports it. Wallet and payment services are fully separated from the AI — the model never sees your address.
+          <strong>Unlocks go through Nimiq Pay's native confirmation.</strong> Your keys never leave the wallet. NIM is supported natively; USDT payment support is not available in this environment yet. Wallet and payment services are fully separated from the AI — the model never sees your address.
         </span>
       </div>
 
