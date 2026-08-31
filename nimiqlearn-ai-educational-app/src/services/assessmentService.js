@@ -191,14 +191,26 @@ export function computeRubricBaseline({ topic, learnerExplanation, referenceAnsw
 
 /* ------------------ public entry point ------------------ */
 
-function normalizeResult(value, meta) {
+/**
+ * Every caller gets this exact shape — see docs/learning-engine.md for the
+ * full ExplainBack result contract:
+ *   { conceptId, score, masteryEstimate, strengths, missingConcepts,
+ *     misconceptions, feedback, nextAction }
+ * plus a few app-specific extras (nextChallenge, source, confidence,
+ * aiPending, note) that existing UI already depends on — additive, never
+ * a breaking rename of what's already there.
+ */
+function normalizeResult(value, meta, conceptId) {
+  const score = clamp(Math.round(value.masteryEstimate ?? 0), 0, 100);
   return {
+    conceptId,
     summary: value.summary,
+    feedback: value.summary,
     strengths: value.strengths || [],
     missingConcepts: value.missingConcepts || [],
     misconceptions: value.misconceptions || [],
-    masteryEstimate: clamp(Math.round(value.masteryEstimate ?? 0), 0, 100),
-    score: clamp(Math.round(value.masteryEstimate ?? 0), 0, 100),
+    masteryEstimate: score,
+    score,
     maxScore: 100,
     nextAction: value.nextAction,
     nextChallenge: value.nextChallenge,
@@ -232,7 +244,7 @@ export async function evaluateExplanation({ topic, referenceAnswer, learnerExpla
       note: !preferAI
         ? "You chose the built-in assessment engine for this explanation."
         : "The AI assistant is still preparing, so this assessment used the built-in engine instantly. You can retry with AI once it's ready.",
-    });
+    }, topic.id);
   }
 
   try {
@@ -243,9 +255,9 @@ export async function evaluateExplanation({ topic, referenceAnswer, learnerExpla
         confidence: "heuristic",
         aiPending: false,
         note: "The AI returned unreadable output; a safe fallback assessment was used.",
-      });
+      }, topic.id);
     }
-    return normalizeResult(result.value, { source: ASSESSMENT_SOURCE.MODEL, confidence: "model", aiPending: false, note: null });
+    return normalizeResult(result.value, { source: ASSESSMENT_SOURCE.MODEL, confidence: "model", aiPending: false, note: null }, topic.id);
   } catch (err) {
     console.warn("[NimiqLearn] ExplainBack model call failed, using rubric baseline.", err);
     return normalizeResult(baseline, {
@@ -253,6 +265,6 @@ export async function evaluateExplanation({ topic, referenceAnswer, learnerExpla
       confidence: "heuristic",
       aiPending: false,
       note: "The local AI model was unavailable; a deterministic fallback assessment was used.",
-    });
+    }, topic.id);
   }
 }

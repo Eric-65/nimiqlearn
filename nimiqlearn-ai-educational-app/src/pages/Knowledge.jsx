@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
+import { findTopic } from "../data/mockTopics.js";
 import KnowledgeMap from "../components/knowledge/KnowledgeMap.jsx";
+import ConceptDetail from "../components/knowledge/ConceptDetail.jsx";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import ProgressBar from "../components/ui/ProgressBar.jsx";
 
 export default function Knowledge() {
   const { navigate } = useNav();
-  const { learner, knowledge, averageMastery, dueNow, reviewQueue } = useLearner();
+  const { learner, knowledge, averageMastery, dueNow, reviewQueue, getEntry } = useLearner();
+  const [selectedTopicId, setSelectedTopicId] = useState(null);
 
   const weak = knowledge.filter((k) => k.status === "LEARNING" || (k.status === "NEW" && !k.lastEvaluatedAt));
   const mastered = knowledge.filter((k) => k.status === "MASTERED").length;
@@ -21,9 +24,11 @@ export default function Knowledge() {
   const recentTopicId = recentEval?.topicId || recentlyImproved?.topicId || null;
   const dueTopicIds = reviewQueue.filter((r) => r.dueNow).map((r) => r.topicId);
 
-  const handleSelect = (topicId) => {
-    // Clicking a weak node immediately starts "Fix this concept"
-    navigate("learn", { topic: topicId });
+  const handleSelect = (topicId) => setSelectedTopicId(topicId);
+
+  const handleDetailNavigate = (page, topicId) => {
+    setSelectedTopicId(null);
+    navigate(page, { topic: topicId });
   };
 
   return (
@@ -73,6 +78,13 @@ export default function Knowledge() {
       )}
 
       <KnowledgeMap knowledge={knowledge} onSelect={handleSelect} recentTopicId={recentTopicId} dueTopicIds={dueTopicIds} />
+
+      <ConceptDetail
+        topic={selectedTopicId ? findTopic(selectedTopicId) : null}
+        entry={selectedTopicId ? getEntry(selectedTopicId) : null}
+        onClose={() => setSelectedTopicId(null)}
+        onNavigate={handleDetailNavigate}
+      />
     </div>
   );
 }

@@ -3,9 +3,9 @@
    ------------------------------------------------------------
    The app owns scheduling with transparent, deterministic
    logic. The AI may generate review *content*, but the timing
-   is never decided by a language model. We make no claim to
-   scientifically predict memory loss — this is a transparent
-   spaced-repetition heuristic.
+   is never decided by a language model. This is NimiqLearn
+   adaptive review scheduling — a transparent heuristic, not a
+   claim of scientifically validated spaced repetition.
    ============================================================ */
 
 import { REVIEW_PRIORITY, reviewLevelLabel } from "../config/learningThresholds.js";
@@ -20,11 +20,32 @@ const STATUS_INTERVAL_DAYS = {
   MASTERED: 21,
 };
 
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+
 /**
- * Compute a review priority score (0-100) plus a recommended
- * review date for one topic's knowledge entry.
+ * Review priority, normalized to 0-1 (higher = review sooner). Documented
+ * weights, all computed on a common 0-100 internal scale before the final
+ * divide so they're easy to reason about independently:
+ *
+ *   40% mastery gap       — the less mastered a concept, the sooner it
+ *                           should come back up.
+ *   30% overdue time      — days past this status's base interval,
+ *                           scaled by that same interval.
+ *   20% recent failures   — fraction of the recent-performance window
+ *                           that was wrong.
+ *  -10% review stability  — more completed reviews slightly lower
+ *                           priority (the concept has held up before).
+ *
+ * NOTE: earlier versions of this function clamped the weighted sum with
+ * a 0-1 clamp before scaling to a 0-100 "priorityScore" — since the
+ * weighted sum is normally well outside [0,1] on that internal scale,
+ * this silently collapsed priorityScore to almost always exactly 0 or 1
+ * (never a meaningful score in between), which in turn made every
+ * priority-based UI badge/threshold downstream effectively decorative.
+ * Fixed here: the 0-100 internal sum is clamped to [0,100], THEN divided
+ * by 100 to produce the real 0-1 value this function returns.
  */
-export function computeReviewRecommendation(entry, now = Date.now()) {
+export function calculateReviewPriority(entry, now = Date.now()) {
   const mastery = entry?.mastery ?? 0;
   const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
   const reviewCount = entry?.reviewCount ?? 0;
@@ -33,29 +54,49 @@ export function computeReviewRecommendation(entry, now = Date.now()) {
   const daysSinceReview = Math.max(0, (now - lastReviewedAt) / DAY);
   const baseInterval = STATUS_INTERVAL_DAYS[entry?.status] || 3;
 
-  // 1. Mastery component: low mastery → higher priority (weight 0.4)
   const masteryScore = 100 - mastery;
-
-  // 2. Recency component: the longer overdue, the higher priority (weight 0.3)
   const overdue = Math.max(0, daysSinceReview - baseInterval);
   const recencyScore = Math.min(100, (overdue / Math.max(baseInterval, 1)) * 100);
-
-  // 3. Failure component: recent incorrect answers raise priority (weight 0.2)
   const failures = recent.filter((r) => r === 0).length;
   const failureScore = recent.length ? (failures / recent.length) * 100 : 0;
-
-  // 4. Stability component: successful reviews lower priority (weight 0.1)
   const stabilityScore = Math.min(100, reviewCount * 12);
 
-  const priorityScore = Math.round(
-    clamp01(0.4 * masteryScore + 0.3 * recencyScore + 0.2 * failureScore - 0.1 * stabilityScore)
-  );
+  const weightedScore = 0.4 * masteryScore + 0.3 * recencyScore + 0.2 * failureScore - 0.1 * stabilityScore;
+  return clamp(weightedScore, 0, 100) / 100;
+}
 
-  // Interval grows with mastery and successful review count
+/**
+ * Deterministic next-review calculation. Same learner state always
+ * produces the same result — no randomness, no LLM involvement.
+ * Conceptual progression (not a claim of validated spaced repetition):
+ * weak understanding -> short interval; improving/strong -> longer
+ * interval, further extended by a track record of completed reviews.
+ */
+export function calculateNextReview(entry, now = Date.now()) {
+  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
+  const reviewCount = entry?.reviewCount ?? 0;
+  const baseInterval = STATUS_INTERVAL_DAYS[entry?.status] || 3;
+
   const intervalDays = Math.round(baseInterval * (1 + Math.min(2, reviewCount * 0.35)));
-  const recommendedReviewAt = lastReviewedAt + intervalDays * DAY;
-  const dueNow = now >= recommendedReviewAt || priorityScore >= REVIEW_PRIORITY.DUE_SOON;
+  const nextReviewAt = lastReviewedAt + intervalDays * DAY;
+  return { nextReviewAt, intervalDays };
+}
 
+/**
+ * Compute a review priority score (0-100, UI-friendly) plus a
+ * recommended review date for one topic's knowledge entry. Thin
+ * wrapper around calculateReviewPriority()/calculateNextReview() — this
+ * is the single place both get combined into the shape the rest of the
+ * app (ForgetMeNot queue, Knowledge Map, LearnLoop) already consumes.
+ */
+export function computeReviewRecommendation(entry, now = Date.now()) {
+  const mastery = entry?.mastery ?? 0;
+  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
+
+  const priorityScore = Math.round(calculateReviewPriority(entry, now) * 100);
+  const { nextReviewAt, intervalDays } = calculateNextReview(entry, now);
+  const daysSinceReview = Math.max(0, (now - lastReviewedAt) / DAY);
+  const dueNow = now >= nextReviewAt || priorityScore >= REVIEW_PRIORITY.DUE_SOON;
   const levelLabel = reviewLevelLabel(priorityScore);
 
   return {
@@ -65,7 +106,8 @@ export function computeReviewRecommendation(entry, now = Date.now()) {
     priorityScore,
     daysSinceReview: Math.round(daysSinceReview),
     intervalDays,
-    recommendedReviewAt,
+    recommendedReviewAt: nextReviewAt, // kept for existing callers
+    nextReviewAt, // same value, contract-matching name
     dueNow,
     levelLabel,
   };
@@ -82,8 +124,4 @@ export function buildReviewQueue(knowledgeEntries, now = Date.now()) {
 export function nextReviewIntervalDays(entry) {
   const base = STATUS_INTERVAL_DAYS[entry?.status] || 3;
   return Math.round(base * (1 + Math.min(2, (entry?.reviewCount ?? 0) * 0.35)));
-}
-
-function clamp01(n) {
-  return Math.min(1, Math.max(0, n));
 }
