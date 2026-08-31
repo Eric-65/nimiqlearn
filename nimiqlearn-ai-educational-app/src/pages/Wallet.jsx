@@ -5,6 +5,7 @@ import WalletStatus from "../components/payments/WalletStatus.jsx";
 import PaymentHistory from "../components/payments/PaymentHistory.jsx";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
+import Button from "../components/ui/Button.jsx";
 import { getSupportedAssets } from "../services/paymentService.js";
 
 export default function Wallet() {

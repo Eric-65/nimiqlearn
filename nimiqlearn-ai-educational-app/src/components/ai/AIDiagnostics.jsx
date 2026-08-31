@@ -82,14 +82,6 @@ export default function AIDiagnostics() {
     );
   }
 
-  const libStage = ai.stage?.startsWith("load-lib") || ai.attempts?.some((a) => a.stage === "library")
-    ? "READY"
-    : ai.status === AI_STATUS.IDLE
-      ? "NOT LOADED"
-      : ai.status === AI_STATUS.ERROR
-        ? "FAILED"
-        : "LOADING";
-
   const activeDtype = ai.metrics?.activeDtype || MODEL_DTYPE;
   const modelSizeMb = ai.metrics?.totalBytes ? (ai.metrics.totalBytes / (1024 * 1024)).toFixed(0) : null;
 
@@ -119,7 +111,7 @@ export default function AIDiagnostics() {
       </div>
 
       <Row label="Status" value={STATUS_LABEL[ai.status]} tone={ai.status === AI_STATUS.ERROR ? "var(--c-rose)" : ai.status === AI_STATUS.READY || ai.status === AI_STATUS.FALLBACK ? "var(--c-teal)" : "var(--c-gold)"} />
-      <Row label="Transformers.js" value={libStage} />
+      <Row label="Transformers.js" value="BUNDLED (npm)" />
       <Row label="WebGPU" value={supportsWebGPU() ? "AVAILABLE" : "UNAVAILABLE"} tone={supportsWebGPU() ? "var(--c-teal)" : "var(--c-gold)"} />
       <Row label="Runtime" value={ai.device ? ai.device.toUpperCase() : "—"} />
       <Row label="Active model" value={ai.model ? ai.model.split("/").pop() : "—"} />
@@ -140,7 +132,7 @@ export default function AIDiagnostics() {
           <div style={{ display: "grid", gap: 2, marginTop: 4, fontFamily: "monospace", fontSize: 10.5, color: "var(--c-text-faint)" }}>
             {ai.attempts.slice(-6).map((a, i) => (
               <div key={i}>
-                {a.ok ? "✓" : "✗"} {a.stage} {a.model?.split("/").pop() || ""} {a.device || ""} {a.dtype || ""} {a.url ? "cdn" : ""}
+                {a.ok ? "✓" : "✗"} {a.stage} {a.model?.split("/").pop() || ""} {a.device || ""} {a.dtype || ""}
                 {a.error ? ` — ${String(a.error).slice(0, 60)}` : ""}
               </div>
             ))}

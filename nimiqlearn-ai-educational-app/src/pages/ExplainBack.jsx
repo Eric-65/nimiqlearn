@@ -3,8 +3,7 @@ import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useAI, AI_STATUS } from "../hooks/useAI.js";
 import { LEAF_TOPICS, findTopic, findTopicPath } from "../data/mockTopics.js";
-import { computeReviewRecommendation } from "../services/forgetMeNotService.js";
-import { decideNextActivity, ACTIVITY_LABELS } from "../services/learnLoopService.js";
+import { ACTIVITY_LABELS } from "../services/learnLoopService.js";
 import { STATUS_META } from "../services/knowledgeService.js";
 import { getAIState } from "../services/aiService.js";
 import AIStatus from "../components/ai/AIStatus.jsx";
@@ -20,7 +19,7 @@ function wordCount(text) {
 
 export default function ExplainBack() {
   const { route, navigate } = useNav();
-  const { getEntry, evaluateExplanation, learner } = useLearner();
+  const { getEntry, evaluateExplanation } = useLearner();
   const ai = useAI();
 
   const [topicId, setTopicId] = useState(route.params?.topic || "newtons-second-law");
@@ -42,6 +41,11 @@ export default function ExplainBack() {
   topicIdRef.current = topicId;
   const submitTsRef = useRef(0);
   const debounceRef = useRef(null);
+  // Guards every async continuation below: if the learner navigates away
+  // (unmounting this page) while AI init/generation is still in flight,
+  // no further state updates are attempted on the unmounted component.
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const topic = findTopic(topicId);
   const entry = getEntry(topicId);
@@ -68,29 +72,25 @@ export default function ExplainBack() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
-  /** Shared evaluation runner. useAI=false forces the deterministic engine. */
+  /** Shared evaluation runner. useAI=false forces the deterministic engine.
+   * The review recommendation and next-activity decision are computed
+   * once, inside evaluateExplanationAction (LearnerContext.jsx), from the
+   * state that was actually just saved — this just displays them rather
+   * than recomputing them from a possibly-stale local copy. */
   const runEvaluation = useCallback(
     async (useAI, onToken) => {
-      const { evaluation: ev, updatedEntry } = await evaluateExplanation({
+      const { evaluation: ev, reviewRecommendation, nextDecision: decision } = await evaluateExplanation({
         topicId: activeTopicRef.current,
         learnerExplanation: text,
         learnerLevel: level,
         preferAI: useAI,
         onToken: onToken || null,
       });
+      if (!mountedRef.current) return false;
       if (activeTopicRef.current !== topicIdRef.current) return false;
 
       setEvaluation(ev);
-      const updated = updatedEntry || getEntry(topicId);
-      const rec = computeReviewRecommendation(updated);
-      setRecommendation(rec);
-      const decision = decideNextActivity({
-        topic,
-        knowledge: updated,
-        history: learner.history.filter((h) => h.topicId === topicId).slice(0, 12),
-        reviewDue: rec.dueNow,
-        reviewPriority: rec.priorityScore,
-      });
+      setRecommendation(reviewRecommendation);
       setNextDecision(decision);
       setPhase("result");
 
@@ -106,7 +106,7 @@ export default function ExplainBack() {
       return true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [topicId, text, level, learner.history]
+    [text, level]
   );
 
   /**
@@ -127,7 +127,7 @@ export default function ExplainBack() {
     setShowOriginal(true);
     setBeforeMastery(getEntry(topicId)?.mastery ?? 0);
 
-    const withStream = (chunk) => setStreamText((prev) => prev + chunk);
+    const withStream = (chunk) => { if (mountedRef.current) setStreamText((prev) => prev + chunk); };
 
     try {
       if (ai.isReady) {
@@ -136,7 +136,7 @@ export default function ExplainBack() {
       } else if (ai.preparing) {
         setPhase("loading");
         const pipe = await ai.initialize();
-        if (useBuiltInRef.current) return;
+        if (!mountedRef.current || useBuiltInRef.current) return;
         if (pipe) {
           setPhase("analyzing");
           await runEvaluation(true, withStream);
@@ -146,7 +146,7 @@ export default function ExplainBack() {
       } else {
         setPhase(ai.isUnavailable ? "analyzing" : "loading");
         const pipe = await ai.initialize();
-        if (useBuiltInRef.current) return;
+        if (!mountedRef.current || useBuiltInRef.current) return;
         if (pipe) {
           setPhase("analyzing");
           await runEvaluation(true, withStream);
@@ -156,7 +156,7 @@ export default function ExplainBack() {
       }
     } finally {
       generatingRef.current = false;
-      setIsGenerating(false);
+      if (mountedRef.current) setIsGenerating(false);
     }
   }, [ai.isReady, ai.preparing, ai.isUnavailable, topicId, text, runEvaluation, getEntry]);
 

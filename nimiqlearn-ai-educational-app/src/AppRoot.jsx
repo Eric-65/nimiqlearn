@@ -5,6 +5,8 @@ import { useNimiq } from "./hooks/useNimiq.js";
 import { startPrewarm } from "./services/aiService.js";
 import AIStatus from "./components/ai/AIStatus.jsx";
 import AIDiagnostics from "./components/ai/AIDiagnostics.jsx";
+// @ts-ignore - plain JavaScript/JSX in this phase
+import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 import Home from "./pages/Home.jsx";
 import Learn from "./pages/Learn.jsx";
 import ExplainBack from "./pages/ExplainBack.jsx";
@@ -63,7 +65,7 @@ function Shell() {
   useEffect(() => {
     let cancelled = false;
     const run = () => {
-      if (!cancelled) startPrewarm();
+      if (!cancelled) startPrewarm({ background: true });
     };
     if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(run, { timeout: 5000 });
@@ -148,7 +150,14 @@ function Shell() {
         </header>
 
         <main className="page">
-          <Page key={page + (route.params?.topic || "")} />
+          {/* Page-local boundary: a crash in one page (e.g. an AI-dependent
+              section of ExplainBack) must not take down the sidebar, nav,
+              or any other page — only main.tsx's top-level boundary is a
+              true last resort. Keyed so switching pages/topics always
+              starts from a clean boundary state, never a stuck fallback. */}
+          <ErrorBoundary key={page + (route.params?.topic || "")}>
+            <Page />
+          </ErrorBoundary>
         </main>
       </div>
 

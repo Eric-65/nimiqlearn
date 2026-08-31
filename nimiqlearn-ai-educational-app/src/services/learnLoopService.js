@@ -9,6 +9,7 @@
 
 import { generateLearningResponse, isAIReady, initializeAI } from "./aiService.js";
 import { TOPIC_CONTENT, findTopic, ALL_TOPICS } from "../data/mockTopics.js";
+import { MASTERY_BANDS, REVIEW_PRIORITY, REVIEW_INSERTION_MIN_STUDY_MINUTES } from "../config/learningThresholds.js";
 
 export const ACTIVITY_TYPES = [
   "SHORT_EXPLANATION",
@@ -61,14 +62,16 @@ export function decideNextActivity({
     return {
       activityType: "SHORT_EXPLANATION",
       reason: "This concept is new to you — let's start with the core idea.",
+      tier: "NEW",
     };
   }
 
   // 2. Review due and priority high → reinforce memory
-  if (reviewDue && reviewPriority >= 65 && studyMinutes >= 3) {
+  if (reviewDue && reviewPriority >= REVIEW_PRIORITY.DUE_SOON && studyMinutes >= REVIEW_INSERTION_MIN_STUDY_MINUTES) {
     return {
       activityType: "REVIEW",
       reason: "ForgetMeNot flagged this concept for reinforcement.",
+      tier: "REVIEW",
     };
   }
 
@@ -80,30 +83,34 @@ export function decideNextActivity({
       activityType: "PRACTICE",
       reason: "You just slipped on this — let's attack the exact misconception.",
       targetMisconception: knowledge.misconceptions[0],
+      tier: "MISCONCEPTION",
     };
   }
 
   // 4. Weak → simple explanation or analogy
-  if (mastery < 40) {
+  if (mastery < MASTERY_BANDS.MID) {
     return {
       activityType: pick(["SHORT_EXPLANATION", "ANALOGY"], lastActivity),
       reason: "Building the foundation before we go deeper.",
+      tier: "LOW",
     };
   }
 
   // 5. Developing → example + quick check
-  if (mastery < 65) {
+  if (mastery < MASTERY_BANDS.HIGH) {
     return {
       activityType: pick(["EXAMPLE", "MULTIPLE_CHOICE"], lastActivity),
       reason: "You get the idea — now let's apply it.",
+      tier: "MID",
     };
   }
 
   // 6. Strong → push into explanation (highest retention)
-  if (mastery < 85) {
+  if (mastery < MASTERY_BANDS.MASTERED) {
     return {
       activityType: pick(["EXPLAIN_BACK", "OPEN_RESPONSE", "MULTIPLE_CHOICE"], lastActivity),
       reason: "You're strong here. Explaining it back will lock it in.",
+      tier: "HIGH",
     };
   }
 
@@ -115,6 +122,7 @@ export function decideNextActivity({
       ? `Mastered! Time to level up to ${nextTopic.name}.`
       : "Mastered! Keep it fresh with a final explanation.",
     nextTopic,
+    tier: "MASTERED",
   };
 }
 

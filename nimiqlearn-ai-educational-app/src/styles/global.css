@@ -575,6 +575,34 @@ button { font-family: inherit; }
 
   .page { padding-bottom: 120px; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+
+  /* The AI status badge ("NimiqLearn AI • AI unavailable" etc.) is a
+     single nowrap line by default (.badge), which is wider than a
+     360-390px viewport and forced horizontal page overflow — confirmed
+     via an actual mobile-viewport screenshot, not just visual review.
+     Letting it wrap internally (rather than removing nowrap globally,
+     which would affect every other badge in the app) fixes it without
+     touching any other badge usage. */
+  .page-header .badge {
+    white-space: normal;
+    text-align: left;
+    line-height: 1.4;
+  }
+
+  /* Same overflow, second location: the persistent top bar (AppRoot.jsx)
+     also renders an AIStatus badge, alongside the page name and (in demo
+     mode) a DEMO/Nimiq Pay badge. Unlike .page-header, .topbar has a
+     fixed height for its single-line look, so wrapping badge TEXT would
+     just clip vertically — instead let the whole bar grow to a second
+     line when its content doesn't fit, same fix shape as .page-header
+     (allow wrapping) but applied to the row, not the text. */
+  .topbar {
+    height: auto;
+    min-height: var(--topbar-h);
+    flex-wrap: wrap;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

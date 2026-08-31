@@ -5,7 +5,9 @@
    active — it calls initializeAI() / generateLearningResponse().
 
    Active model:
-     onnx-community/SmolLM2-135M-Instruct-ONNX-MHA  (q4f16, ~118 MB)
+     onnx-community/SmolLM2-135M-Instruct-ONNX-MHA  (q4f16, ~118 MB
+     for that one quantized artifact — the HF repo itself contains
+     several variants and is much larger in total)
         ↓ if init fails on every runtime
      deterministic educational engine (application code)
 
@@ -16,7 +18,18 @@
    - Prewarm triggers all converge on initializeAI().
    - WebGPU when present; WASM compatibility runtime otherwise.
    - The model never blocks the initial React render.
+
+   Transformers.js itself is imported statically from the installed npm
+   package (below), not fetched at runtime from a CDN — that removed a
+   real production risk (CDN outage/CORS/CSP/ad-blocker breaking the
+   whole AI feature) for no benefit, since the exact same version was
+   already pinned in package.json. Only the model WEIGHTS (via Hugging
+   Face) and onnxruntime-web's WASM backend (which ships its binary via
+   jsDelivr by default — a separate, expected runtime fetch outside our
+   control) are ever fetched over the network at runtime.
    ============================================================ */
+
+import { pipeline, env, TextStreamer } from "@huggingface/transformers";
 
 export const AI_STATUS = {
   IDLE: "idle",
@@ -33,32 +46,20 @@ export const PRIMARY_MODEL = "onnx-community/SmolLM2-135M-Instruct-ONNX-MHA";
 // interactive model. A failed load falls back to the deterministic engine.
 export const FALLBACK_MODEL = null;
 export const MODEL_DTYPE = "q4f16"; // matches model_q4f16.onnx (~118 MB)
-export const MODEL_DTYPE_ALTERNATES = ["q4f16", "q4"];
+// Last-resort compatibility fallback if q4f16 fails to load on WASM —
+// see the attempt plan in runLifecycle() below.
+export const MODEL_DTYPE_FALLBACK = "q4";
 
 const CACHE_FLAG_KEY = "nimiqlearn:model-cached";
 const PRELOAD_FLAG_KEY = "nimiqlearn:preload";
 
-/*
- * Transformers.js v4.2.0 is installed via npm and its API is used exactly
- * as documented. To keep the Mini App bundle small and first paint fast,
- * the library is fetched at runtime from a CDN (pinned to the installed
- * version). Both CDNs send permissive CORS headers. The model weights are
- * fetched as early as the first idle moment (prewarm) — never at import.
- */
-const CDN_SOURCES = [
-  "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0",
-  "https://unpkg.com/@huggingface/transformers@4.2.0",
-];
-
 /* ---------------- timing budgets ---------------- */
-const LIB_TIMEOUT = 45_000;
 const MODEL_INIT_TIMEOUT = 6 * 60_000; // ~118 MB download + init
 const GENERATION_TIMEOUT = 120_000;
 
 /* ---------------- lifecycle state ---------------- */
 let initPromise = null; // singleton across the whole app
 let generator = null; // resolved pipeline
-let library = null; // loaded Transformers.js module (for TextStreamer)
 
 let lifecycle = {
   status: AI_STATUS.IDLE,
@@ -121,6 +122,16 @@ export function isConstrainedDevice() {
   }
 }
 
+/**
+ * A HINT only — set after a real successful pipeline() load, but never
+ * proof the model still exists in this browser's cache (storage can be
+ * cleared, the browser/WebView/device can change, a prior download can
+ * have been incomplete). Nothing in this file skips the real
+ * initializeAI() -> pipeline() call based on this flag; it only affects
+ * display text (wasCached) and whether the conservative idle-preload
+ * opts in (maybePreloadAI). Actual readiness always comes from the
+ * pipeline itself.
+ */
 export function isModelCached() {
   try {
     return localStorage.getItem(CACHE_FLAG_KEY) === "1";
@@ -181,27 +192,6 @@ function logInitFailure(err, { model, device, dtype, stage }) {
   });
 }
 
-/* ---------------- library loading ---------------- */
-
-async function loadLibrary() {
-  setState({ stage: "load-lib", progress: { percent: 4, file: null, detail: "Preparing NimiqLearn AI…" } });
-  let lastError = null;
-  for (const url of CDN_SOURCES) {
-    try {
-      const lib = await withTimeout(import(/* @vite-ignore */ url), LIB_TIMEOUT, `library:${url.split("/")[2]}`);
-      if (lib && typeof lib.pipeline === "function") {
-        recordAttempt({ stage: "library", url, ok: true });
-        return lib;
-      }
-      throw new Error("Transformers.js module did not expose a pipeline()");
-    } catch (err) {
-      lastError = err;
-      recordAttempt({ stage: "library", url, ok: false, error: err?.message });
-    }
-  }
-  throw lastError || new Error("Could not load Transformers.js from any CDN");
-}
-
 /* ---------------- model loading ---------------- */
 
 function emitProgress(data, modelId, device) {
@@ -226,8 +216,7 @@ function emitProgress(data, modelId, device) {
   }
 }
 
-async function loadModel(lib, modelId, device, dtype) {
-  const { pipeline, env } = lib;
+async function loadModel(modelId, device, dtype) {
   env.allowLocalModels = false; // always fetch from the Hub (browser-cached)
   env.useBrowserCache = true; // reuse previously downloaded weights (Cache API)
 
@@ -270,51 +259,63 @@ async function runLifecycle() {
   });
   recordAttempt({ stage: "checking", webGPU: hasWebGPU, cached: isModelCached() });
 
-  library = await loadLibrary();
-  lifecycle.metrics = { ...lifecycle.metrics, libLoadedAtMs: Math.round(performance.now() - t0) };
+  // Controlled attempt plan (never a giant nested webgpu×dtype sweep):
+  //   1. WebGPU already detected above.
+  //   2. Attempt the primary quantized config on the best available device.
+  //   3. On failure, fall back to the WASM compatibility runtime — with
+  //      one further dtype fallback there only, since that's the one
+  //      device every browser supports and is worth a second try.
+  //   4. If every attempt fails, the caller (initializeAI) resolves to
+  //      null and the deterministic fallback engine takes over.
+  // Each (device, dtype) pair is attempted at most once — never
+  // re-downloading the same weights under a different configuration on
+  // a device that already failed.
+  const plan = hasWebGPU
+    ? [
+        { device: "webgpu", dtype: MODEL_DTYPE },
+        { device: "wasm", dtype: MODEL_DTYPE },
+        { device: "wasm", dtype: MODEL_DTYPE_FALLBACK },
+      ]
+    : [
+        { device: "wasm", dtype: MODEL_DTYPE },
+        { device: "wasm", dtype: MODEL_DTYPE_FALLBACK },
+      ];
 
-  // Sequential attempt plan — one model, one runtime at a time.
-  const devices = hasWebGPU ? ["webgpu", "wasm"] : ["wasm"];
-  const dtypes = MODEL_DTYPE_ALTERNATES;
-
-  for (const device of devices) {
-    for (const dtype of dtypes) {
-      try {
-        const pipe = await loadModel(library, PRIMARY_MODEL, device, dtype);
-        const compatibility = device === "wasm";
-        lifecycle.metrics = {
-          ...lifecycle.metrics,
-          activeModel: PRIMARY_MODEL,
-          activeDevice: device,
-          activeDtype: dtype,
-          initCompleteMs: Math.round(performance.now()),
-          initDurationMs: Math.round(performance.now() - t0),
-        };
-        recordAttempt({ stage: "ready", model: PRIMARY_MODEL, device, dtype, ok: true });
-        setState({
-          status: compatibility ? AI_STATUS.FALLBACK : AI_STATUS.READY,
-          stage: "ready",
-          model: PRIMARY_MODEL,
-          device,
-          fallback: compatibility,
-          progress: { percent: 100, file: null, detail: "AI ready" },
-          error: null,
-          cached: isModelCached(),
-        });
-        console.info(`[NimiqLearn] AI ready — ${PRIMARY_MODEL} (${dtype}) on ${device} in ${Math.round(performance.now() - t0)}ms`);
-        return pipe;
-      } catch (err) {
-        logInitFailure(err, { model: PRIMARY_MODEL, device, dtype, stage: "load" });
-        recordAttempt({ stage: "failed", model: PRIMARY_MODEL, device, dtype, error: err?.message });
-        lifecycle.metrics = { ...lifecycle.metrics, lastFailed: { model: PRIMARY_MODEL, device, dtype, error: err?.message } };
-      }
+  for (const { device, dtype } of plan) {
+    try {
+      const pipe = await loadModel(PRIMARY_MODEL, device, dtype);
+      const compatibility = device === "wasm";
+      lifecycle.metrics = {
+        ...lifecycle.metrics,
+        activeModel: PRIMARY_MODEL,
+        activeDevice: device,
+        activeDtype: dtype,
+        initCompleteMs: Math.round(performance.now()),
+        initDurationMs: Math.round(performance.now() - t0),
+      };
+      recordAttempt({ stage: "ready", model: PRIMARY_MODEL, device, dtype, ok: true });
+      setState({
+        status: compatibility ? AI_STATUS.FALLBACK : AI_STATUS.READY,
+        stage: "ready",
+        model: PRIMARY_MODEL,
+        device,
+        fallback: compatibility,
+        progress: { percent: 100, file: null, detail: "AI ready" },
+        error: null,
+        cached: isModelCached(),
+      });
+      console.info(`[NimiqLearn] AI ready — ${PRIMARY_MODEL} (${dtype}) on ${device} in ${Math.round(performance.now() - t0)}ms`);
+      return pipe;
+    } catch (err) {
+      logInitFailure(err, { model: PRIMARY_MODEL, device, dtype, stage: "load" });
+      recordAttempt({ stage: "failed", model: PRIMARY_MODEL, device, dtype, error: err?.message });
+      lifecycle.metrics = { ...lifecycle.metrics, lastFailed: { model: PRIMARY_MODEL, device, dtype, error: err?.message } };
     }
   }
 
   console.error("NimiqLearn AI initialization failed", {
     model: PRIMARY_MODEL,
-    dtypes,
-    runtime: devices,
+    plan,
     error: lifecycle.attempts.at(-1)?.error,
     webGPU: hasWebGPU,
     userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "n/a",
@@ -353,30 +354,35 @@ export function initializeAI() {
   return initPromise;
 }
 
-/** Back-compat alias for the previous Qwen-era name. */
-export function initializeQwen() {
-  return initializeAI();
-}
-
-/** Internal accessor used by AI services. */
-export function getQwen() {
-  return initializeAI();
-}
-
 /* ---------------- background prewarm ---------------- */
 
 /**
- * Default prewarm: starts model initialization as early as practical so a
- * learner who reaches ExplainBack and submits never hits a "warm up" wait.
- * Guards: offline / slow-2g / 2g connections are skipped; already-running
+ * Starts model initialization as early as practical so a learner who
+ * reaches ExplainBack and submits rarely hits a cold-start wait. Guards:
+ * offline / slow-2g / 2g connections are always skipped; already-running
  * or ready states are no-ops. Fire-and-forget — never awaited by the UI.
+ *
+ * Adaptive policy for `{ background: true }` (used only by the app-wide
+ * idle trigger in AppRoot.jsx — page-level triggers like ExplainBack/Learn
+ * mounting call this with the default, since the learner has already
+ * shown clear intent to use the AI there):
+ *   - capable browser / WebGPU available → prewarm
+ *   - mobile with an ordinary connection → prewarm (network guard above
+ *     already covers "good enough" vs. slow-2g/2g)
+ *   - constrained device (low RAM/cores) with no WebGPU → defer; the
+ *     118MB download only starts once the learner actually opens
+ *     ExplainBack or Learn, whose own prewarm() call is unconditional.
+ * NimiqLearn runs inside Nimiq Pay Mini App WebViews, which can be much
+ * more resource-constrained than a desktop browser, so the app-wide
+ * trigger errs cautious rather than always downloading immediately.
  */
-export function startPrewarm() {
+export function startPrewarm({ background = false } = {}) {
   try {
     if (isAIReady() || lifecycle.status !== AI_STATUS.IDLE) return;
     if (typeof navigator !== "undefined" && navigator.onLine === false) return;
     const conn = typeof navigator !== "undefined" ? navigator.connection : null;
     if (conn && (conn.effectiveType === "slow-2g" || conn.effectiveType === "2g")) return;
+    if (background && isConstrainedDevice() && !supportsWebGPU()) return;
     initializeAI().catch(() => {});
   } catch {
     /* never throw out of prewarm */
@@ -419,7 +425,7 @@ export async function generateLearningResponse({
   temperature = 0.4,
   onToken = null,
 } = {}) {
-  const pipe = await getQwen();
+  const pipe = await initializeAI();
   if (!pipe) throw new Error("AI_UNAVAILABLE");
 
   const prevStatus = lifecycle.status;
@@ -441,10 +447,10 @@ export async function generateLearningResponse({
       repetition_penalty: 1.08,
     };
 
-    // Real streaming via TextStreamer when a token callback is requested
-    // and the runtime library supports it. Falls back silently otherwise.
-    if (onToken && library && typeof library.TextStreamer === "function" && pipe.tokenizer) {
-      const streamer = new library.TextStreamer(pipe.tokenizer, {
+    // Real streaming via Transformers.js's TextStreamer — verified against
+    // the installed package (not simulated by chunking a finished response).
+    if (onToken && pipe.tokenizer) {
+      const streamer = new TextStreamer(pipe.tokenizer, {
         skip_prompt: true,
         skip_special_tokens: true,
         callback_function: (chunk) => {
@@ -478,11 +484,6 @@ export async function generateLearningResponse({
   } finally {
     setState({ status: prevStatus });
   }
-}
-
-/** Back-compat alias. */
-export async function generateQwenResponse({ system = "", user, maxNewTokens = 220, temperature = 0.4 }) {
-  return generateLearningResponse({ systemPrompt: system, userPrompt: user, maxNewTokens, temperature });
 }
 
 /* ---------------- robust JSON parsing ---------------- */
@@ -521,7 +522,6 @@ export function parseAIResponse(text, { validate = () => ({ ok: false, value: nu
 export function resetAI() {
   generator = null;
   initPromise = null;
-  library = null;
   lifecycle = {
     status: AI_STATUS.IDLE,
     model: null,
