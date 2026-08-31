@@ -8,6 +8,8 @@
    spaced-repetition heuristic.
    ============================================================ */
 
+import { REVIEW_PRIORITY, reviewLevelLabel } from "../config/learningThresholds.js";
+
 const DAY = 24 * 60 * 60 * 1000;
 
 const STATUS_INTERVAL_DAYS = {
@@ -52,12 +54,9 @@ export function computeReviewRecommendation(entry, now = Date.now()) {
   // Interval grows with mastery and successful review count
   const intervalDays = Math.round(baseInterval * (1 + Math.min(2, reviewCount * 0.35)));
   const recommendedReviewAt = lastReviewedAt + intervalDays * DAY;
-  const dueNow = now >= recommendedReviewAt || priorityScore >= 65;
+  const dueNow = now >= recommendedReviewAt || priorityScore >= REVIEW_PRIORITY.DUE_SOON;
 
-  let levelLabel = "Fresh";
-  if (priorityScore >= 80) levelLabel = "Urgent";
-  else if (priorityScore >= 65) levelLabel = "Due soon";
-  else if (priorityScore >= 40) levelLabel = "Keep an eye";
+  const levelLabel = reviewLevelLabel(priorityScore);
 
   return {
     topicId: entry.topicId,

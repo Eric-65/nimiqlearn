@@ -1,0 +1,22 @@
+# Node / Vite app
+node_modules/
+dist/
+.vite/
+*.local
+
+# Training workspace — raw datasets, processed data, and model
+# checkpoints are never committed (see training/datasets/README.md).
+training/**/raw/
+training/**/processed/
+training/**/checkpoints/
+*.csv
+*.parquet
+*.jsonl
+*.ckpt
+*.joblib
+*.onnx
+training/**/.venv/
+
+# OS / editor
+.DS_Store
+*.log

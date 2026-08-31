@@ -10,7 +10,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { makeKnowledgeEntry } from "../data/mockLearner.js";
 import { INITIAL_LEARNER } from "../data/mockLearner.js";
 import { findTopic } from "../data/mockTopics.js";
-import { evaluateExplanation } from "../services/explainBackService.js";
+import { evaluateExplanation } from "../services/assessmentService.js";
 import {
   updateKnowledgeAfterEvaluation,
   applyActivityResult,
@@ -19,6 +19,7 @@ import {
   averageMastery,
 } from "../services/knowledgeService.js";
 import { buildReviewQueue } from "../services/forgetMeNotService.js";
+import { logEvent } from "../services/eventLogService.js";
 
 const STORAGE_KEY = "nimiqlearn:learner:v1";
 
@@ -85,7 +86,9 @@ export function LearnerProvider({ children }) {
       const topic = findTopic(topicId);
       if (!topic) throw new Error("Unknown topic.");
 
+      logEvent({ eventType: "EXPLANATION_SUBMITTED", topicId });
       const evaluation = await evaluateExplanation({ topic, learnerExplanation, learnerLevel, preferAI, onToken });
+      logEvent({ eventType: "EXPLANATION_EVALUATED", topicId, score: evaluation.masteryEstimate });
 
       // Compute the updated entry from the latest committed state so the
       // caller can use it immediately (React state updates are async).
@@ -114,6 +117,12 @@ export function LearnerProvider({ children }) {
 
   const recordActivityResultAction = useCallback(
     ({ topicId, correct, activityType = "ACTIVITY" }) => {
+      logEvent({
+        eventType: activityType === "EXPLAIN_BACK" ? "CHALLENGE_COMPLETED" : "ANSWER_SUBMITTED",
+        topicId,
+        activityId: activityType,
+        correct,
+      });
       patchKnowledge(topicId, (entry) => applyActivityResult(entry, { correct, activityType }));
       setLearner((l) => ({
         ...l,
@@ -128,6 +137,7 @@ export function LearnerProvider({ children }) {
   );
 
   const recordReviewAction = useCallback(({ topicId, correct }) => {
+    logEvent({ eventType: "REVIEW_COMPLETED", topicId, correct });
     patchKnowledge(topicId, (entry) => recordReview(entry, { correct }));
     setLearner((l) => ({
       ...l,
