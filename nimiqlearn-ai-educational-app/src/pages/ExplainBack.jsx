@@ -42,6 +42,11 @@ export default function ExplainBack() {
   topicIdRef.current = topicId;
   const submitTsRef = useRef(0);
   const debounceRef = useRef(null);
+  // Guards every async continuation below: if the learner navigates away
+  // (unmounting this page) while AI init/generation is still in flight,
+  // no further state updates are attempted on the unmounted component.
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const topic = findTopic(topicId);
   const entry = getEntry(topicId);
@@ -78,6 +83,7 @@ export default function ExplainBack() {
         preferAI: useAI,
         onToken: onToken || null,
       });
+      if (!mountedRef.current) return false;
       if (activeTopicRef.current !== topicIdRef.current) return false;
 
       setEvaluation(ev);
@@ -127,7 +133,7 @@ export default function ExplainBack() {
     setShowOriginal(true);
     setBeforeMastery(getEntry(topicId)?.mastery ?? 0);
 
-    const withStream = (chunk) => setStreamText((prev) => prev + chunk);
+    const withStream = (chunk) => { if (mountedRef.current) setStreamText((prev) => prev + chunk); };
 
     try {
       if (ai.isReady) {
@@ -136,7 +142,7 @@ export default function ExplainBack() {
       } else if (ai.preparing) {
         setPhase("loading");
         const pipe = await ai.initialize();
-        if (useBuiltInRef.current) return;
+        if (!mountedRef.current || useBuiltInRef.current) return;
         if (pipe) {
           setPhase("analyzing");
           await runEvaluation(true, withStream);
@@ -146,7 +152,7 @@ export default function ExplainBack() {
       } else {
         setPhase(ai.isUnavailable ? "analyzing" : "loading");
         const pipe = await ai.initialize();
-        if (useBuiltInRef.current) return;
+        if (!mountedRef.current || useBuiltInRef.current) return;
         if (pipe) {
           setPhase("analyzing");
           await runEvaluation(true, withStream);
@@ -156,7 +162,7 @@ export default function ExplainBack() {
       }
     } finally {
       generatingRef.current = false;
-      setIsGenerating(false);
+      if (mountedRef.current) setIsGenerating(false);
     }
   }, [ai.isReady, ai.preparing, ai.isUnavailable, topicId, text, runEvaluation, getEntry]);
 
