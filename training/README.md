@@ -35,6 +35,15 @@ would eventually fill in — see `exports/README.md` for that contract.
 
 Full provenance, schema, and licensing for both live in `datasets/README.md`.
 
+**Network note**: the environment this pipeline was built and tested in
+has its network egress proxy blocking `kaggle.com` entirely — neither
+dataset could be downloaded, nor could the Kaggle pages even be fetched
+to re-verify column names/license live. `scripts/download_data.sh`
+documents the download commands to run wherever you *do* have Kaggle
+access; everything below was validated end-to-end against small,
+clearly-labeled synthetic stand-ins instead (see each pipeline's "Demo
+run" section) — real numbers are still pending a real download.
+
 ```
 Automatic Short Answer Grading Dataset          Riiid Answer Correctness Prediction
         ↓                                                ↓
@@ -53,11 +62,20 @@ datasets.
 
 | Path | Purpose |
 |---|---|
-| `explainback/` | Offline pipeline for the Automatic Short Answer Grading dataset → ExplainBack assessment model |
-| `learner_state/` | Offline pipeline for the Riiid Answer Correctness Prediction dataset → learner-state model |
-| `exports/` | Where trained artifacts land once exported to a browser-compatible format, plus the contract they must satisfy |
+| `scripts/download_data.sh` | Manual, separate developer operation — never run by npm. Documents Kaggle CLI auth + download commands (no embedded credentials). |
+| `data/raw/{explainback,learner_state}/` | Downloaded (or synthetic demo) raw CSVs. Gitignored. |
+| `data/processed/{explainback,learner_state}/` | Normalized `train.jsonl`/`val.jsonl`/`test.jsonl` + `manifest.json` from each pipeline's prepare/split scripts. Gitignored. |
+| `explainback/` | Offline pipeline: prepare → baseline → train → evaluate → export, for the ASAG dataset → ExplainBack assessment model |
+| `learner_state/` | Offline pipeline: prepare → split → baseline → train → evaluate → export, for the Riiid dataset → learner-state model |
+| `models/{explainback,learner_state}/` | Trained model checkpoints (`.joblib`). Gitignored. |
+| `exports/` | Browser-compatible exports + the contract they must satisfy + committed synthetic-demo fixtures |
 | `datasets/` | Dataset provenance, schema, and licensing |
-| `evaluation/` | Shared metrics definitions for comparing a trained model against the deterministic baseline |
+| `evaluation/` | Metrics definitions + `reports/` — the real, generated (not hand-written) evaluation reports |
+
+The React frontend never imports from `data/raw`, `data/processed`,
+`models/`, or anything else under `training/` — it's a separate workspace
+by construction, not just convention (there is no build-time wiring
+between the two at all).
 
 ## Three intelligence layers in the running app
 
@@ -87,22 +105,27 @@ engine.
 
 ## Roadmap
 
-- **Phase 1 (current)** — deterministic ExplainBack baseline (rubric +
-  similarity) + SmolLM2 natural-language feedback + deterministic
-  learner-state engine. **This is the only phase actually implemented.**
-- **Phase 2** — train a specialized ExplainBack assessment model offline,
-  using `explainback/prepare_dataset.py` → `train.py` → `evaluate.py`.
-- **Phase 3** — train a learner-state model offline using the Riiid
-  dataset (`learner_state/prepare_riiid.py` → `train.py` → `evaluate.py`).
-- **Phase 4** — export both models to an ONNX / browser-compatible format
-  (`exports/`).
-- **Phase 5** — integrate browser inference (transformers.js / onnxruntime-web)
-  behind the existing `assessmentService.js` / `learnerStateService.js`
-  interfaces, so no calling code changes.
-- **Phase 6** — compare the trained model against the Phase 1 baseline
-  using the metrics in `evaluation/README.md`, and only then flip the
-  `source` a caller sees from `"deterministic-fallback"` to
-  `"trained-assessment-model"`.
+- **Phase 1** — deterministic ExplainBack baseline (rubric + similarity)
+  + SmolLM2 natural-language feedback + deterministic learner-state
+  engine. Implemented and shipped.
+- **Phase 2** — the full prepare → baseline → train → evaluate → export
+  pipeline for both datasets exists and runs end-to-end (`explainback/`,
+  `learner_state/`), verified against small synthetic stand-ins because
+  this environment cannot reach `kaggle.com`. **Not yet run against
+  either real dataset.**
+- **Phase 3** — run both pipelines against the real downloaded datasets,
+  and record real numbers in `evaluation/reports/`, replacing the
+  synthetic-data reports currently there.
+- **Phase 4** — compare the real-data trained models against the Phase 1
+  baselines using `evaluation/README.md`'s metrics. Only proceed past
+  this point if a trained model actually beats its baseline.
+- **Phase 5** — wire the winning trained model in behind
+  `assessmentService.js` / `learnerStateService.js` (flipping `source`
+  from `"deterministic-fallback"` to `"trained-assessment-model"`),
+  using the JS reference scorers in `exports/` as the starting point —
+  already verified to reproduce their Python models' predictions
+  bit-for-bit on the synthetic demo run.
 
-None of phases 2-6 are implemented. Do not report them as complete until
-a real training run has produced a real, evaluated artifact.
+Do not report phases 3-5 as complete until they've actually happened
+against real data — see each pipeline's README for exactly what has and
+hasn't been run so far.

@@ -2,8 +2,17 @@
 
 Neither dataset is stored in this repository. Both are pulled at
 preprocessing time from Kaggle into a local, gitignored directory (see
-root `.gitignore`: `*.csv`, `*.parquet`, `*.jsonl` and friends). Nothing
-here is ever fetched by, or bundled into, the browser app.
+root `.gitignore`: `*.csv`, `*.parquet`, `*.jsonl` and friends, plus
+`training/data/raw/`). Nothing here is ever fetched by, or bundled into,
+the browser app.
+
+**This session could not actually download either dataset, or even fetch
+the Kaggle pages below to re-verify their current column names/license
+live** — the sandbox's network egress proxy blocks `kaggle.com` entirely.
+Everything documented below (columns, license) reflects what was already
+known/recorded in an earlier pass, not a live re-check performed just
+now. Re-verify both pages yourself before relying on the license terms
+here for anything beyond internal development.
 
 ## 1. Automatic Short Answer Grading
 
@@ -18,13 +27,9 @@ here is ever fetched by, or bundled into, the browser app.
 | Preprocessing version | not yet run — no preprocessing has been executed against the real dataset |
 | Training date | none — no training has occurred |
 
-Download only into `explainback/raw/` (gitignored) via the Kaggle CLI or web UI —
-never fetched by, or committed to, this repository, and never bundled into
-the React application:
-
-```bash
-kaggle datasets download -d mubeenfurqanahmed/automatic-short-answer-grading-dataset -p explainback/raw/ --unzip
-```
+Download via `../scripts/download_data.sh explainback` into
+`data/raw/explainback/` (gitignored) — never fetched by, or committed to,
+this repository, and never bundled into the React application.
 
 ## 2. Riiid Answer Correctness Prediction
 
@@ -39,12 +44,9 @@ kaggle datasets download -d mubeenfurqanahmed/automatic-short-answer-grading-dat
 | Preprocessing version | not yet run |
 | Training date | none — no training has occurred |
 
-Requires joining the competition on Kaggle before download is permitted:
-
-```bash
-kaggle competitions download -c riiid-test-answer-prediction -p learner_state/raw/
-unzip learner_state/raw/riiid-test-answer-prediction.zip -d learner_state/raw/
-```
+Requires joining the competition on Kaggle first, then
+`../scripts/download_data.sh learner_state` into `data/raw/learner_state/`
+(gitignored).
 
 The dataset is only ever used inside `learner_state/` (offline). It is
 never fetched at runtime and never reaches the React application — only
@@ -58,5 +60,11 @@ the resulting lightweight model artifact or derived parameters would
 - `src/data/mockExplainBackExamples.js` in the app is a hand-written, 8-example
   sample for demo/dev purposes only — it is not extracted from the real
   dataset and must stay that size.
+- `explainback/make_synthetic_sample.py` and `learner_state/make_synthetic_sample.py`
+  generate a larger (hundreds to thousands of rows) SYNTHETIC stand-in for
+  each dataset, used only to prove the offline pipelines run end-to-end
+  in an environment that cannot reach Kaggle. Also not the real data —
+  see each pipeline's README "Demo run" section for what was actually
+  measured against it.
 - Update the "Preprocessing version" / "Training date" rows above the
   moment either pipeline is actually run against real data.

@@ -4,11 +4,17 @@ dist/
 .vite/
 *.local
 
-# Training workspace — raw datasets, processed data, and model
-# checkpoints are never committed (see training/datasets/README.md).
-training/**/raw/
-training/**/processed/
-training/**/checkpoints/
+# Training workspace — raw datasets, processed data, and trained model
+# artifacts are never committed (see training/datasets/README.md). This
+# also covers synthetic demo data from make_synthetic_sample.py — it's
+# regenerated from a fixed seed, not hand-crafted, so it doesn't need to
+# live in git either. These directories don't need to exist in git at
+# all: every script that writes into them creates them on demand
+# (Path(...).mkdir(parents=True, exist_ok=True)).
+training/data/raw/
+training/data/processed/
+training/models/
+training/exports/**/model.json
 *.csv
 *.parquet
 *.jsonl
@@ -16,6 +22,9 @@ training/**/checkpoints/
 *.joblib
 *.onnx
 training/**/.venv/
+
+# Evaluation reports ARE committed — they're small markdown files that
+# document real, reproducible pipeline runs (see training/evaluation/).
 
 # OS / editor
 .DS_Store

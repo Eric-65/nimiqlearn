@@ -1,0 +1,33 @@
+{
+  "format": "nimiqlearn-learner-state-logreg-v1",
+  "featureKeys": [
+    "attemptCount",
+    "recentFailures",
+    "topicMastery",
+    "recentRate",
+    "daysSinceReview"
+  ],
+  "scalerMean": [
+    28.71849957374254,
+    4.22540494458653,
+    0.4277916965046905,
+    0.43684082328583596,
+    0.02192916028267182
+  ],
+  "scalerScale": [
+    16.313636588899715,
+    1.6965947874133045,
+    0.1584325123281044,
+    0.21052825642384623,
+    0.013054105065092043
+  ],
+  "coef": [
+    0.0884700286948444,
+    -0.0894326576287665,
+    0.11350762795135974,
+    -0.03759613961337675,
+    0.018589313647594696
+  ],
+  "intercept": -0.2482419590139781,
+  "note": "Feature order matches featureKeys; see scoreLearnerState.js for the plain-JS scorer."
+}

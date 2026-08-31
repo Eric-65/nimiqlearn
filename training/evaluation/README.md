@@ -1,10 +1,22 @@
 # Evaluation framework
 
 Metrics a trained model must report before it's considered for the
-export contract in `../exports/README.md`. No numbers are reported here —
-only definitions. Run the `evaluate.py` in the relevant pipeline directory
-to get real numbers, and paste the actual output (not a paraphrase) when
-recording a result.
+export contract in `../exports/README.md`. Definitions below; real
+numbers from an actual pipeline run live in `reports/` (see "Reports"
+below) — this file doesn't restate them, since they'd drift out of sync
+with the scripts that produced them.
+
+## Reports
+
+- `reports/explainback_eval.md`
+- `reports/learner_state_eval.md`
+
+Both are generated verbatim by `evaluate.py` in their respective pipeline
+— never hand-edited. **Both currently describe a run against synthetic
+demo data**, not the real Kaggle datasets (this environment's network
+egress proxy blocks `kaggle.com` — see each pipeline's README for the
+"Demo run" section). Re-run `evaluate.py` against a real-data split to
+replace them with real numbers; the report format stays the same.
 
 ## ExplainBack assessment
 

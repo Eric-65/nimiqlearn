@@ -4,32 +4,42 @@ matching the shape src/services/learnerStateService.js already consumes:
 recentCorrectness, attemptCount, recentFailures, topicMastery,
 timeSinceReviewMs -> label_nextCorrect.
 
-This is feature engineering for offline research only — no Riiid data is
-ever loaded by, or shipped with, the browser app.
+Column names below (user_id, content_id, content_type_id, timestamp,
+answered_correctly) are the actual Riiid competition schema, not a guess
+— see https://www.kaggle.com/competitions/riiid-test-answer-prediction/data.
+This script still verifies them against the real file header and fails
+loudly if they don't match, in case Kaggle's export ever changes.
+
+Chronological ordering is preserved per user (each feature row only uses
+that user's OWN prior history — see AVOID DATA LEAKAGE in ../README.md).
+`learnerId` is carried through into every output row so a downstream
+train/test split can be done by user group, not by row — otherwise the
+same learner's rows could land in both train and test, which would leak
+information about that learner's overall skill level across the split.
 
 Usage:
-    python3 prepare_riiid.py --input raw/train.csv --output processed/features.jsonl
+    python3 prepare_riiid.py --input ../data/raw/learner_state/train.csv \
+        --output ../data/processed/learner_state/features.jsonl
 """
 import argparse
 import json
 import sys
 from pathlib import Path
 
-WINDOW = 8  # how many prior attempts feed recentCorrectness, matches the
-            # app's own recentPerformance ring buffer size (see mockLearner.js)
+REQUIRED_COLUMNS = ["user_id", "content_type_id", "timestamp", "answered_correctly"]
+WINDOW = 8  # matches the app's own recentPerformance ring buffer size (see mockLearner.js)
 
 
-def build_features_for_user(rows):
-    """rows: list of dicts, one per interaction, already sorted by timestamp
-    for a single user. Yields one feature row per attempt (using only prior
-    history — no leakage from the attempt being predicted)."""
+def build_features_for_user(user_id, rows):
+    """rows: one user's interactions, already sorted by timestamp. Yields
+    one feature row per attempt, using only that user's PRIOR history —
+    never information from the attempt being predicted or from later
+    attempts (no leakage across time)."""
     history = []
     last_timestamp = None
     for row in rows:
         if row.get("content_type_id") == 1:
-            # Riiid marks lecture rows with content_type_id == 1; they are
-            # not questions and carry no correctness label.
-            continue
+            continue  # lecture row, not a question — no correctness label
 
         correct = int(row["answered_correctly"])
         timestamp = int(row["timestamp"])
@@ -42,6 +52,7 @@ def build_features_for_user(rows):
             time_since_review_ms = timestamp - last_timestamp if last_timestamp is not None else None
 
             yield {
+                "learnerId": str(user_id),
                 "recentCorrectness": recent,
                 "attemptCount": attempt_count,
                 "recentFailures": recent_failures,
@@ -67,11 +78,12 @@ def main():
         print("This script requires pandas. Install with: pip install pandas", file=sys.stderr)
         sys.exit(1)
 
-    required = {"user_id", "timestamp", "content_type_id", "answered_correctly"}
     df = pd.read_csv(args.input)
-    missing = required - set(df.columns)
+    missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
     if missing:
         print(f"Input CSV is missing expected columns: {missing}", file=sys.stderr)
+        print(f"Actual columns found: {list(df.columns)}", file=sys.stderr)
+        print("If Kaggle's schema changed, update REQUIRED_COLUMNS in this script.", file=sys.stderr)
         sys.exit(1)
 
     df = df.sort_values(["user_id", "timestamp"])
@@ -86,11 +98,14 @@ def main():
     with open(out_path, "w", encoding="utf-8") as fh:
         for uid in user_ids:
             user_rows = df[df["user_id"] == uid].to_dict("records")
-            for feature_row in build_features_for_user(user_rows):
+            for feature_row in build_features_for_user(uid, user_rows):
                 fh.write(json.dumps(feature_row) + "\n")
                 written += 1
 
-    print(f"Wrote {written} feature rows for {len(user_ids)} users to {out_path}")
+    print(f"Rows in raw file: {len(df)}")
+    print(f"Users processed: {len(user_ids)}")
+    print(f"Feature rows written (post lecture-row filtering, first attempt per user excluded): {written}")
+    print(f"Output: {out_path}")
 
 
 if __name__ == "__main__":

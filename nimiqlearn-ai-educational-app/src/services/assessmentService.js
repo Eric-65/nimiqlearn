@@ -35,7 +35,7 @@ import { TOPIC_CONTENT } from "../data/mockTopics.js";
 
 export const ASSESSMENT_SOURCE = {
   MODEL: "smolLM2",
-  TRAINED: "trained-assessment-model", // reserved — not implemented (see training/README.md, phase 2)
+  TRAINED: "trained-assessment-model", // reserved — not implemented (see training/README.md, phase 5)
   BASELINE: "deterministic-fallback",
 };
 
@@ -95,7 +95,7 @@ function coverageRatio(answerTokens, referenceTokens) {
 
 /**
  * Deterministic rubric assessment. Always available, never blocks on the
- * AI. This is the "trained-assessment-model" stand-in until Phase 2 (see
+ * AI. This is the "trained-assessment-model" stand-in until the pipeline in training/ actually beats it (Phase 3-5, see
  * training/README.md) — the interface (input/output shape) is designed to
  * stay identical once a real trained model is exported.
  */

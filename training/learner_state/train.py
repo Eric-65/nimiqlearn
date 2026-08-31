@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
-"""Train a baseline learner-state classifier: logistic regression over
-recentCorrectness/attemptCount/recentFailures/topicMastery/timeSinceReviewMs
+"""Train a learner-state classifier: logistic regression over
+attemptCount/recentFailures/topicMastery/recentCorrectness-rate/timeSince
 -> P(next answer correct).
 
-Deliberately simple, to match the interface (not necessarily the internal
-logic) of src/services/learnerStateService.js's predictLearnerState(), so
-the exported model can be swapped in behind that same function signature
-later without changing any calling code.
+Deliberately simple (a handful of hand-engineered features + logistic
+regression) so the coefficients export directly to plain JS arithmetic
+(see export.py) with no ML runtime needed at all.
+
+Trains on train.jsonl, reports on val.jsonl. Final, one-time numbers come
+from evaluate.py against test.jsonl, which this script never touches.
 
 Usage:
-    python3 train.py --input processed/features.jsonl --model-out checkpoints/riiid_logreg.joblib
+    python3 train.py --data-dir ../data/processed/learner_state --model-out ../models/learner_state/logreg.joblib
 """
 import argparse
 import json
 import sys
+from pathlib import Path
 
-
-FEATURE_KEYS = ["attemptCount", "recentFailures", "topicMastery", "timeSinceReviewMs"]
+FEATURE_KEYS = ["attemptCount", "recentFailures", "topicMastery", "recentRate", "daysSinceReview"]
 
 
 def load_examples(path):
@@ -38,37 +40,38 @@ def featurize(example):
         example["recentFailures"],
         example["topicMastery"],
         recent_rate,
-        min(time_since / 86_400_000, 30),  # clamp to 30 days, in days
+        min(time_since / 86_400_000, 30),
     ]
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", required=True, help="Feature JSONL from prepare_riiid.py")
+    parser.add_argument("--data-dir", required=True, help="Directory with train.jsonl and val.jsonl from split_dataset.py")
     parser.add_argument("--model-out", required=True, help="Where to write the trained pipeline (joblib)")
-    parser.add_argument("--test-size", type=float, default=0.2)
-    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
     try:
         from sklearn.linear_model import LogisticRegression
-        from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
         from sklearn.pipeline import Pipeline
+        from sklearn.metrics import roc_auc_score
         import joblib
     except ImportError:
         print("This script requires scikit-learn and joblib: pip install scikit-learn joblib", file=sys.stderr)
         sys.exit(1)
 
-    examples = load_examples(args.input)
-    if len(examples) < 50:
-        print(f"Only {len(examples)} feature rows found — need the real Riiid dataset, not synthetic data.", file=sys.stderr)
+    data_dir = Path(args.data_dir)
+    train_examples = load_examples(data_dir / "train.jsonl")
+    val_examples = load_examples(data_dir / "val.jsonl")
+
+    if len(train_examples) < 50:
+        print(f"Only {len(train_examples)} training rows found — need the real Riiid dataset.", file=sys.stderr)
         sys.exit(1)
 
-    X = [featurize(e) for e in examples]
-    y = [e["label_nextCorrect"] for e in examples]
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=args.test_size, random_state=args.seed, stratify=y)
+    X_train = [featurize(e) for e in train_examples]
+    y_train = [e["label_nextCorrect"] for e in train_examples]
+    X_val = [featurize(e) for e in val_examples]
+    y_val = [e["label_nextCorrect"] for e in val_examples]
 
     pipeline = Pipeline([
         ("scale", StandardScaler()),
@@ -77,14 +80,20 @@ def main():
     pipeline.fit(X_train, y_train)
 
     train_acc = pipeline.score(X_train, y_train)
-    test_acc = pipeline.score(X_test, y_test)
-    print(f"Train accuracy: {train_acc:.3f}  |  Test accuracy: {test_acc:.3f}  |  n_train={len(X_train)} n_test={len(X_test)}")
+    print(f"n_train={len(train_examples)} n_val={len(val_examples)}")
+    print(f"Train accuracy: {train_acc:.3f}")
+    if val_examples:
+        val_acc = pipeline.score(X_val, y_val)
+        val_auc = roc_auc_score(y_val, pipeline.predict_proba(X_val)[:, 1])
+        print(f"Val accuracy: {val_acc:.3f}  |  Val ROC-AUC: {val_auc:.3f}")
+    else:
+        print("No val.jsonl examples — skipping validation report.")
 
-    from pathlib import Path
     out_path = Path(args.model_out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"pipeline": pipeline, "feature_keys": FEATURE_KEYS}, out_path)
     print(f"Saved model to {out_path}")
+    print("Final numbers come from evaluate.py against test.jsonl.")
 
 
 if __name__ == "__main__":
