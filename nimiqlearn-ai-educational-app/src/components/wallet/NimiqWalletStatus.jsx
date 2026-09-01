@@ -12,11 +12,19 @@ function truncateAddress(address) {
 }
 
 /**
- * Wallet connection status card (item 30/31). Deliberately NOT a crypto
+ * Wallet connection status card (Part 29/30). Deliberately NOT a crypto
  * dashboard — just: Nimiq Pay detected, wallet connected, wallet
  * authenticated, network ready. Connection and authentication are shown
- * as two independent facts (item 11): a connected account is never shown
+ * as two independent facts (Part 10): a connected account is never shown
  * as authenticated unless a real signing flow has actually succeeded.
+ *
+ * Copy for each state follows Part 29 exactly:
+ *   NOT AVAILABLE  → "Open NimiqLearn in Nimiq Pay to connect your wallet."
+ *   DISCONNECTED   → "Connect Nimiq Pay"
+ *   CONNECTING     → "Connecting..."
+ *   CONNECTED      → "Wallet connected"
+ *   AUTHENTICATED  → "Wallet authenticated"
+ *   ERROR          → "Connection failed" [Retry]
  */
 export default function NimiqWalletStatus() {
   const nimiq = useNimiq();
@@ -45,20 +53,28 @@ export default function NimiqWalletStatus() {
   return (
     <Card title="Your Nimiq wallet" sub="Wallet state is handled by application code — the AI never sees it.">
       <div className="flex items-center gap-8 wrap" style={{ marginBottom: 16 }}>
-        {nimiq.status === NIMIQ_STATUS.INITIALIZING && <Badge tone="amber" dot>Connecting…</Badge>}
-        {nimiq.status === NIMIQ_STATUS.CONNECTED && <Badge tone="teal" dot>Connected</Badge>}
+        {nimiq.status === NIMIQ_STATUS.INITIALIZING && <Badge tone="amber" dot>Connecting...</Badge>}
+        {nimiq.status === NIMIQ_STATUS.CONNECTED && nimiq.isAuthenticated && <Badge tone="teal" dot>Wallet authenticated</Badge>}
+        {nimiq.status === NIMIQ_STATUS.CONNECTED && !nimiq.isAuthenticated && <Badge tone="teal" dot>Wallet connected</Badge>}
         {nimiq.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE && <Badge tone="slate" dot>Nimiq Pay detected</Badge>}
         {nimiq.status === NIMIQ_STATUS.ERROR && <Badge tone="rose" dot>Connection failed</Badge>}
-        {nimiq.status === NIMIQ_STATUS.BROWSER_UNAVAILABLE && <Badge tone="amber" dot>Nimiq Pay unavailable</Badge>}
+        {nimiq.status === NIMIQ_STATUS.BROWSER_MODE && <Badge tone="amber" dot>Not available</Badge>}
       </div>
 
-      {nimiq.status === NIMIQ_STATUS.BROWSER_UNAVAILABLE && (
+      {nimiq.status === NIMIQ_STATUS.BROWSER_MODE && (
         <div className="notice warn" style={{ marginBottom: 16 }}>
           <span aria-hidden="true">🧪</span>
           <span>
-            Nimiq Pay wallet access is available when this Mini App runs inside Nimiq Pay. This browser environment is
-            useful for UI testing but cannot prove the real wallet flow.
+            Open NimiqLearn in Nimiq Pay to connect your wallet. This browser environment is useful for UI testing but
+            cannot prove the real wallet flow.
           </span>
+        </div>
+      )}
+
+      {nimiq.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE && nimiq.error === "Connection cancelled" && (
+        <div className="notice warn" style={{ marginBottom: 16 }}>
+          <span aria-hidden="true">🚫</span>
+          <span>Connection cancelled. Nothing was shared, and no account was connected.</span>
         </div>
       )}
 
@@ -87,32 +103,30 @@ export default function NimiqWalletStatus() {
             </button>
           )}
         />
-        <Row label="Network" value={nimiq.network || "—"} />
         <Row
           label="NIM balance"
-          value="Not available"
-          hint="This Mini App SDK does not expose a balance query — see Wallet diagnostics for why."
+          value="Balance unavailable in this Mini App provider."
+          hint="See Wallet diagnostics for why — no balance query method is exposed."
         />
-        <Row label="Block height" value={nimiq.networkHeight ?? "—"} />
+        <Row label="Block number" value={nimiq.blockNumber ?? "—"} />
       </div>
 
       <div className="flex gap-8 wrap">
         {nimiq.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE && (
-          <Button variant="nimiq" size="sm" onClick={nimiq.connect}>Connect Nimiq Pay</Button>
+          <Button variant="nimiq" onClick={nimiq.connect}>Connect Nimiq Pay</Button>
         )}
         {nimiq.status === NIMIQ_STATUS.INITIALIZING && (
-          <Button variant="nimiq" size="sm" disabled loading>Connecting…</Button>
+          <Button variant="nimiq" disabled loading>Connecting...</Button>
         )}
         {nimiq.status === NIMIQ_STATUS.ERROR && (
-          <Button variant="outline" size="sm" onClick={nimiq.connect}>Retry</Button>
+          <Button variant="outline" onClick={nimiq.connect}>Retry</Button>
         )}
         {nimiq.status === NIMIQ_STATUS.CONNECTED && (
           <>
-            <Button variant="outline" size="sm" onClick={nimiq.disconnect}>Disconnect</Button>
+            <Button variant="outline" onClick={nimiq.disconnect}>Disconnect</Button>
             {!nimiq.isAuthenticated && (
-              <Button variant="outline" size="sm" onClick={handleSignIn}>Sign in with Nimiq Pay</Button>
+              <Button variant="outline" onClick={handleSignIn}>Sign in with Nimiq Pay</Button>
             )}
-            {nimiq.isAuthenticated && <Badge tone="teal">Signed in</Badge>}
           </>
         )}
       </div>

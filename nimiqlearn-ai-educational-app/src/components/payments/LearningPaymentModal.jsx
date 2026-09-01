@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Modal from "../ui/Modal.jsx";
 import Button from "../ui/Button.jsx";
 import Badge from "../ui/Badge.jsx";
@@ -26,13 +26,23 @@ const STEP = {
  * reports TRANSACTION_STATE.CONFIRMED. In DEMO MODE every simulated
  * payment is clearly labelled as a simulation.
  */
+/** Part 27's exact progression copy, driven by the real transactionState
+ * the provider reports — never a fake percentage or a guessed stage. */
+const PENDING_TEXT = {
+  [TRANSACTION_STATE.AWAITING_APPROVAL]: "Waiting for wallet approval...",
+  [TRANSACTION_STATE.SUBMITTED]: "Transaction submitted",
+  [TRANSACTION_STATE.CONFIRMED]: "Payment confirmed",
+};
+
 export default function LearningPaymentModal({ pack, open, onClose, onSuccess }) {
   const nimiq = useNimiq();
   const { learner, recordPendingPayment, clearPendingPayment } = useLearner();
   const [step, setStep] = useState(STEP.REVIEW);
   const [result, setResult] = useState(null);
+  const [pendingText, setPendingText] = useState("Waiting for wallet approval...");
   const assets = getSupportedAssets();
   const [selectedAsset, setSelectedAsset] = useState("NIM");
+  const submittingRef = useRef(false);
 
   const pending = pack ? hasPendingPayment(learner.pendingPayments, pack.id) : false;
 
@@ -41,6 +51,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
       setStep(pending ? STEP.NEEDS_VERIFICATION : STEP.REVIEW);
       setResult(null);
       setSelectedAsset("NIM");
+      submittingRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -52,17 +63,28 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
   const disabled = !PAYMENTS_ENABLED;
 
   const handleConfirm = async () => {
+    // Part 26 — never allow a rapid double-click to trigger two
+    // transactions, even before React re-renders the button away.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+
     setStep(STEP.CONFIRMING);
     // brief explicit review moment before the request goes out
     await new Promise((r) => setTimeout(r, 500));
     setStep(STEP.PENDING);
-    const res = await nimiq.pay(request);
+    setPendingText(demo ? "Simulating payment…" : PENDING_TEXT[TRANSACTION_STATE.AWAITING_APPROVAL]);
+    const res = await nimiq.pay(request, {
+      onStateChange: (s) => {
+        if (PENDING_TEXT[s]) setPendingText(PENDING_TEXT[s]);
+      },
+    });
     setResult(res);
+    submittingRef.current = false;
     if (res.transactionState === TRANSACTION_STATE.CONFIRMED) {
       setStep(STEP.SUCCESS);
       onSuccess?.(res);
     } else {
-      // Item 22 — an UNKNOWN outcome blocks a second attempt for this
+      // Part 24/26 — an UNKNOWN outcome blocks a second attempt for this
       // product until the learner explicitly acknowledges checking their
       // own wallet (see the NEEDS_VERIFICATION step below).
       if (res.transactionState === TRANSACTION_STATE.UNKNOWN) {
@@ -191,7 +213,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
         {step === STEP.PENDING && (
           <div className="anim-fade" style={{ textAlign: "center", padding: "18px 0" }}>
             <div className="spinner" style={{ width: 30, height: 30, borderWidth: 3, margin: "0 auto 16px" }} aria-hidden="true" />
-            <h3 style={{ margin: "0 0 6px" }}>{demo ? "Simulating payment…" : "Waiting for wallet approval…"}</h3>
+            <h3 style={{ margin: "0 0 6px" }}>{pendingText}</h3>
             <p className="small muted" style={{ margin: 0 }}>
               {demo ? "This is a demo simulation and will complete momentarily." : "Approve the request in Nimiq Pay to continue."}
             </p>
@@ -205,7 +227,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </div>
-            <h3 style={{ margin: "0 0 8px" }}>{result.simulated ? "Pack unlocked (simulated)" : "Unlocked"}</h3>
+            <h3 style={{ margin: "0 0 8px" }}>{result.simulated ? "Learning pack unlocked (simulated)" : "Learning pack unlocked"}</h3>
             <p className="small muted" style={{ margin: "0 0 14px" }}>
               {result.detail}
             </p>
@@ -214,7 +236,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               amount={request.amount}
               asset={result.asset}
               recipient={request.recipient}
-              reference={result.reference}
+              transactionHash={result.transactionHash}
               status={result.transactionState}
               simulated={result.simulated}
               occurredAt={Date.now()}
@@ -232,7 +254,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
             </div>
             <h3 style={{ margin: "0 0 8px" }}>
               {result?.transactionState === TRANSACTION_STATE.UNKNOWN
-                ? "Payment status unknown"
+                ? "Payment submitted"
                 : result?.transactionState === TRANSACTION_STATE.REJECTED
                 ? "Payment cancelled"
                 : "Payment not confirmed"}

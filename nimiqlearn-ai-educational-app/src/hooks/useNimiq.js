@@ -2,11 +2,21 @@
    NimiqLearn — useNimiq hook
    ------------------------------------------------------------
    Thin reactive wrapper over nimiqWalletService.js (the single
-   source of truth) and paymentService.js. Attempts a real
-   connection on first mount ONLY — this only ever calls
-   listAccounts() through the provider, never a payment or a sign
-   request, so it never auto-approves or auto-signs anything
-   (item 36).
+   source of truth) and paymentService.js.
+
+   On first mount this only ever calls detectNimiqPay() — provider
+   PRESENCE detection (init()), which never requires user
+   confirmation. It deliberately does NOT call connectWallet() on
+   mount: that calls provider.connect() internally, which calls
+   listAccounts(), which DOES require user confirmation per the
+   official Nimiq Mini Apps skill's own capability table. Auto-
+   connecting on mount would mean a native "share your account"
+   dialog could appear the instant the mini app opens, with no
+   user interaction — exactly the anti-pattern the skill's own
+   pre-ship checklist calls out ("The app does not trigger
+   approval dialogs on page load without user interaction").
+   connectWallet() is only ever invoked from the "Connect Nimiq
+   Pay" button (see NimiqWalletStatus.jsx) — a real user click.
 
    `autoConnectAttempted` is module-level, not component state, so
    it is shared across every component that calls this hook (a
@@ -26,10 +36,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   getWalletState,
   subscribeToWalletChanges,
+  detectNimiqPay,
   connectWallet,
   disconnectWallet,
   authenticateWithNimiqPay,
-  isNimiqPayAvailable,
   NIMIQ_STATUS,
 } from "../services/nimiqWalletService.js";
 import { processPayment } from "../services/paymentService.js";
@@ -46,7 +56,7 @@ export function useNimiq() {
   useEffect(() => {
     if (autoConnectAttempted) return;
     autoConnectAttempted = true;
-    connectWallet().catch(() => {});
+    detectNimiqPay().catch(() => {});
   }, []);
 
   const connect = useCallback(() => connectWallet(), []);
@@ -56,10 +66,9 @@ export function useNimiq() {
 
   return {
     ...state,
-    providerAvailable: isNimiqPayAvailable(),
     isConnecting: state.status === NIMIQ_STATUS.INITIALIZING,
     isConnected: state.status === NIMIQ_STATUS.CONNECTED,
-    isUnavailable: state.status === NIMIQ_STATUS.BROWSER_UNAVAILABLE,
+    isUnavailable: state.status === NIMIQ_STATUS.BROWSER_MODE,
     isError: state.status === NIMIQ_STATUS.ERROR,
     isAuthenticated: Boolean(state.authenticated),
     connect,

@@ -39,7 +39,7 @@ export default function Wallet() {
                     <span className="strong">{a.asset}</span>
                     <span className="tiny muted">{a.network}</span>
                   </span>
-                  {a.real ? <Badge tone="teal">Real support</Badge> : <Badge tone="slate">When supported</Badge>}
+                  {a.real ? <Badge tone="teal">Real support</Badge> : <Badge tone="slate">Coming soon</Badge>}
                 </div>
               ))}
             </div>

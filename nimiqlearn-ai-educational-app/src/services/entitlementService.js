@@ -29,16 +29,17 @@ export const ENTITLEMENT_STATUS = {
  * @param {string} params.productId
  * @param {string|null} params.purchaserAddress - the wallet address that paid,
  *   or null when the purchase happened in browser DEMO MODE (no real wallet).
- * @param {string} params.transactionId - the provider's transaction reference,
- *   or a clearly-labelled SIM-… id for a demo purchase (see paymentService.js).
+ * @param {string} params.transactionHash - the real transaction hash returned by
+ *   sendBasicTransaction() (verified via the official Nimiq Mini Apps skill), or
+ *   a clearly-labelled SIM-… id for a demo purchase (see paymentService.js).
  * @param {boolean} [params.simulated] - true for a DEMO MODE purchase — carried
  *   through so the UI never has to guess whether a payment was real.
  */
-export function createEntitlement({ productId, purchaserAddress = null, transactionId, simulated = false }) {
+export function createEntitlement({ productId, purchaserAddress = null, transactionHash, simulated = false }) {
   return {
     productId,
     purchaserAddress,
-    transactionId,
+    transactionHash,
     purchasedAt: Date.now(),
     status: ENTITLEMENT_STATUS.ACTIVE,
     simulated,

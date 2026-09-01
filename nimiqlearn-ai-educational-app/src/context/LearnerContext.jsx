@@ -233,12 +233,12 @@ export function LearnerProvider({ children }) {
     }));
   }, []);
 
-  const unlockPackAction = useCallback(({ productId, purchaserAddress, transactionId, simulated }) => {
+  const unlockPackAction = useCallback(({ productId, purchaserAddress, transactionHash, simulated }) => {
     setLearner((l) => {
       if (hasEntitlement(l.unlockedPacks, productId)) return l;
       return {
         ...l,
-        unlockedPacks: [...(l.unlockedPacks || []), createEntitlement({ productId, purchaserAddress, transactionId, simulated })],
+        unlockedPacks: [...(l.unlockedPacks || []), createEntitlement({ productId, purchaserAddress, transactionHash, simulated })],
         pendingPayments: (l.pendingPayments || []).filter((p) => p.productId !== productId),
       };
     });

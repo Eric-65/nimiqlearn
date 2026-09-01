@@ -21,7 +21,7 @@ export default function Marketplace() {
     unlockPack({
       productId: selectedPack.id,
       purchaserAddress: result.purchaserAddress || null,
-      transactionId: result.reference,
+      transactionHash: result.transactionHash,
       simulated: result.simulated,
     });
     setNotice({
@@ -112,7 +112,7 @@ export default function Marketplace() {
       <div className="notice info" style={{ marginTop: 24 }}>
         <span aria-hidden="true">🛡️</span>
         <span>
-          <strong>Unlocks go through Nimiq Pay's native confirmation.</strong> Your keys never leave the wallet. NIM is supported natively; USDT payment support is not available in this environment yet. Wallet and payment services are fully separated from the AI — the model never sees your address.
+          <strong>Unlocks go through Nimiq Pay's native confirmation.</strong> Your keys never leave the wallet. NIM is supported natively; USDT is coming soon. Wallet and payment services are fully separated from the AI — the model never sees your address.
         </span>
       </div>
 

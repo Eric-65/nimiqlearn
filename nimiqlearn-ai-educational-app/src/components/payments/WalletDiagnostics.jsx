@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNimiq } from "../../hooks/useNimiq.js";
-import { NIMIQ_STATUS, isNimiqPayAvailable, getUsdtSupportStatus } from "../../services/nimiqWalletService.js";
+import { NIMIQ_STATUS, isNimiqPayAvailable, isProviderInitialized, getUsdtSupportStatus } from "../../services/nimiqWalletService.js";
+import { getLastPaymentState } from "../../services/paymentService.js";
 import Button from "../ui/Button.jsx";
 
 const FLAG = "nimiqlearn:wallet-diagnostics";
@@ -114,27 +115,29 @@ export default function WalletDiagnostics() {
       </div>
 
       <Row label="Nimiq Pay detected" value={isNimiqPayAvailable() ? "YES" : "NO"} tone={isNimiqPayAvailable() ? "var(--c-teal)" : "var(--c-gold)"} />
+      <Row label="Provider initialized" value={isProviderInitialized() ? "YES" : "NO"} tone={isProviderInitialized() ? "var(--c-teal)" : undefined} />
       <Row
-        label="Connection status"
+        label="Wallet state"
         value={nimiq.status}
         tone={nimiq.status === NIMIQ_STATUS.CONNECTED ? "var(--c-teal)" : nimiq.status === NIMIQ_STATUS.ERROR ? "var(--c-rose)" : "var(--c-gold)"}
       />
       <Row label="Address" value={truncate(nimiq.address)} />
-      <Row label="Network" value={nimiq.network || "—"} />
       <Row label="Consensus" value={nimiq.consensusReady === null ? "—" : nimiq.consensusReady ? "ESTABLISHED" : "SYNCING"} />
-      <Row label="Block height" value={nimiq.networkHeight ?? "—"} />
+      <Row label="Block number" value={nimiq.blockNumber ?? "—"} />
       <Row label="Host language" value={nimiq.language || "—"} />
       <Row label="NIM balance query" value="NOT SUPPORTED BY SDK" tone="var(--c-gold)" />
       <Row label="USDT support" value={getUsdtSupportStatus()} tone="var(--c-gold)" />
       <Row label="Payment provider" value="Nimiq Pay (native sendBasicTransaction)" />
-      <Row label="Signed in (auth)" value={nimiq.isAuthenticated ? "YES" : "NO"} tone={nimiq.isAuthenticated ? "var(--c-teal)" : undefined} />
+      <Row label="Authenticated" value={nimiq.isAuthenticated ? "YES" : "NO"} tone={nimiq.isAuthenticated ? "var(--c-teal)" : undefined} />
       {nimiq.authenticated && (
         <>
           <Row label="Auth address" value={truncate(nimiq.authenticated.address)} />
           <Row label="Auth expires" value={new Date(nimiq.authenticated.expiresAt).toLocaleTimeString()} />
         </>
       )}
-      {lastError && <Row label="Last error" value={lastError} tone="var(--c-rose)" />}
+      <Row label="Payment state" value={getLastPaymentState().transactionState} />
+      <Row label="Transaction hash" value={truncate(getLastPaymentState().transactionHash)} />
+      {lastError && <Row label="Last provider error" value={lastError} tone="var(--c-rose)" />}
 
       <div className="flex gap-8 wrap" style={{ marginTop: 12 }}>
         <Button variant="outline" size="sm" onClick={nimiq.connect}>Connect</Button>
