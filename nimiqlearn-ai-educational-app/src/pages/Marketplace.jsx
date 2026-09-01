@@ -6,6 +6,7 @@ import LearningPaymentModal from "../components/payments/LearningPaymentModal.js
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import Button from "../components/ui/Button.jsx";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_REASON } from "../config/paymentConfig.js";
 
 export default function Marketplace() {
   const { learner, unlockPack } = useLearner();
@@ -44,6 +45,13 @@ export default function Marketplace() {
           <Badge tone="amber" dot>DEMO MODE — payments simulated</Badge>
         )}
       </header>
+
+      {!PAYMENTS_ENABLED && (
+        <div className="notice danger anim-pop" style={{ marginBottom: 22 }} role="status">
+          <span aria-hidden="true">⚠️</span>
+          <span>{PAYMENTS_DISABLED_REASON}</span>
+        </div>
+      )}
 
       {notice && (
         <div className={`notice ${notice.kind} anim-pop`} style={{ marginBottom: 22 }} role="status">

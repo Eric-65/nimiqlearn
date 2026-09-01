@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNimiq } from "../../hooks/useNimiq.js";
-import { WALLET_STATUS, ENVIRONMENT, isNimiqPayAvailable, getUsdtSupportStatus } from "../../services/nimiqWalletService.js";
+import { NIMIQ_STATUS, isNimiqPayAvailable, getUsdtSupportStatus } from "../../services/nimiqWalletService.js";
 import Button from "../ui/Button.jsx";
 
 const FLAG = "nimiqlearn:wallet-diagnostics";
@@ -40,8 +40,9 @@ function truncate(address) {
  * or the `#wallet-diagnostics` hash. Never ships to normal learners.
  *
  * Shows connection facts only — never a private key, seed phrase, or
- * signature. `nimiq.auth` only ever holds { address, authenticatedAt,
- * expiresAt }, so surfacing it here is safe by construction.
+ * signature. `nimiq.authenticated` only ever holds { address,
+ * authenticatedAt, expiresAt }, so surfacing it here is safe by
+ * construction.
  */
 export default function WalletDiagnostics() {
   const nimiq = useNimiq();
@@ -87,13 +88,6 @@ export default function WalletDiagnostics() {
     );
   }
 
-  const environmentLabel =
-    nimiq.environment === ENVIRONMENT.NIMIQ_PAY_AVAILABLE
-      ? "NIMIQ_PAY_AVAILABLE"
-      : nimiq.environment === ENVIRONMENT.BROWSER_MODE
-      ? "BROWSER_MODE"
-      : "UNSUPPORTED";
-
   return (
     <div
       style={{
@@ -120,25 +114,24 @@ export default function WalletDiagnostics() {
       </div>
 
       <Row label="Nimiq Pay detected" value={isNimiqPayAvailable() ? "YES" : "NO"} tone={isNimiqPayAvailable() ? "var(--c-teal)" : "var(--c-gold)"} />
-      <Row label="Environment" value={environmentLabel} />
       <Row
         label="Connection status"
-        value={nimiq.status.toUpperCase()}
-        tone={nimiq.status === WALLET_STATUS.CONNECTED ? "var(--c-teal)" : nimiq.status === WALLET_STATUS.ERROR ? "var(--c-rose)" : "var(--c-gold)"}
+        value={nimiq.status}
+        tone={nimiq.status === NIMIQ_STATUS.CONNECTED ? "var(--c-teal)" : nimiq.status === NIMIQ_STATUS.ERROR ? "var(--c-rose)" : "var(--c-gold)"}
       />
       <Row label="Address" value={truncate(nimiq.address)} />
       <Row label="Network" value={nimiq.network || "—"} />
-      <Row label="Consensus" value={nimiq.consensus === null ? "—" : nimiq.consensus ? "ESTABLISHED" : "SYNCING"} />
-      <Row label="Block height" value={nimiq.blockNumber ?? "—"} />
+      <Row label="Consensus" value={nimiq.consensusReady === null ? "—" : nimiq.consensusReady ? "ESTABLISHED" : "SYNCING"} />
+      <Row label="Block height" value={nimiq.networkHeight ?? "—"} />
       <Row label="Host language" value={nimiq.language || "—"} />
       <Row label="NIM balance query" value="NOT SUPPORTED BY SDK" tone="var(--c-gold)" />
       <Row label="USDT support" value={getUsdtSupportStatus()} tone="var(--c-gold)" />
       <Row label="Payment provider" value="Nimiq Pay (native sendBasicTransaction)" />
-      <Row label="Signed in (auth)" value={nimiq.auth ? "YES" : "NO"} tone={nimiq.auth ? "var(--c-teal)" : undefined} />
-      {nimiq.auth && (
+      <Row label="Signed in (auth)" value={nimiq.isAuthenticated ? "YES" : "NO"} tone={nimiq.isAuthenticated ? "var(--c-teal)" : undefined} />
+      {nimiq.authenticated && (
         <>
-          <Row label="Auth address" value={truncate(nimiq.auth.address)} />
-          <Row label="Auth expires" value={new Date(nimiq.auth.expiresAt).toLocaleTimeString()} />
+          <Row label="Auth address" value={truncate(nimiq.authenticated.address)} />
+          <Row label="Auth expires" value={new Date(nimiq.authenticated.expiresAt).toLocaleTimeString()} />
         </>
       )}
       {lastError && <Row label="Last error" value={lastError} tone="var(--c-rose)" />}

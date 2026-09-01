@@ -21,7 +21,7 @@ import {
 import { buildReviewQueue, computeReviewRecommendation } from "../services/forgetMeNotService.js";
 import { decideNextActivity } from "../services/learnLoopService.js";
 import { logEvent } from "../services/eventLogService.js";
-import { createEntitlement, hasEntitlement } from "../services/entitlementService.js";
+import { createEntitlement, hasEntitlement, createPendingPayment } from "../services/entitlementService.js";
 
 const STORAGE_KEY = "nimiqlearn:learner:v1";
 
@@ -239,8 +239,26 @@ export function LearnerProvider({ children }) {
       return {
         ...l,
         unlockedPacks: [...(l.unlockedPacks || []), createEntitlement({ productId, purchaserAddress, transactionId, simulated })],
+        pendingPayments: (l.pendingPayments || []).filter((p) => p.productId !== productId),
       };
     });
+  }, []);
+
+  /** Item 22 — records an unresolved (UNKNOWN) payment so the same
+   * product cannot be purchased again until the learner explicitly
+   * acknowledges checking their own wallet (clearPendingPaymentAction). */
+  const recordPendingPaymentAction = useCallback(({ productId }) => {
+    setLearner((l) => {
+      if ((l.pendingPayments || []).some((p) => p.productId === productId)) return l;
+      return { ...l, pendingPayments: [...(l.pendingPayments || []), createPendingPayment({ productId })] };
+    });
+  }, []);
+
+  const clearPendingPaymentAction = useCallback(({ productId }) => {
+    setLearner((l) => ({
+      ...l,
+      pendingPayments: (l.pendingPayments || []).filter((p) => p.productId !== productId),
+    }));
   }, []);
 
   const resetLearnerAction = useCallback(() => {
@@ -267,9 +285,20 @@ export function LearnerProvider({ children }) {
       recordActivityResult: recordActivityResultAction,
       recordReview: recordReviewAction,
       unlockPack: unlockPackAction,
+      recordPendingPayment: recordPendingPaymentAction,
+      clearPendingPayment: clearPendingPaymentAction,
       resetLearner: resetLearnerAction,
     };
-  }, [learner, evaluateExplanationAction, recordActivityResultAction, recordReviewAction, unlockPackAction, resetLearnerAction]);
+  }, [
+    learner,
+    evaluateExplanationAction,
+    recordActivityResultAction,
+    recordReviewAction,
+    unlockPackAction,
+    recordPendingPaymentAction,
+    clearPendingPaymentAction,
+    resetLearnerAction,
+  ]);
 
   return <LearnerContext.Provider value={value}>{children}</LearnerContext.Provider>;
 }

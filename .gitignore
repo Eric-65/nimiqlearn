@@ -4,6 +4,10 @@ dist/
 .vite/
 *.local
 
+# Local payment configuration (may hold a real recipient address) — only
+# .env.example is committed, see src/config/paymentConfig.js.
+nimiqlearn-ai-educational-app/.env
+
 # Training workspace — raw datasets, processed data, and trained model
 # artifacts are never committed (see training/datasets/README.md). This
 # also covers synthetic demo data from make_synthetic_sample.py — it's

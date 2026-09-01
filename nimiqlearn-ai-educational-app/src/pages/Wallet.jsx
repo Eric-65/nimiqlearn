@@ -1,7 +1,7 @@
 import React from "react";
 import { useNimiq } from "../hooks/useNimiq.js";
 import { useLearner } from "../hooks/useLearner.js";
-import WalletStatus from "../components/payments/WalletStatus.jsx";
+import NimiqWalletStatus from "../components/wallet/NimiqWalletStatus.jsx";
 import PaymentHistory from "../components/payments/PaymentHistory.jsx";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -29,7 +29,7 @@ export default function Wallet() {
 
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
-          <WalletStatus />
+          <NimiqWalletStatus />
 
           <Card title="Supported assets" sub="Detected from the current environment — never hard-coded to an unsupported chain.">
             <div style={{ display: "grid", gap: 10 }}>
@@ -47,6 +47,21 @@ export default function Wallet() {
         </div>
 
         <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
+          {(learner.pendingPayments || []).length > 0 && (
+            <Card title="Payment status needs verification" sub="A payment may have been submitted but could not be confirmed — check your Nimiq Pay transaction history before retrying.">
+              <div style={{ display: "grid", gap: 8 }}>
+                {learner.pendingPayments.map((p) => (
+                  <div key={p.productId} className="notice warn" style={{ margin: 0 }}>
+                    <span aria-hidden="true">⏳</span>
+                    <span>
+                      <strong>{p.productId}</strong> — attempted {new Date(p.startedAt).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
           <PaymentHistory unlockedPacks={learner.unlockedPacks} />
 
           <Card title="How to run as a real Mini App">

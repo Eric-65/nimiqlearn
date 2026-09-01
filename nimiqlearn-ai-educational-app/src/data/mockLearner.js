@@ -76,7 +76,8 @@ export const INITIAL_LEARNER = {
   coins: 12,
   studyMinutes: 245,
   createdAt: now - 21 * DAY,
-  unlockedPacks: [], // pack ids unlocked via payments
+  unlockedPacks: [], // entitlements from confirmed payments — see entitlementService.js
+  pendingPayments: [], // unresolved (UNKNOWN) payment attempts — see item 22 / entitlementService.js
   knowledge: [
     makeKnowledgeEntry("linear-equations", "Linear equations", {
       mastery: 88, status: "MASTERED",

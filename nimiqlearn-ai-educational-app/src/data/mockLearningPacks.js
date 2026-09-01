@@ -6,7 +6,12 @@
    addresses configured by the creator.
    ============================================================ */
 
-export const EDU_RECIPIENT = "NQ07 0000 0000 0000 0000 0000 0000 0000 0000";
+import { NIM_LEARNING_RECIPIENT } from "../config/paymentConfig.js";
+
+// Real, environment-configured recipient (item 25) — null (payment
+// disabled) until VITE_NIM_LEARNING_RECIPIENT is set. Never a hard-coded
+// placeholder address.
+const EDU_RECIPIENT = NIM_LEARNING_RECIPIENT;
 
 export const LEARNING_PACKS = [
   {

@@ -52,3 +52,23 @@ export function hasEntitlement(entitlements, productId) {
 export function findEntitlement(entitlements, productId) {
   return (entitlements || []).find((e) => e.productId === productId) || null;
 }
+
+/* ============================================================
+   Pending (unresolved) payments — item 22.
+   ------------------------------------------------------------
+   A payment can end in TRANSACTION_STATE.UNKNOWN (see
+   paymentService.js): the request may or may not have reached
+   the chain, and this app has no way to check. Recording it here
+   blocks a second purchase attempt for the SAME product until
+   the learner explicitly acknowledges they've checked their own
+   wallet — this is the concrete mechanism that prevents an
+   accidental double payment.
+   ============================================================ */
+
+export function createPendingPayment({ productId }) {
+  return { productId, startedAt: Date.now() };
+}
+
+export function hasPendingPayment(pendingPayments, productId) {
+  return (pendingPayments || []).some((p) => p.productId === productId);
+}

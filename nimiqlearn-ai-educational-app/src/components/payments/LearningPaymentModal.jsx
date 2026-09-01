@@ -2,36 +2,54 @@ import React, { useEffect, useState } from "react";
 import Modal from "../ui/Modal.jsx";
 import Button from "../ui/Button.jsx";
 import Badge from "../ui/Badge.jsx";
+import PaymentReceipt from "./PaymentReceipt.jsx";
 import { useNimiq } from "../../hooks/useNimiq.js";
-import { buildPaymentRequest, getSupportedAssets } from "../../services/paymentService.js";
+import { useLearner } from "../../hooks/useLearner.js";
+import { buildPaymentRequest, getSupportedAssets, TRANSACTION_STATE } from "../../services/paymentService.js";
+import { hasPendingPayment } from "../../services/entitlementService.js";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_REASON } from "../../config/paymentConfig.js";
 
-const STEP = { REVIEW: "review", CONFIRMING: "confirming", PENDING: "pending", SUCCESS: "success", FAILED: "failed", CANCELLED: "cancelled" };
+const STEP = {
+  NEEDS_VERIFICATION: "needsVerification", // item 22 — blocks a duplicate purchase attempt
+  REVIEW: "review",
+  CONFIRMING: "confirming",
+  PENDING: "pending",
+  SUCCESS: "success",
+  FAILED: "failed",
+  CANCELLED: "cancelled",
+};
 
 /**
  * Learning Economy payment dialog.
- * States: review → confirming → pending → success | failed | cancelled.
- * Success is only shown when the provider reports success. In DEMO MODE
- * every simulated payment is clearly labelled as a simulation.
+ * States: (needsVerification ->) review → confirming → pending →
+ * success | failed | cancelled. Success is only shown when the provider
+ * reports TRANSACTION_STATE.CONFIRMED. In DEMO MODE every simulated
+ * payment is clearly labelled as a simulation.
  */
 export default function LearningPaymentModal({ pack, open, onClose, onSuccess }) {
   const nimiq = useNimiq();
+  const { learner, recordPendingPayment, clearPendingPayment } = useLearner();
   const [step, setStep] = useState(STEP.REVIEW);
   const [result, setResult] = useState(null);
   const assets = getSupportedAssets();
   const [selectedAsset, setSelectedAsset] = useState("NIM");
 
+  const pending = pack ? hasPendingPayment(learner.pendingPayments, pack.id) : false;
+
   useEffect(() => {
     if (open) {
-      setStep(STEP.REVIEW);
+      setStep(pending ? STEP.NEEDS_VERIFICATION : STEP.REVIEW);
       setResult(null);
       setSelectedAsset("NIM");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (!pack) return null;
 
   const demo = !nimiq.isConnected;
   const request = { ...buildPaymentRequest(pack), asset: selectedAsset };
+  const disabled = !PAYMENTS_ENABLED;
 
   const handleConfirm = async () => {
     setStep(STEP.CONFIRMING);
@@ -40,10 +58,16 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
     setStep(STEP.PENDING);
     const res = await nimiq.pay(request);
     setResult(res);
-    if (res.status === "success") {
+    if (res.transactionState === TRANSACTION_STATE.CONFIRMED) {
       setStep(STEP.SUCCESS);
       onSuccess?.(res);
     } else {
+      // Item 22 — an UNKNOWN outcome blocks a second attempt for this
+      // product until the learner explicitly acknowledges checking their
+      // own wallet (see the NEEDS_VERIFICATION step below).
+      if (res.transactionState === TRANSACTION_STATE.UNKNOWN) {
+        recordPendingPayment({ productId: pack.id });
+      }
       setStep(STEP.FAILED);
     }
   };
@@ -51,16 +75,48 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
   return (
     <Modal open={open} onClose={step === STEP.PENDING ? undefined : () => { setStep(STEP.CANCELLED); setTimeout(onClose, 350); }} title="Unlock learning pack">
       <div style={{ padding: 26 }}>
+        {step === STEP.NEEDS_VERIFICATION && (
+          <div className="anim-fade" style={{ textAlign: "center", padding: "12px 0" }}>
+            <h3 style={{ margin: "0 0 8px" }}>Payment status needs verification</h3>
+            <p className="small muted" style={{ margin: "0 0 18px" }}>
+              A previous payment attempt for <strong>{pack.title}</strong> could not be confirmed. To avoid paying twice,
+              please check your Nimiq Pay transaction history before trying again.
+            </p>
+            <div className="flex gap-12">
+              <Button
+                variant="outline"
+                block
+                onClick={() => {
+                  clearPendingPayment({ productId: pack.id });
+                  setStep(STEP.REVIEW);
+                }}
+              >
+                I've checked my wallet
+              </Button>
+              <Button variant="ghost" block onClick={onClose}>Close</Button>
+            </div>
+          </div>
+        )}
+
         {step === STEP.REVIEW && (
           <div className="anim-fade">
             <div className="flex items-center justify-between wrap gap-8" style={{ marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: 20 }}>Unlock {pack.title}</h3>
-              {demo ? (
+              {disabled ? (
+                <Badge tone="rose">Payment disabled</Badge>
+              ) : demo ? (
                 <Badge tone="amber">DEMO MODE — simulation</Badge>
               ) : (
                 <Badge tone="teal">Nimiq Pay • live</Badge>
               )}
             </div>
+
+            {disabled && (
+              <div className="notice danger" style={{ marginBottom: 16 }}>
+                <span aria-hidden="true">⚠️</span>
+                <span>{PAYMENTS_DISABLED_REASON}</span>
+              </div>
+            )}
 
             <dl style={{ margin: 0, display: "grid", gap: 13 }}>
               <div className="flex justify-between">
@@ -93,13 +149,13 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               </div>
               <div className="flex justify-between">
                 <dt className="muted small">Recipient</dt>
-                <dd style={{ margin: 0, fontFamily: "monospace", fontSize: 12.5 }} title={request.recipient}>
-                  {request.recipient}
+                <dd style={{ margin: 0, fontFamily: "monospace", fontSize: 12.5, wordBreak: "break-all", textAlign: "right" }} title={request.recipient || undefined}>
+                  {request.recipient || "Not configured"}
                 </dd>
               </div>
             </dl>
 
-            {demo ? (
+            {!disabled && (demo ? (
               <div className="notice warn" style={{ marginTop: 18 }}>
                 <span aria-hidden="true">🧪</span>
                 <span>
@@ -113,11 +169,11 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                   This request opens <strong>Nimiq Pay's native confirmation dialog</strong>. Your keys never leave the wallet. Success is only shown after Nimiq Pay confirms.
                 </span>
               </div>
-            )}
+            ))}
 
             <div className="flex gap-12" style={{ marginTop: 22 }}>
               <Button variant="ghost" onClick={() => { setStep(STEP.CANCELLED); setTimeout(onClose, 300); }}>Cancel</Button>
-              <Button variant={demo ? "amber" : "nimiq"} onClick={handleConfirm} style={{ flex: 1 }} disabled={nimiq.isConnecting}>
+              <Button variant={demo ? "amber" : "nimiq"} onClick={handleConfirm} style={{ flex: 1 }} disabled={disabled || nimiq.isConnecting}>
                 {nimiq.isConnecting ? "Checking environment…" : `Confirm with Nimiq Pay · ${request.amount} ${request.asset}`}
               </Button>
             </div>
@@ -135,7 +191,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
         {step === STEP.PENDING && (
           <div className="anim-fade" style={{ textAlign: "center", padding: "18px 0" }}>
             <div className="spinner" style={{ width: 30, height: 30, borderWidth: 3, margin: "0 auto 16px" }} aria-hidden="true" />
-            <h3 style={{ margin: "0 0 6px" }}>{demo ? "Simulating payment…" : "Waiting for Nimiq Pay confirmation…"}</h3>
+            <h3 style={{ margin: "0 0 6px" }}>{demo ? "Simulating payment…" : "Waiting for wallet approval…"}</h3>
             <p className="small muted" style={{ margin: 0 }}>
               {demo ? "This is a demo simulation and will complete momentarily." : "Approve the request in Nimiq Pay to continue."}
             </p>
@@ -149,23 +205,21 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </div>
-            <h3 style={{ margin: "0 0 8px" }}>{result.simulated ? "Pack unlocked (simulated)" : "Payment confirmed"}</h3>
+            <h3 style={{ margin: "0 0 8px" }}>{result.simulated ? "Pack unlocked (simulated)" : "Unlocked"}</h3>
             <p className="small muted" style={{ margin: "0 0 14px" }}>
               {result.detail}
             </p>
-            <div className="notice" style={{ margin: "0 0 18px", textAlign: "left" }}>
-              <span aria-hidden="true">{result.simulated ? "🧪" : "🧾"}</span>
-              <span>
-                <strong>Reference:</strong> <code>{result.reference}</code>
-                <br />
-                {result.simulated ? (
-                  <em>This is a simulated receipt. No blockchain transaction occurred.</em>
-                ) : (
-                  <em>Submitted by {result.provider}. Final confirmation is settled on-chain.</em>
-                )}
-              </span>
-            </div>
-            <Button variant="teal" block onClick={onClose}>Start learning</Button>
+            <PaymentReceipt
+              product={pack.title}
+              amount={request.amount}
+              asset={result.asset}
+              recipient={request.recipient}
+              reference={result.reference}
+              status={result.transactionState}
+              simulated={result.simulated}
+              occurredAt={Date.now()}
+            />
+            <Button variant="teal" block onClick={onClose} style={{ marginTop: 18 }}>Start learning</Button>
           </div>
         )}
 
@@ -177,9 +231,9 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               </svg>
             </div>
             <h3 style={{ margin: "0 0 8px" }}>
-              {result?.status === "uncertain"
+              {result?.transactionState === TRANSACTION_STATE.UNKNOWN
                 ? "Payment status unknown"
-                : result?.status === "rejected"
+                : result?.transactionState === TRANSACTION_STATE.REJECTED
                 ? "Payment cancelled"
                 : "Payment not confirmed"}
             </h3>
@@ -187,7 +241,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               {result?.error || "Payment status could not be confirmed."}
             </p>
             <div className="flex gap-12">
-              {result?.status === "uncertain" ? (
+              {result?.transactionState === TRANSACTION_STATE.UNKNOWN ? (
                 <Button variant="outline" block onClick={onClose}>I'll check my wallet first</Button>
               ) : (
                 <Button variant="outline" block onClick={() => setStep(STEP.REVIEW)}>Try again</Button>

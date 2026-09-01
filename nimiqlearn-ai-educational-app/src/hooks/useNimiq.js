@@ -3,9 +3,23 @@
    ------------------------------------------------------------
    Thin reactive wrapper over nimiqWalletService.js (the single
    source of truth) and paymentService.js. Attempts a real
-   connection on mount — this only ever calls listAccounts()
-   through the provider, never a payment or a sign request, so it
-   never auto-approves or auto-signs anything (see item 51).
+   connection on first mount ONLY — this only ever calls
+   listAccounts() through the provider, never a payment or a sign
+   request, so it never auto-approves or auto-signs anything
+   (item 36).
+
+   `autoConnectAttempted` is module-level, not component state, so
+   it is shared across every component that calls this hook (a
+   page, the status card, the diagnostics panel can all be mounted
+   at once, and the user navigates between pages constantly).
+   Without it, every navigation would remount a component that
+   calls useNimiq() and restart a fresh ~10s init() poll even
+   though the environment (inside Nimiq Pay or not) cannot have
+   changed mid-session — a real bug caught by testing navigation
+   between pages, not just a single page load. An explicit
+   connect()/disconnect() call (Retry, Connect, Disconnect
+   buttons) is NOT gated by this — those are user-initiated and
+   should always run.
    ============================================================ */
 
 import { useCallback, useEffect, useState } from "react";
@@ -14,35 +28,40 @@ import {
   subscribeToWalletChanges,
   connectWallet,
   disconnectWallet,
-  signInWithNimiqPay,
-  WALLET_STATUS,
-  ENVIRONMENT,
+  authenticateWithNimiqPay,
+  isNimiqPayAvailable,
+  NIMIQ_STATUS,
 } from "../services/nimiqWalletService.js";
 import { processPayment } from "../services/paymentService.js";
 
-export { WALLET_STATUS, ENVIRONMENT };
+export { NIMIQ_STATUS };
+
+let autoConnectAttempted = false;
 
 export function useNimiq() {
   const [state, setState] = useState(getWalletState());
 
   useEffect(() => subscribeToWalletChanges(setState), []);
 
-  // Real environment/account detection only — see module doc.
   useEffect(() => {
+    if (autoConnectAttempted) return;
+    autoConnectAttempted = true;
     connectWallet().catch(() => {});
   }, []);
 
   const connect = useCallback(() => connectWallet(), []);
   const disconnect = useCallback(() => disconnectWallet(), []);
-  const signIn = useCallback(() => signInWithNimiqPay(), []);
+  const signIn = useCallback(() => authenticateWithNimiqPay(), []);
   const pay = useCallback((request, options) => processPayment(request, options), []);
 
   return {
     ...state,
-    isConnecting: state.status === WALLET_STATUS.CONNECTING,
-    isConnected: state.status === WALLET_STATUS.CONNECTED,
-    isUnavailable: state.status === WALLET_STATUS.UNAVAILABLE,
-    isError: state.status === WALLET_STATUS.ERROR,
+    providerAvailable: isNimiqPayAvailable(),
+    isConnecting: state.status === NIMIQ_STATUS.INITIALIZING,
+    isConnected: state.status === NIMIQ_STATUS.CONNECTED,
+    isUnavailable: state.status === NIMIQ_STATUS.BROWSER_UNAVAILABLE,
+    isError: state.status === NIMIQ_STATUS.ERROR,
+    isAuthenticated: Boolean(state.authenticated),
     connect,
     disconnect,
     signIn,

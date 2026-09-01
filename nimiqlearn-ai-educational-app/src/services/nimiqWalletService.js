@@ -4,19 +4,31 @@
    Every fact this file relies on about the real provider API was
    verified directly against:
      - the INSTALLED package: node_modules/@nimiq/mini-app-sdk@0.1.0
+       (dist/*.js — the actual compiled code that runs, not just
+       its .d.ts types)
      - its upstream source: github.com/nimiq/trust-web3-provider,
        packages/mini-app-sdk/ (SDK wrapper) and packages/nimiq/
        NimiqProvider.ts (the actual provider implementation)
-   No method or event name here is invented — see
+   nimiq.dev (the current official docs host named in the Prompt 9
+   spec) is unreachable from this sandbox's network egress policy;
+   the installed package + upstream source are the next-best real
+   ground truth and are the same two sources used throughout this
+   file. No method or event name here is invented — see
    docs/nimiq-pay-integration.md for the full verification trail.
 
    Real, confirmed API surface used below:
-     init(options?)                          — polls for window.nimiq
-     provider.connect()                      — internally calls listAccounts()
-     provider.disconnect()                   — clears cached accounts, emits 'disconnect'
-     provider.listAccounts()                 — string[] | ErrorResponse
-     provider.sign(message)                  — SignatureResult | ErrorResponse
-     provider.sendBasicTransaction(tx)       — string | ErrorResponse (real NIM payment)
+     init(options?)                    — polls for window.nimiq, default
+                                          timeout 10_000ms (read from the
+                                          installed package's compiled JS)
+     provider.connect()                — internally calls listAccounts()
+     provider.disconnect()             — clears cached accounts, emits 'disconnect'
+     provider.listAccounts()           — string[] | ErrorResponse
+     provider.sign(message)            — SignatureResult | ErrorResponse
+     provider.sendBasicTransaction(tx) — string | ErrorResponse (real NIM payment;
+                                          the SDK's own doc comment says this
+                                          returns "the serialized transaction",
+                                          NOT a separately-computed hash — see
+                                          sendNimPayment() below)
      provider.isConsensusEstablished()
      provider.getBlockNumber()
      provider.getNetwork()
@@ -29,44 +41,57 @@
      - any balance query method (getBalance always resolves unsupported)
      - any USDT / EVM / window.ethereum integration (zero such code in
        @nimiq/mini-app-sdk or its upstream nimiq provider package)
+     - any transaction-status/confirmation-count lookup: provider.request()
+       only recognizes the WALLET_METHODS set above; anything else falls
+       through to a raw JSON-RPC call against a separate RPC endpoint this
+       app would have to configure itself via setRPCUrl() — Nimiq Pay does
+       not supply one. Inventing one would mean silently trusting a
+       third-party RPC node this app doesn't control, so this file does
+       not do it. See waitForTransaction() below.
    ============================================================ */
 
-import { init as initNimiqProvider, getHostLanguage } from "@nimiq/mini-app-sdk";
+import { init as initSdkProvider, getHostLanguage } from "@nimiq/mini-app-sdk";
+import { createAuthChallenge, createSession, clearSession, getStoredSession } from "./authService.js";
 
 const LUNAS_PER_NIM = 1e5;
-const AUTH_STORAGE_KEY = "nimiqlearn:wallet-auth";
-const AUTH_SESSION_MS = 5 * 60 * 1000; // 5 minutes — see signInWithNimiqPay()
 
-export const WALLET_STATUS = {
-  UNAVAILABLE: "unavailable", // not running inside Nimiq Pay
-  DISCONNECTED: "disconnected", // Nimiq Pay detected, not yet connected
-  CONNECTING: "connecting",
-  CONNECTED: "connected",
-  ERROR: "error", // Nimiq Pay detected, but connection/account fetch failed
-};
-
-export const ENVIRONMENT = {
+/* ---------------- unified environment/connection state (item 6) ----------------
+   A single flat enum, not two separate ones — the spec is explicit that
+   "connected" must never be shown when no provider actually exists, so
+   there is exactly one status value per real situation:
+     NIMIQ_PAY_AVAILABLE — provider detected, not yet connected
+     BROWSER_UNAVAILABLE — no provider (normal browser tab)
+     INITIALIZING        — connection attempt in flight
+     CONNECTED           — real address obtained
+     ERROR               — provider detected, but connect/account-fetch failed
+*/
+export const NIMIQ_STATUS = {
   NIMIQ_PAY_AVAILABLE: "NIMIQ_PAY_AVAILABLE",
-  BROWSER_MODE: "BROWSER_MODE",
-  UNSUPPORTED: "UNSUPPORTED", // no `window` at all (non-browser render)
+  BROWSER_UNAVAILABLE: "BROWSER_UNAVAILABLE",
+  INITIALIZING: "INITIALIZING",
+  CONNECTED: "CONNECTED",
+  ERROR: "ERROR",
 };
 
 let provider = null;
 let listenersRegistered = false;
 
 let state = {
-  environment: detectEnvironmentSync(),
-  status: WALLET_STATUS.DISCONNECTED,
+  status: detectInitialStatus(),
   address: null,
-  balance: null, // see getBalance() — always null, never fabricated
+  balance: null, // see getNimBalance() below — always null, never fabricated
   network: null,
-  consensus: null,
-  blockNumber: null,
+  consensusReady: null,
+  networkHeight: null,
   language: null,
   error: null,
-  auth: null, // { address, authenticatedAt, expiresAt } — see signInWithNimiqPay()
+  authenticated: null, // { address, authenticatedAt, expiresAt } — see authenticateWithNimiqPay()
 };
-state.status = state.environment === ENVIRONMENT.NIMIQ_PAY_AVAILABLE ? WALLET_STATUS.DISCONNECTED : WALLET_STATUS.UNAVAILABLE;
+
+function detectInitialStatus() {
+  if (typeof window === "undefined") return NIMIQ_STATUS.BROWSER_UNAVAILABLE;
+  return window.nimiq ? NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE : NIMIQ_STATUS.BROWSER_UNAVAILABLE;
+}
 
 const listeners = new Set();
 
@@ -91,26 +116,15 @@ export function subscribeToWalletChanges(fn) {
   return () => listeners.delete(fn);
 }
 
-/* ---------------- environment detection (item 6) ---------------- */
-
-function detectEnvironmentSync() {
-  if (typeof window === "undefined") return ENVIRONMENT.UNSUPPORTED;
-  return window.nimiq ? ENVIRONMENT.NIMIQ_PAY_AVAILABLE : ENVIRONMENT.BROWSER_MODE;
-}
-
 /** Instant, synchronous snapshot — window.nimiq can still be injected a
  * little AFTER this returns false (the host injects asynchronously), so
- * connectWallet() always does the real timeout-based init() poll rather
- * than trusting this alone. Use this only for immediate UI labeling. */
+ * initializeNimiqProvider() always does the real timeout-based init() poll
+ * rather than trusting this alone. Use this only for immediate UI labeling. */
 export function isNimiqPayAvailable() {
-  return detectEnvironmentSync() === ENVIRONMENT.NIMIQ_PAY_AVAILABLE;
+  return typeof window !== "undefined" && Boolean(window.nimiq);
 }
 
-export function detectEnvironment() {
-  return detectEnvironmentSync();
-}
-
-/* ---------------- connection (items 3/4/7/8) ---------------- */
+/* ---------------- provider initialization (items 3-8) ---------------- */
 
 function describeProviderError(err) {
   const message = err?.message || String(err || "Unknown wallet error");
@@ -125,77 +139,82 @@ async function refreshAccountState() {
   }
   const address = accounts?.[0] || null;
   const network = provider.getNetwork();
-  const [consensus, blockNumber] = await Promise.all([
-    provider.isConsensusEstablished().catch(() => null),
-    provider.getBlockNumber().catch(() => null),
+  const [consensusReady, networkHeight] = await Promise.all([
+    getConsensusStatus().catch(() => null),
+    getBlockNumber().catch(() => null),
   ]);
   setState({
-    status: address ? WALLET_STATUS.CONNECTED : WALLET_STATUS.ERROR,
+    status: address ? NIMIQ_STATUS.CONNECTED : NIMIQ_STATUS.ERROR,
     address,
     network,
-    consensus,
-    blockNumber,
+    consensusReady,
+    networkHeight,
     error: address ? null : "Nimiq Pay did not return an account.",
   });
   // Rehydrate a still-valid prior sign-in for this exact address, so a
   // page reload doesn't silently drop a session that hasn't expired.
-  if (address) setState({ auth: getStoredAuthSession() });
+  if (address) setState({ authenticated: getStoredSession(address) });
 }
 
 function onProviderConnect() {
-  refreshAccountState().catch((err) => setState({ status: WALLET_STATUS.ERROR, error: describeProviderError(err).message }));
+  refreshAccountState().catch((err) => setState({ status: NIMIQ_STATUS.ERROR, error: describeProviderError(err).message }));
 }
 
 function onProviderDisconnect() {
   setState({
-    status: WALLET_STATUS.DISCONNECTED,
+    status: NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE,
     address: null,
     network: null,
-    consensus: null,
-    blockNumber: null,
+    consensusReady: null,
+    networkHeight: null,
+    authenticated: null,
   });
-  clearStoredAuth();
+  clearSession();
 }
 
 /**
- * Real connection flow: init() polls for window.nimiq (real timeout-based
- * implementation — see docs), then provider.connect() (which itself calls
- * listAccounts() — verified in the upstream source). Never fabricates a
- * connected state: status only becomes CONNECTED once a real address is
- * returned by the provider.
- *
- * `useNimiq()` calls this from a mount effect in every component that uses
- * it (several can be mounted at once — page + status card + diagnostics
- * panel). Guarded against concurrent/duplicate calls: if a connection is
- * already in flight or established, later callers just get the current
- * state (they already receive live updates via subscribeToWalletChanges).
- * `provider` is a module-level singleton, so event listeners are attached
- * at most once per provider instance — never once per useNimiq() caller.
+ * initializeNimiqProvider() — the exact architecture the spec asks for
+ * (module-level provider + in-flight promise so concurrent callers share
+ * one real init() call), extended with the connection step: `useNimiq()`
+ * calls this from a mount effect in every component that uses it (several
+ * can be mounted at once — page + status card + diagnostics panel), so
+ * this is guarded against duplicate concurrent connects. It never fabricates
+ * a connected state: status only becomes CONNECTED once a real, non-empty
+ * address comes back from the provider itself.
  */
-export async function connectWallet({ timeout = 8000 } = {}) {
-  if (state.status === WALLET_STATUS.CONNECTING || state.status === WALLET_STATUS.CONNECTED) {
+let providerPromise = null;
+
+export async function initializeNimiqProvider({ timeout } = {}) {
+  if (provider) return provider;
+  if (!providerPromise) {
+    providerPromise = initSdkProvider(timeout != null ? { timeout } : undefined);
+  }
+  provider = await providerPromise;
+  return provider;
+}
+
+export async function connectWallet({ timeout } = {}) {
+  if (state.status === NIMIQ_STATUS.INITIALIZING || state.status === NIMIQ_STATUS.CONNECTED) {
     return getWalletState();
   }
-  setState({ status: WALLET_STATUS.CONNECTING, error: null });
+  setState({ status: NIMIQ_STATUS.INITIALIZING, error: null });
   try {
-    if (!provider) {
-      provider = await initNimiqProvider({ timeout });
-    }
+    await initializeNimiqProvider({ timeout });
     if (!listenersRegistered) {
       provider.on("connect", onProviderConnect);
       provider.on("disconnect", onProviderDisconnect);
       listenersRegistered = true;
     }
-    setState({ environment: ENVIRONMENT.NIMIQ_PAY_AVAILABLE, language: getHostLanguage() || null });
+    setState({ status: NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE, language: getHostLanguage() || null });
 
     await provider.connect();
     await refreshAccountState();
     return getWalletState();
   } catch (err) {
     const { message, notInjected } = describeProviderError(err);
+    providerPromise = null;
     setState({
-      status: notInjected ? WALLET_STATUS.UNAVAILABLE : WALLET_STATUS.ERROR,
-      environment: notInjected ? ENVIRONMENT.BROWSER_MODE : state.environment,
+      status: notInjected ? NIMIQ_STATUS.BROWSER_UNAVAILABLE : NIMIQ_STATUS.ERROR,
       error: message,
     });
     return getWalletState();
@@ -203,47 +222,76 @@ export async function connectWallet({ timeout = 8000 } = {}) {
 }
 
 /**
- * disconnectWallet() vs. local reset — documented distinction (item 14):
- * when a real provider connection exists, this calls its OWN disconnect()
- * (real method, verified: clears the provider's cached account list and
- * emits 'disconnect', which onProviderDisconnect() above reacts to). When
- * there is no provider (browser mode, or connection never succeeded),
- * there is nothing to disconnect FROM — this just resets NimiqLearn's own
- * local UI state, which is a fundamentally different thing from revoking
- * a real wallet session (there is no such session to revoke).
+ * disconnectWallet() vs. local reset — documented distinction: when a real
+ * provider connection exists, this calls its OWN disconnect() (real method,
+ * verified: clears the provider's cached account list and emits
+ * 'disconnect', which onProviderDisconnect() above reacts to). When there
+ * is no provider (browser mode, or connection never succeeded), there is
+ * nothing to disconnect FROM — this just resets NimiqLearn's own local UI
+ * state, which is a fundamentally different thing from revoking a real
+ * wallet session (there is no such session to revoke).
  */
 export function disconnectWallet() {
   if (provider && typeof provider.disconnect === "function") {
     provider.disconnect(); // real disconnect — triggers onProviderDisconnect via the 'disconnect' event
     return;
   }
-  // Local-only reset (see doc comment above).
   setState({
-    status: state.environment === ENVIRONMENT.NIMIQ_PAY_AVAILABLE ? WALLET_STATUS.DISCONNECTED : WALLET_STATUS.UNAVAILABLE,
+    status: isNimiqPayAvailable() ? NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE : NIMIQ_STATUS.BROWSER_UNAVAILABLE,
     address: null,
     network: null,
-    consensus: null,
-    blockNumber: null,
+    consensusReady: null,
+    networkHeight: null,
+    authenticated: null,
   });
-  clearStoredAuth();
+  clearSession();
 }
+
+/* ---------------- account / network primitives (item 4) ---------------- */
 
 export function getAddress() {
   return state.address;
 }
 
+/** Real listAccounts() wrapper — item 7/4's named primitive. Throws if the
+ * provider has not been initialized yet; callers that just want the
+ * currently-known address should read getAddress() / wallet state instead. */
+export async function listAccounts() {
+  if (!provider) throw new Error("Nimiq provider is not initialized. Call connectWallet() first.");
+  const accounts = await provider.listAccounts();
+  if (accounts && !Array.isArray(accounts) && "error" in accounts) {
+    throw new Error(accounts.error?.message || "Nimiq Pay did not return an account list.");
+  }
+  return accounts;
+}
+
+/** Real isConsensusEstablished() wrapper (items 4/27). */
+export async function getConsensusStatus() {
+  if (!provider) return null;
+  return provider.isConsensusEstablished();
+}
+
+/** Real getBlockNumber() wrapper (items 4/28) — the only real, non-stale
+ * source of the current network height, e.g. for a future
+ * validityStartHeight parameter. Never hard-coded. */
+export async function getBlockNumber() {
+  if (!provider) return null;
+  return provider.getBlockNumber();
+}
+
 /**
- * BALANCE — verified unsupported. The real provider's WALLET_METHODS set
- * (listAccounts, sign, sendBasicTransaction, sendBasicTransactionWithData,
- * plus staking transactions) contains no balance getter. Any other method
- * name passed to provider.request() falls through to a raw JSON-RPC call
- * against a SEPARATE, self-configured RPC endpoint (setRPCUrl()) that
- * Nimiq Pay does not supply — querying a real balance would mean this app
- * independently trusting a third-party Albatross RPC node, a materially
- * different (and currently unimplemented) trust model. This function
- * therefore always resolves unsupported rather than a fabricated number.
+ * NIM BALANCE — verified unsupported (item 26). The real provider's
+ * WALLET_METHODS set (listAccounts, sign, sendBasicTransaction,
+ * sendBasicTransactionWithData, plus staking transactions) contains no
+ * balance getter. Any other method name passed to provider.request() falls
+ * through to a raw JSON-RPC call against a SEPARATE, self-configured RPC
+ * endpoint (setRPCUrl()) that Nimiq Pay does not supply — querying a real
+ * balance would mean this app independently trusting a third-party
+ * Albatross RPC node, a materially different (and currently unimplemented)
+ * trust model. This function therefore always resolves unsupported rather
+ * than a fabricated number.
  */
-export async function getBalance() {
+export async function getNimBalance() {
   return {
     amount: null,
     asset: "NIM",
@@ -259,130 +307,106 @@ export function getUsdtSupportStatus() {
   return "UNSUPPORTED";
 }
 
-/* ---------------- payments (items 19-24, 30) ---------------- */
+/* ---------------- payments (items 13-22) ---------------- */
+
+/** Integer-safe NIM -> Luna conversion (item 14). Never uses floating-point
+ * arithmetic on the final integer value — rounds once, at the boundary. */
+export function nimToLuna(amountNim) {
+  const n = Number(amountNim);
+  if (!Number.isFinite(n) || n <= 0) throw new Error(`Invalid NIM amount: ${amountNim}`);
+  return Math.round(n * LUNAS_PER_NIM);
+}
 
 /**
- * Real NIM payment — the SDK has no separate "payment request" concept;
- * a payment IS a signed transaction, submitted via the wallet's native
- * confirmation UI. Resolves only once the provider itself returns a
- * result; never resolves "success" from a timer or a guess.
+ * Real NIM payment — the SDK has no separate "payment request" concept; a
+ * payment IS a signed transaction, submitted via the wallet's native
+ * confirmation UI. Resolves only once the provider itself returns a result;
+ * never resolves from a timer or a guess.
+ *
+ * Returns `{ serialized, network, asset }`. IMPORTANT: `serialized` is what
+ * the installed SDK's own doc comment calls "the serialized transaction" —
+ * NOT a separately-computed Nimiq protocol transaction hash. Computing that
+ * canonical hash would require re-implementing Nimiq's transaction
+ * serialization + Blake2b hashing outside any documented SDK method, which
+ * risks silently producing a hash that does not match the real one on
+ * chain — worse than being explicit that this is a real, verifiable
+ * transaction reference from the real provider call, not an independently
+ * computed hash. See docs/nimiq-pay-integration.md.
  */
-export async function requestNimPayment({ recipient, amountNim }) {
-  if (!provider || state.status !== WALLET_STATUS.CONNECTED) {
+export async function sendNimPayment({ recipient, amountNim, fee, validityStartHeight } = {}) {
+  if (!provider || state.status !== NIMIQ_STATUS.CONNECTED) {
     throw new Error("Connect your Nimiq Pay wallet before requesting a payment.");
   }
-  const valueLunas = Math.round(Number(amountNim) * LUNAS_PER_NIM);
-  const result = await provider.sendBasicTransaction({ recipient, value: valueLunas });
+  if (!recipient) {
+    throw new Error("No recipient address configured for this payment.");
+  }
+  const tx = { recipient, value: nimToLuna(amountNim) };
+  if (fee != null) tx.fee = nimToLuna(fee);
+  if (validityStartHeight != null) tx.validityStartHeight = validityStartHeight;
+
+  const result = await provider.sendBasicTransaction(tx);
   if (result && typeof result === "object" && "error" in result) {
     throw new Error(result.error?.message || "Nimiq Pay did not confirm this transaction.");
   }
   return { serialized: result, network: provider.getNetwork(), asset: "NIM" };
 }
 
-/** USDT is not implemented — see getUsdtSupportStatus(). Never fakes a
- * transaction; the UI must call getUsdtSupportStatus() before offering
- * this asset as a payment option at all. */
+/** USDT is not implemented — see getUsdtSupportStatus() (item 41). Never
+ * fakes a transaction; the UI must call getUsdtSupportStatus() before
+ * offering this asset as a payment option at all. */
 export async function requestUsdtPayment() {
   throw new Error("USDT payment support is not available in this environment yet.");
 }
 
-/* ---------------- sign-in / authentication (items 15-18) ---------------- */
-
-function secureNonce() {
-  const cryptoObj = typeof crypto !== "undefined" ? crypto : globalThis.crypto;
-  if (!cryptoObj?.getRandomValues) throw new Error("A secure random source is not available in this environment.");
-  const bytes = new Uint8Array(16);
-  cryptoObj.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+/**
+ * Documented mechanism for tracking a submitted transaction: there isn't
+ * one. sendBasicTransaction() returns the serialized transaction, not a
+ * hash to look up, and the SDK's request() only recognizes the
+ * WALLET_METHODS set — everything else needs a self-configured RPC
+ * endpoint this app does not provide. Rather than inventing a status
+ * endpoint (explicitly disallowed — item 19), this always resolves
+ * "UNKNOWN": the caller (paymentService.js) treats that as "needs manual
+ * verification," never as a fabricated confirmation.
+ */
+export async function waitForTransaction() {
+  return { status: "UNKNOWN", reason: "No documented transaction-status mechanism is exposed by this Mini App SDK without independently configuring a third-party RPC endpoint." };
 }
 
-function buildSignInMessage({ address, nonce, issuedAt, expiresAt }) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "unknown-origin";
-  return [
-    "Sign in to NimiqLearn",
-    "",
-    `Origin: ${origin}`,
-    `Address: ${address}`,
-    `Nonce: ${nonce}`,
-    `Issued: ${issuedAt}`,
-    `Expires: ${expiresAt}`,
-  ].join("\n");
-}
+/* ---------------- sign-in / authentication (items 9-12) ---------------- */
 
-function persistAuthSession(session) {
-  try {
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-  } catch {
-    /* storage unavailable — session still works for this page load via state */
+/** Real provider.sign() wrapper — the low-level primitive (item 9). Never
+ * requests a seed phrase, private key, or wallet password: signing a
+ * message is the only thing this ever asks the provider for. */
+export async function signMessage(message) {
+  if (!provider || state.status !== NIMIQ_STATUS.CONNECTED) {
+    throw new Error("Connect your wallet before signing a message.");
   }
-}
-
-function clearStoredAuth() {
-  try {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  } catch {
-    /* ignore */
+  const result = await provider.sign(message);
+  if (result && "error" in result) {
+    throw new Error(result.error?.message || "Signing was rejected.");
   }
-  setState({ auth: null });
+  return result; // { publicKey, signature }
 }
 
 /**
- * Optional message-signing authentication (item 15/16/17). A fresh
- * cryptographically-random nonce (crypto.getRandomValues, never
- * Math.random) and a short expiry are the ONLY replay defenses available
- * client-side — there is no backend here to track spent nonces server-
- * side, so this is a prototype auth model, not a production one. See
- * docs/nimiq-pay-integration.md, "Security model".
+ * Composed sign-in flow (items 9-11): builds a clear challenge the user
+ * reads before approving (authService.createAuthChallenge), calls the real
+ * signMessage(), and on success stores ONLY minimal session metadata via
+ * authService — never the signature or public key.
  *
- * Never signs anything the user doesn't see: the exact message text is
- * passed to provider.sign(), which is Nimiq Pay's own confirmation UI —
- * this app has no way to sign "hidden" data through this API.
+ * Connection and authentication are deliberately separate states: a
+ * connected account is NOT automatically authenticated. This only ever
+ * runs when explicitly invoked by the user pressing "Sign in".
  */
-export async function signInWithNimiqPay() {
-  if (!provider || state.status !== WALLET_STATUS.CONNECTED || !state.address) {
+export async function authenticateWithNimiqPay() {
+  if (!provider || state.status !== NIMIQ_STATUS.CONNECTED || !state.address) {
     throw new Error("Connect your wallet before signing in.");
   }
-  const issuedAt = new Date();
-  const expiresAt = new Date(issuedAt.getTime() + AUTH_SESSION_MS);
-  const nonce = secureNonce();
-  const message = buildSignInMessage({
-    address: state.address,
-    nonce,
-    issuedAt: issuedAt.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-  });
-
-  const result = await provider.sign(message);
-  if (result && "error" in result) {
-    throw new Error(result.error?.message || "Sign-in was rejected.");
-  }
-
-  // Only the minimum session metadata is stored — never the signature or
-  // public key. localStorage is not cryptographic proof of anything; it
-  // is a convenience so the UI can show "signed in" without re-prompting
-  // every render. See item 18.
-  const session = {
-    address: state.address,
-    authenticatedAt: issuedAt.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-  };
-  persistAuthSession(session);
-  setState({ auth: session });
+  const { message, issuedAt, expiresAt } = createAuthChallenge({ address: state.address });
+  await signMessage(message); // signature itself is intentionally discarded — see authService.js doc comment
+  const session = createSession({ address: state.address, issuedAt, expiresAt });
+  setState({ authenticated: session });
   return session;
 }
 
-export function getStoredAuthSession() {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return null;
-    const session = JSON.parse(raw);
-    if (!session?.expiresAt || new Date(session.expiresAt).getTime() < Date.now()) {
-      clearStoredAuth();
-      return null;
-    }
-    if (session.address !== state.address) return null; // different account — not this session's proof
-    return session;
-  } catch {
-    return null;
-  }
-}
+export { getStoredSession } from "./authService.js";

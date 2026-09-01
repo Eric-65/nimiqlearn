@@ -12,19 +12,25 @@
 
 import {
   getWalletState,
-  WALLET_STATUS,
-  requestNimPayment,
+  NIMIQ_STATUS,
+  sendNimPayment,
   getUsdtSupportStatus,
 } from "./nimiqWalletService.js";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_REASON } from "../config/paymentConfig.js";
 
+/** Item 18 — the exact transaction-state machine the spec asks for. A
+ * transaction hash/reference is never equated with "confirmed": UNKNOWN
+ * is its own state precisely so the UI never collapses "we don't know"
+ * into either a false success or a false failure (item 22). */
 export const TRANSACTION_STATE = {
-  IDLE: "idle",
-  REQUESTING: "requesting",
-  AWAITING_APPROVAL: "awaitingApproval",
-  SUBMITTED: "submitted",
-  CONFIRMED: "confirmed",
-  REJECTED: "rejected",
-  FAILED: "failed",
+  IDLE: "IDLE",
+  REVIEW: "REVIEW",
+  REQUESTING_APPROVAL: "REQUESTING_APPROVAL",
+  SUBMITTED: "SUBMITTED",
+  CONFIRMED: "CONFIRMED",
+  REJECTED: "REJECTED",
+  FAILED: "FAILED",
+  UNKNOWN: "UNKNOWN",
 };
 
 const PAYMENT_TIMEOUT_MS = 60_000;
@@ -34,7 +40,7 @@ export function buildPaymentRequest(pack) {
     productId: pack.id,
     amount: pack.price,
     asset: pack.asset || "NIM",
-    recipient: pack.recipient,
+    recipient: pack.recipient, // resolves through src/config/paymentConfig.js — null if unconfigured
     purpose: pack.purpose || "Educational learning pack",
     title: pack.title,
   };
@@ -69,50 +75,60 @@ function withTimeout(promise, ms) {
 const looksLikeUserRejection = (message) => /reject|cancel|denied|declined/i.test(message || "");
 
 /**
- * Execute a payment and report its real outcome.
+ * Execute a payment and report its real outcome via `transactionState`
+ * (item 18):
+ *  - CONFIRMED — the real provider call resolved. `simulated` tells you
+ *                 whether this was a real Nimiq Pay transaction or an
+ *                 explicitly-labelled DEMO MODE simulation.
+ *  - REJECTED  — the user explicitly declined in their wallet. Safe to
+ *                 say the wallet was not charged (nothing was ever
+ *                 broadcast).
+ *  - FAILED    — a provider error we CAN classify as a real failure
+ *                 (e.g. an unsupported asset, rejected before submission).
+ *  - UNKNOWN   — a timeout or an error we cannot classify. We do NOT
+ *                 claim the wallet was or wasn't charged here (item 22) —
+ *                 the caller must block a repeat purchase of the same
+ *                 product until the learner explicitly acknowledges
+ *                 checking their own wallet (see LearningPaymentModal.jsx
+ *                 and LearnerContext's pendingPayments).
  *
- * Returns one of three shapes, distinguished by `status`:
- *  - "success"   — transactionState CONFIRMED. `simulated` tells you
- *                   whether this was a real Nimiq Pay transaction or an
- *                   explicitly-labelled DEMO MODE simulation.
- *  - "rejected"  — the user explicitly declined in their wallet. Safe to
- *                   say the wallet was not charged (nothing was ever
- *                   broadcast).
- *  - "uncertain" — anything else that didn't resolve to success: a
- *                   provider error we can't classify, or a timeout. We
- *                   do NOT claim the wallet was or wasn't charged here —
- *                   see item 23: only "success" or "rejected" make that
- *                   claim, because only those cases give us grounds to.
- *
- * `onStateChange(transactionState)` fires through the TRANSACTION_STATE
- * enum so the UI can show real stage labels (never a fake percentage).
+ * `onStateChange(transactionState)` fires through TRANSACTION_STATE so the
+ * UI can show real stage labels (never a fake percentage).
  */
 export async function processPayment(request, { onStateChange } = {}) {
   const emit = (s) => onStateChange?.(s);
   const wallet = getWalletState();
 
-  if (wallet.status === WALLET_STATUS.CONNECTED) {
+  if (!PAYMENTS_ENABLED || !request.recipient) {
+    emit(TRANSACTION_STATE.FAILED);
+    return {
+      transactionState: TRANSACTION_STATE.FAILED,
+      simulated: false,
+      error: PAYMENTS_DISABLED_REASON || "No recipient address is configured for this product.",
+      detail: "Payment is disabled until a real recipient address is configured.",
+    };
+  }
+
+  if (wallet.status === NIMIQ_STATUS.CONNECTED) {
     if (request.asset !== "NIM") {
       emit(TRANSACTION_STATE.FAILED);
       return {
         transactionState: TRANSACTION_STATE.FAILED,
-        status: "failed",
         simulated: false,
         error: "USDT payment support is not available in this environment yet.",
         detail: "Only NIM payments are currently supported by this Mini App SDK.",
       };
     }
 
-    emit(TRANSACTION_STATE.AWAITING_APPROVAL);
+    emit(TRANSACTION_STATE.REQUESTING_APPROVAL);
     try {
       const result = await withTimeout(
-        requestNimPayment({ recipient: request.recipient, amountNim: request.amount }),
+        sendNimPayment({ recipient: request.recipient, amountNim: request.amount }),
         PAYMENT_TIMEOUT_MS
       );
       emit(TRANSACTION_STATE.CONFIRMED);
       return {
         transactionState: TRANSACTION_STATE.CONFIRMED,
-        status: "success",
         simulated: false,
         purchaserAddress: wallet.address,
         reference: result.serialized,
@@ -122,20 +138,19 @@ export async function processPayment(request, { onStateChange } = {}) {
       };
     } catch (err) {
       if (err.message === "PAYMENT_TIMEOUT") {
-        emit(TRANSACTION_STATE.SUBMITTED);
+        emit(TRANSACTION_STATE.UNKNOWN);
         return {
-          transactionState: TRANSACTION_STATE.SUBMITTED,
-          status: "uncertain",
+          transactionState: TRANSACTION_STATE.UNKNOWN,
           simulated: false,
           error: "Payment status could not be confirmed. Please check your wallet before trying again.",
           detail: "Nimiq Pay did not respond within the expected time.",
         };
       }
       const rejected = looksLikeUserRejection(err.message);
-      emit(rejected ? TRANSACTION_STATE.REJECTED : TRANSACTION_STATE.FAILED);
+      const finalState = rejected ? TRANSACTION_STATE.REJECTED : TRANSACTION_STATE.UNKNOWN;
+      emit(finalState);
       return {
-        transactionState: rejected ? TRANSACTION_STATE.REJECTED : TRANSACTION_STATE.FAILED,
-        status: rejected ? "rejected" : "uncertain",
+        transactionState: finalState,
         simulated: false,
         error: rejected
           ? "Payment was cancelled. Your wallet was not charged."
@@ -147,12 +162,11 @@ export async function processPayment(request, { onStateChange } = {}) {
 
   // ---- Browser DEMO simulation — explicit, always labelled, never a
   // real transaction. Runs only when no wallet is connected at all. ----
-  emit(TRANSACTION_STATE.REQUESTING);
+  emit(TRANSACTION_STATE.REVIEW);
   await new Promise((r) => setTimeout(r, 1400));
   emit(TRANSACTION_STATE.CONFIRMED);
   return {
     transactionState: TRANSACTION_STATE.CONFIRMED,
-    status: "success",
     simulated: true,
     purchaserAddress: null,
     reference: `SIM-${randomId()}`,
