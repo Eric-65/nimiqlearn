@@ -31,11 +31,12 @@
 
 import { isAIReady } from "./aiService.js";
 import { callModelAssessment } from "./explainBackService.js";
+import { scoreWithTrainedModel, classifyWithTrainedModel } from "./explainBackTrainedModel.js";
 import { TOPIC_CONTENT } from "../data/mockTopics.js";
 
 export const ASSESSMENT_SOURCE = {
   MODEL: "smolLM2",
-  TRAINED: "trained-assessment-model", // reserved — not implemented (see training/README.md, phase 5)
+  TRAINED: "trained-assessment-model", // real — see computeRubricBaseline() and training/explainback/README.md
   BASELINE: "deterministic-fallback",
 };
 
@@ -94,10 +95,17 @@ function coverageRatio(answerTokens, referenceTokens) {
 /* ------------------ rubric baseline (Layer 2 core) ------------------ */
 
 /**
- * Deterministic rubric assessment. Always available, never blocks on the
- * AI. This is the "trained-assessment-model" stand-in until the pipeline in training/ actually beats it (Phase 3-5, see
- * training/README.md) — the interface (input/output shape) is designed to
- * stay identical once a real trained model is exported.
+ * Deterministic rubric assessment, ALWAYS computed and always available —
+ * never blocks on the AI. As of the real training run in training/explainback/
+ * (see training/evaluation/reports/explainback_eval.md), this also blends
+ * in a real trained-model signal (TF-IDF + Ridge, verified to beat the
+ * untrained lexical baseline on the real Automatic Short Answer Grading
+ * test split). The trained model is a general short-answer-similarity
+ * model with no awareness of NimiqLearn's specific topics, so it is
+ * weighted as a minority (30%) refinement of the topic-aware rubric
+ * (70%), never a replacement — and if it fails to load or score for any
+ * reason, the rubric-only score is used unchanged. See
+ * training/exports/README.md, "Before wiring either model in."
  */
 export function computeRubricBaseline({ topic, learnerExplanation, referenceAnswer }) {
   const content = TOPIC_CONTENT[topic.id] || {};
@@ -147,7 +155,29 @@ export function computeRubricBaseline({ topic, learnerExplanation, referenceAnsw
     0.05 * (usesTopicTerm ? 1 : 0) -
     (misconceptionFlag ? 0.18 : 0);
 
-  const score = clamp(Math.round(rawScore * 100), learnerTokens.length ? 5 : 0, 100);
+  const rubricScore = clamp(Math.round(rawScore * 100), learnerTokens.length ? 5 : 0, 100);
+
+  // Real trained-model signal (see module doc above). Only blended in
+  // when there's an actual reference answer to compare against — the
+  // trained model has no concept of TOPIC_CONTENT.keyPoints, so without
+  // a reference it has nothing meaningful to score. Wrapped defensively:
+  // a scoring failure (e.g. a future model swap with a bad export) must
+  // never break assessment — it just falls back to the rubric alone.
+  let trainedSimilarity = null;
+  let trainedLabel = null;
+  const trainedRefText = referenceAnswer || content.definition || "";
+  if (trainedRefText && learnerExplanation && learnerTokens.length) {
+    try {
+      trainedSimilarity = Math.round(scoreWithTrainedModel(trainedRefText, learnerExplanation) * 100);
+      trainedLabel = classifyWithTrainedModel(trainedRefText, learnerExplanation).label;
+    } catch (err) {
+      console.warn("[NimiqLearn] Trained ExplainBack model unavailable, using rubric-only score.", err);
+    }
+  }
+  const score =
+    trainedSimilarity !== null
+      ? clamp(Math.round(0.7 * rubricScore + 0.3 * trainedSimilarity), learnerTokens.length ? 5 : 0, 100)
+      : rubricScore;
 
   const strengths = keyPointHits.filter((k) => k.hit).map((k) => `You correctly touched on: ${k.keyPoint}`);
   if (!strengths.length && learnerTokens.length) {
@@ -179,6 +209,9 @@ export function computeRubricBaseline({ topic, learnerExplanation, referenceAnsw
       score < 45
         ? `Can you explain what would happen if the key quantity in ${topic.name} changed?`
         : `Can you explain how ${topic.name} applies to a real situation you have seen?`,
+    rubricScore,
+    trainedSimilarity,
+    trainedLabel,
     rubric: {
       dimensions: RUBRIC_DIMENSIONS,
       coreDefinitionCoverage: Math.round(definitionCoverage * 100),
@@ -214,6 +247,9 @@ function normalizeResult(value, meta, conceptId) {
     maxScore: 100,
     nextAction: value.nextAction,
     nextChallenge: value.nextChallenge,
+    rubricScore: value.rubricScore ?? null,
+    trainedSimilarity: value.trainedSimilarity ?? null,
+    trainedLabel: value.trainedLabel ?? null,
     ...meta,
   };
 }
@@ -235,10 +271,14 @@ export async function evaluateExplanation({ topic, referenceAnswer, learnerExpla
   }
 
   const baseline = computeRubricBaseline({ topic, learnerExplanation, referenceAnswer });
+  // Reports TRAINED only when the real trained-model signal actually blended
+  // into this baseline's score (see computeRubricBaseline()) — never a
+  // fixed label regardless of whether the model actually ran.
+  const baselineSource = baseline.trainedSimilarity !== null ? ASSESSMENT_SOURCE.TRAINED : ASSESSMENT_SOURCE.BASELINE;
 
   if (!preferAI || !isAIReady()) {
     return normalizeResult(baseline, {
-      source: ASSESSMENT_SOURCE.BASELINE,
+      source: baselineSource,
       confidence: "heuristic",
       aiPending: preferAI ? true : false,
       note: !preferAI
@@ -251,7 +291,7 @@ export async function evaluateExplanation({ topic, referenceAnswer, learnerExpla
     const result = await callModelAssessment({ topic, learnerExplanation, learnerLevel, baseline, onToken });
     if (!result.ok) {
       return normalizeResult(baseline, {
-        source: ASSESSMENT_SOURCE.BASELINE,
+        source: baselineSource,
         confidence: "heuristic",
         aiPending: false,
         note: "The AI returned unreadable output; a safe fallback assessment was used.",
@@ -261,7 +301,7 @@ export async function evaluateExplanation({ topic, referenceAnswer, learnerExpla
   } catch (err) {
     console.warn("[NimiqLearn] ExplainBack model call failed, using rubric baseline.", err);
     return normalizeResult(baseline, {
-      source: ASSESSMENT_SOURCE.BASELINE,
+      source: baselineSource,
       confidence: "heuristic",
       aiPending: false,
       note: "The local AI model was unavailable; a deterministic fallback assessment was used.",

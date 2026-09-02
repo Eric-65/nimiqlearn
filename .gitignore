@@ -8,6 +8,10 @@ dist/
 # .env.example is committed, see src/config/paymentConfig.js.
 nimiqlearn-ai-educational-app/.env
 
+# Real secret (ANTHROPIC_API_KEY) — only server/.env.example is committed,
+# see server/index.js and docs/learn-concept.md.
+server/.env
+
 # Training workspace — raw datasets, processed data, and trained model
 # artifacts are never committed (see training/datasets/README.md). This
 # also covers synthetic demo data from make_synthetic_sample.py — it's
@@ -19,6 +23,7 @@ training/data/raw/
 training/data/processed/
 training/models/
 training/exports/**/model.json
+training/exports/**/classifier.json
 *.csv
 *.parquet
 *.jsonl

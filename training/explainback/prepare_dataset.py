@@ -24,11 +24,16 @@ from pathlib import Path
 
 # Known column-name aliases seen across ASAG-style dataset uploads.
 # The first match found in the actual CSV header wins for each field.
+# "desired_answer" and "score_avg" were added after running this script
+# against the real Mohler short-answer-grading corpus (the dataset behind
+# Kaggle's mubeenfurqanahmed/automatic-short-answer-grading-dataset) —
+# exactly the "add the real column name and re-run" path this script's
+# own error message describes.
 COLUMN_ALIASES = {
     "question": ["question", "questions", "prompt"],
-    "referenceAnswer": ["model_answer", "reference_answer", "ideal_answer", "correct_answer", "teacher_answer"],
+    "referenceAnswer": ["model_answer", "reference_answer", "ideal_answer", "correct_answer", "teacher_answer", "desired_answer"],
     "learnerAnswer": ["student_answer", "learner_answer", "answer", "response"],
-    "score": ["teacher_marks", "score", "marks", "grade", "points"],
+    "score": ["teacher_marks", "score", "marks", "grade", "points", "score_avg"],
     "maxScore": ["total_marks", "max_marks", "max_score", "out_of", "total_score"],
 }
 
@@ -39,16 +44,25 @@ COLUMN_ALIASES = {
 LABEL_THRESHOLDS = {"INCORRECT_MAX": 0.34, "PARTIAL_MAX": 0.67}
 
 
-def detect_columns(header):
+def detect_columns(header, fixed_max_score=None):
     """Match each required field to one actual CSV column. Raises with a
     clear message (listing found vs. expected) if any field can't be
-    matched — never silently assumes a column name."""
+    matched — never silently assumes a column name.
+
+    maxScore is the one field allowed to be absent from the CSV: some
+    real ASAG-style corpora (e.g. the Mohler dataset) grade on a single
+    fixed scale documented outside the file rather than a per-row max-score
+    column. That absence is only tolerated when the caller explicitly
+    passes --fixed-max-score — never inferred silently.
+    """
     header_lower = {h.lower().strip(): h for h in header}
     mapping = {}
     missing = []
     for field, aliases in COLUMN_ALIASES.items():
         found = next((header_lower[a] for a in aliases if a in header_lower), None)
         if found is None:
+            if field == "maxScore" and fixed_max_score is not None:
+                continue  # covered by --fixed-max-score instead of a column
             missing.append((field, aliases))
         else:
             mapping[field] = found
@@ -58,7 +72,9 @@ def detect_columns(header):
             "Could not match required column(s) to the actual CSV header.\n"
             + "\n".join(lines)
             + f"\nActual columns found in file: {list(header)}\n"
-            + "Add the real column name to COLUMN_ALIASES in this script and re-run."
+            + "Add the real column name to COLUMN_ALIASES in this script, or if the "
+            + "field is genuinely absent (e.g. a fixed grading scale with no "
+            + "per-row max-score column), pass --fixed-max-score, and re-run."
         )
     return mapping
 
@@ -71,7 +87,7 @@ def label_for(normalized_score):
     return "CORRECT"
 
 
-def normalize_dataframe(df, mapping):
+def normalize_dataframe(df, mapping, fixed_max_score=None):
     """Returns (normalized_examples, stats) — stats documents exactly what
     was dropped and why, per the spec's "document rows before/after"."""
     stats = {"rows_before": len(df), "dropped_missing_fields": 0, "dropped_bad_maxscore": 0, "rows_after": 0}
@@ -81,7 +97,7 @@ def normalize_dataframe(df, mapping):
         ref = row.get(mapping["referenceAnswer"])
         learner = row.get(mapping["learnerAnswer"])
         score = row.get(mapping["score"])
-        max_score = row.get(mapping["maxScore"])
+        max_score = row.get(mapping["maxScore"]) if "maxScore" in mapping else fixed_max_score
 
         if any(v is None or (isinstance(v, float) and v != v) for v in [question, ref, learner, score, max_score]):
             stats["dropped_missing_fields"] += 1
@@ -157,6 +173,10 @@ def main():
     parser.add_argument("--group-by-question", action="store_true", default=True,
                          help="Keep all rows for the same question in one split (default: on)")
     parser.add_argument("--no-group-by-question", dest="group_by_question", action="store_false")
+    parser.add_argument("--fixed-max-score", type=float, default=None,
+                         help="Use this constant as maxScore when the CSV has no per-row max-score column "
+                              "(e.g. the Mohler dataset, graded 0-5 with no separate max-score field). "
+                              "Never inferred automatically — must be passed explicitly.")
     args = parser.parse_args()
 
     try:
@@ -171,10 +191,12 @@ def main():
         sys.exit(1)
 
     df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
-    mapping = detect_columns(df.columns)
+    mapping = detect_columns(df.columns, fixed_max_score=args.fixed_max_score)
     print(f"Detected column mapping: {mapping}")
+    if "maxScore" not in mapping:
+        print(f"No max-score column found — using --fixed-max-score={args.fixed_max_score} for every row.")
 
-    examples, stats = normalize_dataframe(df, mapping)
+    examples, stats = normalize_dataframe(df, mapping, fixed_max_score=args.fixed_max_score)
     print(f"Rows before preprocessing: {stats['rows_before']}")
     print(f"Dropped (missing/unparseable fields): {stats['dropped_missing_fields']}")
     print(f"Dropped (non-positive max score): {stats['dropped_bad_maxscore']}")
@@ -195,6 +217,7 @@ def main():
     manifest = {
         "source_files": files,
         "column_mapping": mapping,
+        "fixed_max_score": args.fixed_max_score,
         "label_thresholds": LABEL_THRESHOLDS,
         "preprocessing_stats": stats,
         "split": {

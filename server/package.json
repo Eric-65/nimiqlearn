@@ -1,0 +1,16 @@
+{
+  "name": "nimiqlearn-teaching-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal backend proxy that holds ANTHROPIC_API_KEY server-side and exposes a teaching endpoint for NimiqLearn's Learn Concept feature. Never bundle this key into the frontend — see ../nimiqlearn-ai-educational-app for why.",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}

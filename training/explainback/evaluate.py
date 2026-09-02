@@ -58,7 +58,8 @@ def classification_metrics(y_true_labels, y_pred_labels):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", required=True, help="Directory with test.jsonl and manifest.json from prepare_dataset.py")
-    parser.add_argument("--model", required=True, help="Path to a joblib pipeline from train.py")
+    parser.add_argument("--model", required=True, help="Path to a joblib regressor pipeline from train.py")
+    parser.add_argument("--classifier-model", default=None, help="Optional: path to a joblib classifier pipeline from train_classifier.py, evaluated alongside the regressor")
     parser.add_argument("--report", required=True, help="Path to write the markdown evaluation report")
     parser.add_argument("--dataset-label", default="Automatic Short Answer Grading", help="Human-readable name of the data actually used, for the report header")
     args = parser.parse_args()
@@ -97,6 +98,12 @@ def main():
     baseline_cls = classification_metrics(y_true_labels, baseline_labels)
     model_cls = classification_metrics(y_true_labels, model_labels)
 
+    classifier_cls = None
+    if args.classifier_model:
+        classifier_pipeline = joblib.load(args.classifier_model)
+        classifier_predictions = classifier_pipeline.predict(model_input)
+        classifier_cls = classification_metrics(y_true_labels, list(classifier_predictions))
+
     manifest_path = data_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 
@@ -119,14 +126,21 @@ test split and the actual trained model file — none are hand-entered.
 
 ## Classification (INCORRECT / PARTIAL / CORRECT, thresholds 0.34 / 0.67)
 
+Two different ways of producing a 3-way label are compared: thresholding
+the *regressor's* continuous score (a derived classification, not a
+purpose-built one), versus a *dedicated* classifier (train_classifier.py)
+trained directly on the label.
+
 | Model | Accuracy | Macro P | Macro R | Macro F1 |
 |---|---|---|---|---|
-| Lexical baseline | {baseline_cls['accuracy']:.3f} | {baseline_cls['macro_precision']:.3f} | {baseline_cls['macro_recall']:.3f} | {baseline_cls['macro_f1']:.3f} |
-| Trained model | {model_cls['accuracy']:.3f} | {model_cls['macro_precision']:.3f} | {model_cls['macro_recall']:.3f} | {model_cls['macro_f1']:.3f} |
+| Lexical baseline (thresholded) | {baseline_cls['accuracy']:.3f} | {baseline_cls['macro_precision']:.3f} | {baseline_cls['macro_recall']:.3f} | {baseline_cls['macro_f1']:.3f} |
+| Regressor, thresholded (TF-IDF + Ridge) | {model_cls['accuracy']:.3f} | {model_cls['macro_precision']:.3f} | {model_cls['macro_recall']:.3f} | {model_cls['macro_f1']:.3f} |
+{f"| Dedicated classifier (TF-IDF + LogisticRegression) | {classifier_cls['accuracy']:.3f} | {classifier_cls['macro_precision']:.3f} | {classifier_cls['macro_recall']:.3f} | {classifier_cls['macro_f1']:.3f} |" if classifier_cls else "| Dedicated classifier | — | — | — | — (not evaluated — pass --classifier-model) |"}
 
 ## Interpretation
 
-{"The trained model beats the lexical baseline on MAE." if model_reg['mae'] < baseline_reg['mae'] else "The trained model did NOT beat the lexical baseline on MAE on this run — do not deploy it over the baseline until that changes."}
+{"The trained regressor beats the lexical baseline on MAE." if model_reg['mae'] < baseline_reg['mae'] else "The trained regressor did NOT beat the lexical baseline on MAE on this run — do not deploy it over the baseline until that changes."}
+{f"The dedicated classifier {'beats' if classifier_cls['macro_f1'] > model_cls['macro_f1'] else 'does NOT beat'} the regressor-derived classification on macro-F1 ({classifier_cls['macro_f1']:.3f} vs {model_cls['macro_f1']:.3f})." if classifier_cls else ""}
 
 Misconception detection is not evaluated here: the source dataset carries
 no misconception labels, so no such metric can be honestly reported (see

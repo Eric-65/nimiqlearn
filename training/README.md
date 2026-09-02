@@ -35,14 +35,30 @@ would eventually fill in — see `exports/README.md` for that contract.
 
 Full provenance, schema, and licensing for both live in `datasets/README.md`.
 
-**Network note**: the environment this pipeline was built and tested in
-has its network egress proxy blocking `kaggle.com` entirely — neither
-dataset could be downloaded, nor could the Kaggle pages even be fetched
-to re-verify column names/license live. `scripts/download_data.sh`
-documents the download commands to run wherever you *do* have Kaggle
-access; everything below was validated end-to-end against small,
-clearly-labeled synthetic stand-ins instead (see each pipeline's "Demo
-run" section) — real numbers are still pending a real download.
+**Network note**: the environment this pipeline runs in has its network
+egress proxy blocking `kaggle.com` entirely — `scripts/download_data.sh`
+still documents the direct Kaggle commands for wherever you *do* have
+Kaggle access, and the ASAG dataset itself is Kaggle-gated too.
+
+**ExplainBack (ASAG) — REAL data, obtained via a GitHub mirror.** Since
+Kaggle itself is unreachable, the underlying academic corpus (Mohler et
+al.) that Kaggle's `automatic-short-answer-grading-dataset` packages was
+downloaded instead from a public GitHub mirror
+(`gsasikiran/Comparative-Evaluation-of-Pretrained-Transfer-Learning-Models-on-ASAG`,
+`mohler_dataset_edited.csv`) — the same 2,273-row dataset, not a
+substitute or synthetic stand-in. `explainback/prepare_dataset.py` was
+extended (new column aliases + `--fixed-max-score`) to handle this
+file's real column names and its fixed 0-5 grading scale. Real
+train/evaluate/export ran end-to-end; see `explainback/README.md` and
+`evaluation/reports/explainback_eval.md` for the real numbers.
+
+**Learner-state (Riiid) — still synthetic.** Riiid's dataset is
+Kaggle-competition-gated (100M+ rows, several GB), not a small public
+dataset — no open GitHub mirror of the actual `train.csv` exists (search
+turned up only solution code, never the raw competition data, which is
+standard practice for Kaggle competitions). This pipeline remains
+validated only against the synthetic stand-in described in its own
+README — real numbers are still pending real Kaggle competition access.
 
 ```
 Automatic Short Answer Grading Dataset          Riiid Answer Correctness Prediction
