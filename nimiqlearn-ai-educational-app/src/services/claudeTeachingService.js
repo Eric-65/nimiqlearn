@@ -1,6 +1,10 @@
 /* ============================================================
-   NimiqLearn — Claude teaching service (Learn Concept)
+   NimiqLearn — Claude teaching service
    ------------------------------------------------------------
+   Not currently imported by any page. Kept as reusable plumbing
+   for a future Claude "AI Tutor" layer inside ExplainBack — see
+   docs/learn-concept.md for status and rationale.
+
    Talks ONLY to NimiqLearn's own small backend (../../server/) —
    never to the Anthropic API directly, and never holds an API
    key. The backend is what actually calls Claude, server-side.

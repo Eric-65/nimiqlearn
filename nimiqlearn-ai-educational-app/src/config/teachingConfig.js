@@ -1,10 +1,12 @@
 /* ============================================================
-   NimiqLearn — Learn Concept (Claude teaching) configuration
+   NimiqLearn — Claude teaching backend configuration
    ------------------------------------------------------------
-   The backend URL is safe to expose client-side (it's just an
-   endpoint, not a secret) — the actual ANTHROPIC_API_KEY lives
-   only in ../../server/.env, on the server, never here. See
-   ../../server/index.js and docs/learn-concept.md.
+   Not currently wired into any page — kept as reusable plumbing
+   for a future Claude "AI Tutor" layer inside ExplainBack (see
+   docs/learn-concept.md). The backend URL is safe to expose
+   client-side (it's just an endpoint, not a secret) — the actual
+   ANTHROPIC_API_KEY lives only in ../../server/.env, on the
+   server, never here. See ../../server/index.js.
 
    Same disable-if-unconfigured pattern as
    src/config/paymentConfig.js: no backend URL configured means

@@ -10,7 +10,6 @@ import WalletDiagnostics from "./components/payments/WalletDiagnostics.jsx";
 import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 import Home from "./pages/Home.jsx";
 import Learn from "./pages/Learn.jsx";
-import LearnConcept from "./pages/LearnConcept.jsx";
 import ExplainBack from "./pages/ExplainBack.jsx";
 import ForgetMeNot from "./pages/ForgetMeNot.jsx";
 import Knowledge from "./pages/Knowledge.jsx";
@@ -20,7 +19,6 @@ import Wallet from "./pages/Wallet.jsx";
 const NAV_ITEMS = [
   { path: "home", label: "Home", icon: "M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" },
   { path: "learn", label: "Learn", icon: "M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 016.5 22H20V2H6.5A2.5 2.5 0 004 4.5v15z" },
-  { path: "learn-concept", label: "Learn Concept", icon: "M12 2a7 7 0 00-4 12.74V17a2 2 0 002 2h4a2 2 0 002-2v-2.26A7 7 0 0012 2zM10 21h4" },
   { path: "explain", label: "ExplainBack", icon: "M8 12h8M8 8h5M12 20l-3-4H6a2 2 0 01-2-2V6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-3l-3 4z" },
   { path: "review", label: "ForgetMeNot", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
   { path: "knowledge", label: "Knowledge", icon: "M3 5a2 2 0 012-2h4l2 2h8a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM8 13h5m-5 4h8" },
@@ -31,7 +29,6 @@ const NAV_ITEMS = [
 const PAGES = {
   home: Home,
   learn: Learn,
-  "learn-concept": LearnConcept,
   explain: ExplainBack,
   review: ForgetMeNot,
   knowledge: Knowledge,
@@ -90,7 +87,7 @@ function Shell() {
       <aside className="sidebar" aria-label="Primary navigation">
         <Brand />
         <div className="nav-section-label">Learn</div>
-        {NAV_ITEMS.slice(0, 4).map((item) => (
+        {NAV_ITEMS.slice(0, 3).map((item) => (
           <button
             key={item.path}
             className={`nav-item ${page === item.path ? "active" : ""}`}
@@ -105,7 +102,7 @@ function Shell() {
         ))}
         <div className="nav-section-label">Economy</div>
         <span className="nav-divider" aria-hidden="true" />
-        {NAV_ITEMS.slice(4).map((item) => (
+        {NAV_ITEMS.slice(3).map((item) => (
           <button
             key={item.path}
             className={`nav-item ${page === item.path ? "active" : ""}`}
