@@ -105,10 +105,13 @@ verify a real Claude reply end to end.
   `.env.example` is a local-dev convenience only; a real deployment
   should set this to the Mini App's actual origin.
 
-## Next step, when this is picked back up
+## Update: ExplainBack now has an AI Tutor — just not this one
 
-Design how Claude should surface inside ExplainBack — e.g. a Claude-backed
-"explain this differently" or hint action after a PARTIAL/INCORRECT
-`assessmentService.js` result — and decide whether it augments or replaces
-the existing rubric+trained-model feedback (`computeRubricBaseline()`),
-before writing any UI. Nothing here has been designed yet.
+An "AI Tutor" panel now exists inside ExplainBack, but it calls GLM-5.3
+(via Hugging Face), not Claude — see `docs/explainback-ai-tutor.md` for
+the full design. It uses a sibling pair of routes on this same `server/`
+process (`/api/tutor/health`, `/api/tutor/feedback`, gated by `HF_TOKEN`
+rather than `ANTHROPIC_API_KEY`). This file's Claude plumbing
+(`server/index.js`'s `/api/teach`, `claudeTeachingService.js`,
+`teachingConfig.js`) remains unused by any page, kept as-is in case a
+future feature wants Claude specifically.

@@ -2,13 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useAI, AI_STATUS } from "../hooks/useAI.js";
-import { LEAF_TOPICS, findTopic, findTopicPath } from "../data/mockTopics.js";
+import { LEAF_TOPICS, findTopic, findTopicPath, TOPIC_CONTENT } from "../data/mockTopics.js";
 import { ACTIVITY_LABELS } from "../services/learnLoopService.js";
 import { STATUS_META } from "../services/knowledgeService.js";
 import { getAIState } from "../services/aiService.js";
 import AIStatus from "../components/ai/AIStatus.jsx";
 import AIModelLoader from "../components/ai/AIModelLoader.jsx";
 import ExplanationResult from "../components/ai/ExplanationResult.jsx";
+import AITutorPanel from "../components/ai/AITutorPanel.jsx";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -396,6 +397,13 @@ export default function ExplainBack() {
             afterMastery={afterMastery}
             statusAfter={statusAfter}
             onChallenge={() => navigate("learn", { topic: topicId })}
+          />
+
+          <AITutorPanel
+            topic={topic}
+            referenceAnswer={TOPIC_CONTENT[topicId]?.definition}
+            learnerExplanation={text}
+            evaluation={evaluation}
           />
 
           {latencyNote && evaluation.confidence === "model" && (
