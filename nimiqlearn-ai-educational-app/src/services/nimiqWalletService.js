@@ -49,19 +49,14 @@
              'disconnect' (fires on disconnect()) — these are the ONLY
              two events the real provider emits.
 
+   USDT/EVM payments now live in evmWalletService.js — a separate file
+   for a separate provider (window.ethereum, not window.nimiq). This
+   file's job is the native Nimiq provider only.
+
    Explicitly NOT implemented in this pass:
      - any balance query method — verified genuinely absent from BOTH
        the Nimiq provider's documented capability list AND its
        WALLET_METHODS set (getNimBalance() always resolves unsupported)
-     - real USDT/EVM payments — IMPORTANT: the skill confirms Nimiq Pay
-       DOES inject a real, separate `window.ethereum` (EIP-1193 /
-       EIP-6963) supporting NIM's sibling EVM chains and ERC-20 tokens
-       including USDT/USDC. That is a genuinely supported platform
-       capability, NOT "unsupported" — NimiqLearn simply has not
-       implemented it yet in this pass (Prompt 10 explicitly scopes
-       this pass to the native Nimiq provider; EVM is a documented
-       roadmap item, not a limitation of the platform). See
-       getUsdtSupportStatus() and docs/nimiq-pay-integration.md.
      - any transaction-status/confirmation lookup: the skill's own
        capability table has no such method, and provider.request()
        for anything outside WALLET_METHODS falls through to a raw
@@ -377,18 +372,6 @@ export async function getNimBalance() {
   };
 }
 
-/**
- * USDT — NOT "unsupported by the platform." The skill confirms Nimiq Pay
- * injects a real window.ethereum (EIP-1193/EIP-6963) with ERC-20 support
- * across several EVM chains, USDT included. NimiqLearn has not implemented
- * that path yet (Prompt 10 scopes this pass to the native Nimiq provider),
- * so the honest status is "not yet implemented here," not "unsupported."
- * See docs/nimiq-pay-integration.md, "External wallet / EVM roadmap".
- */
-export function getUsdtSupportStatus() {
-  return "COMING_SOON";
-}
-
 /* ---------------- payments (Parts 16-24) ---------------- */
 
 /** Integer-safe NIM -> Luna conversion (Part 17). Never uses floating-point
@@ -428,13 +411,6 @@ export async function sendNimPayment({ recipient, amountNim, fee, validityStartH
     throw new Error(result.error?.message || "Nimiq Pay did not confirm this transaction.");
   }
   return { hash: result, network: provider.getNetwork(), asset: "NIM" };
-}
-
-/** USDT is not implemented yet — see getUsdtSupportStatus() above. Never
- * fakes a transaction; the UI must call getUsdtSupportStatus() before
- * offering this asset as a payment option at all. */
-export async function requestUsdtPayment() {
-  throw new Error("USDT payment support is coming soon — not yet implemented in NimiqLearn.");
 }
 
 /**

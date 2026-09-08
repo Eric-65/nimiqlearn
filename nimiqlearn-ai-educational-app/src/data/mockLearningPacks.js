@@ -1,9 +1,13 @@
 /* ============================================================
    NimiqLearn — Learning Economy packs
-   Paid via Nimiq Pay. NIM is supported natively; USDT is coming
-   soon (see docs/nimiq-pay-integration.md, "External wallet / EVM
-   roadmap"). Recipients are educator addresses configured by the
-   creator.
+   Paid via Nimiq Pay. NIM is the default price for every pack.
+   A pack additionally opts into USDT by setting its own flat
+   `usdtPrice` (see paymentService.js's buildPaymentRequest() doc
+   comment for why this is a flat price, not a live NIM->USDT
+   conversion this app has no oracle for). USDT still requires
+   VITE_USDT_LEARNING_RECIPIENT to be configured — see
+   src/config/evmPaymentConfig.js. Recipients are educator
+   addresses configured by the creator.
    ============================================================ */
 
 import { NIM_LEARNING_RECIPIENT } from "../config/paymentConfig.js";
@@ -25,6 +29,7 @@ export const LEARNING_PACKS = [
     price: 0.5,
     asset: "NIM",
     recipient: EDU_RECIPIENT,
+    usdtPrice: 0.5,
     category: "Programming",
     creator: "Ada Learning Co.",
     duration: "3 weeks",
@@ -63,6 +68,7 @@ export const LEARNING_PACKS = [
     price: 1.2,
     asset: "NIM",
     recipient: EDU_RECIPIENT,
+    usdtPrice: 1.5,
     category: "Career",
     creator: "ML Mentor Circle",
     duration: "1 week",

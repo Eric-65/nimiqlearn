@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNimiq } from "../../hooks/useNimiq.js";
-import { NIMIQ_STATUS, isNimiqPayAvailable, isProviderInitialized, getUsdtSupportStatus } from "../../services/nimiqWalletService.js";
+import { useEvmWallet } from "../../hooks/useEvmWallet.js";
+import { NIMIQ_STATUS, isNimiqPayAvailable, isProviderInitialized } from "../../services/nimiqWalletService.js";
+import { EVM_STATUS } from "../../services/evmWalletService.js";
 import { getLastPaymentState } from "../../services/paymentService.js";
+import { USDT_PAYMENTS_ENABLED } from "../../config/evmPaymentConfig.js";
 import Button from "../ui/Button.jsx";
 
 const FLAG = "nimiqlearn:wallet-diagnostics";
@@ -47,6 +50,7 @@ function truncate(address) {
  */
 export default function WalletDiagnostics() {
   const nimiq = useNimiq();
+  const evm = useEvmWallet();
   const [show, setShow] = useState(enabled());
   const [lastError, setLastError] = useState(null);
 
@@ -126,7 +130,6 @@ export default function WalletDiagnostics() {
       <Row label="Block number" value={nimiq.blockNumber ?? "—"} />
       <Row label="Host language" value={nimiq.language || "—"} />
       <Row label="NIM balance query" value="NOT SUPPORTED BY SDK" tone="var(--c-gold)" />
-      <Row label="USDT support" value={getUsdtSupportStatus()} tone="var(--c-gold)" />
       <Row label="Payment provider" value="Nimiq Pay (native sendBasicTransaction)" />
       <Row label="Authenticated" value={nimiq.isAuthenticated ? "YES" : "NO"} tone={nimiq.isAuthenticated ? "var(--c-teal)" : undefined} />
       {nimiq.authenticated && (
@@ -139,9 +142,25 @@ export default function WalletDiagnostics() {
       <Row label="Transaction hash" value={truncate(getLastPaymentState().transactionHash)} />
       {lastError && <Row label="Last provider error" value={lastError} tone="var(--c-rose)" />}
 
-      <div className="flex gap-8 wrap" style={{ marginTop: 12 }}>
+      <div className="flex gap-8 wrap" style={{ marginTop: 12, marginBottom: 4 }}>
         <Button variant="outline" size="sm" onClick={nimiq.connect}>Connect</Button>
         <Button variant="outline" size="sm" onClick={nimiq.disconnect}>Disconnect</Button>
+      </div>
+
+      <div className="small strong" style={{ color: "var(--c-gold)", margin: "10px 0 4px" }}>⚙ EVM (USDT)</div>
+      <Row label="Ethereum provider detected" value={evm.isUnavailable ? "NO" : "YES"} tone={evm.isUnavailable ? "var(--c-gold)" : "var(--c-teal)"} />
+      <Row
+        label="EVM wallet state"
+        value={evm.status}
+        tone={evm.status === EVM_STATUS.CONNECTED ? "var(--c-teal)" : evm.status === EVM_STATUS.ERROR ? "var(--c-rose)" : "var(--c-gold)"}
+      />
+      <Row label="EVM address" value={truncate(evm.address)} />
+      <Row label="Active chain ID" value={evm.chainId || "—"} />
+      <Row label="USDT recipient configured" value={USDT_PAYMENTS_ENABLED ? "YES" : "NO"} tone={USDT_PAYMENTS_ENABLED ? "var(--c-teal)" : "var(--c-gold)"} />
+
+      <div className="flex gap-8 wrap" style={{ marginTop: 8 }}>
+        <Button variant="outline" size="sm" onClick={evm.connect}>Connect EVM</Button>
+        <Button variant="outline" size="sm" onClick={evm.disconnect}>Disconnect EVM</Button>
       </div>
     </div>
   );

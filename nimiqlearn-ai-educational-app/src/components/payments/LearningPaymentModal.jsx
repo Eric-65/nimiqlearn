@@ -4,10 +4,11 @@ import Button from "../ui/Button.jsx";
 import Badge from "../ui/Badge.jsx";
 import PaymentReceipt from "./PaymentReceipt.jsx";
 import { useNimiq } from "../../hooks/useNimiq.js";
+import { useEvmWallet } from "../../hooks/useEvmWallet.js";
 import { useLearner } from "../../hooks/useLearner.js";
-import { buildPaymentRequest, getSupportedAssets, TRANSACTION_STATE } from "../../services/paymentService.js";
+import { buildPaymentRequest, getPackPaymentOptions, TRANSACTION_STATE } from "../../services/paymentService.js";
 import { hasPendingPayment } from "../../services/entitlementService.js";
-import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_REASON } from "../../config/paymentConfig.js";
+import { EVM_CHAINS, DEFAULT_USDT_CHAIN } from "../../config/evmChains.js";
 
 const STEP = {
   NEEDS_VERIFICATION: "needsVerification", // item 22 — blocks a duplicate purchase attempt
@@ -36,12 +37,13 @@ const PENDING_TEXT = {
 
 export default function LearningPaymentModal({ pack, open, onClose, onSuccess }) {
   const nimiq = useNimiq();
+  const evm = useEvmWallet();
   const { learner, recordPendingPayment, clearPendingPayment } = useLearner();
   const [step, setStep] = useState(STEP.REVIEW);
   const [result, setResult] = useState(null);
   const [pendingText, setPendingText] = useState("Waiting for wallet approval...");
-  const assets = getSupportedAssets();
   const [selectedAsset, setSelectedAsset] = useState("NIM");
+  const [selectedChain, setSelectedChain] = useState(DEFAULT_USDT_CHAIN);
   const submittingRef = useRef(false);
 
   const pending = pack ? hasPendingPayment(learner.pendingPayments, pack.id) : false;
@@ -51,6 +53,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
       setStep(pending ? STEP.NEEDS_VERIFICATION : STEP.REVIEW);
       setResult(null);
       setSelectedAsset("NIM");
+      setSelectedChain(DEFAULT_USDT_CHAIN);
       submittingRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -58,9 +61,20 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
 
   if (!pack) return null;
 
-  const demo = !nimiq.isConnected;
-  const request = { ...buildPaymentRequest(pack), asset: selectedAsset };
-  const disabled = !PAYMENTS_ENABLED;
+  const assets = getPackPaymentOptions(pack);
+  // Which provider's connection state determines DEMO vs. live differs by
+  // asset — NIM goes through Nimiq Pay's native provider, USDT through the
+  // separate EVM provider (see evmWalletService.js).
+  const demo = selectedAsset === "USDT" ? !evm.isConnected : !nimiq.isConnected;
+  const checkingEnvironment = selectedAsset === "USDT" ? evm.isConnecting : nimiq.isConnecting;
+  const request = {
+    ...buildPaymentRequest(pack, selectedAsset),
+    ...(selectedAsset === "USDT" ? { chainKey: selectedChain } : {}),
+  };
+  // Derived directly from whether a real recipient resolved for this
+  // asset (see buildPaymentRequest()) — never a second, separately-tracked
+  // "enabled" flag that could drift from the actual request.
+  const disabled = !request.recipient;
 
   const handleConfirm = async () => {
     // Part 26 — never allow a rapid double-click to trigger two
@@ -136,7 +150,10 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
             {disabled && (
               <div className="notice danger" style={{ marginBottom: 16 }}>
                 <span aria-hidden="true">⚠️</span>
-                <span>{PAYMENTS_DISABLED_REASON}</span>
+                <span>
+                  No {selectedAsset} recipient address is configured for this pack yet. Unlocking with {selectedAsset} is
+                  disabled until an educator recipient address is configured.
+                </span>
               </div>
             )}
 
@@ -148,7 +165,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                 </dd>
               </div>
               <div className="flex justify-between items-center gap-12">
-                <dt className="muted small">Asset / network</dt>
+                <dt className="muted small">Asset</dt>
                 <dd style={{ margin: 0 }}>
                   <select
                     className="select"
@@ -159,12 +176,30 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                   >
                     {assets.map((a) => (
                       <option key={a.asset} value={a.asset} disabled={!a.real}>
-                        {a.asset} — {a.network}
+                        {a.asset}{a.real ? "" : " — Coming soon"}
                       </option>
                     ))}
                   </select>
                 </dd>
               </div>
+              {selectedAsset === "USDT" && (
+                <div className="flex justify-between items-center gap-12">
+                  <dt className="muted small">Chain</dt>
+                  <dd style={{ margin: 0 }}>
+                    <select
+                      className="select"
+                      style={{ minWidth: 150, padding: "6px 34px 6px 12px", fontSize: 13.5 }}
+                      value={selectedChain}
+                      onChange={(e) => setSelectedChain(e.target.value)}
+                      aria-label="Select EVM chain"
+                    >
+                      {Object.entries(EVM_CHAINS).map(([key, c]) => (
+                        <option key={key} value={key}>{c.name}</option>
+                      ))}
+                    </select>
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="muted small">Purpose</dt>
                 <dd style={{ margin: 0, textAlign: "right" }}>{request.purpose}</dd>
@@ -181,7 +216,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               <div className="notice warn" style={{ marginTop: 18 }}>
                 <span aria-hidden="true">🧪</span>
                 <span>
-                  You're in <strong>DEMO MODE</strong>. Confirming simulates the payment — no blockchain transaction is created and no NIM moves. Simulated receipts are labelled <strong>SIM-…</strong>.
+                  You're in <strong>DEMO MODE</strong>. Confirming simulates the payment — no blockchain transaction is created and no {request.asset} moves. Simulated receipts are labelled <strong>SIM-…</strong>.
                 </span>
               </div>
             ) : (
@@ -195,8 +230,8 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
 
             <div className="flex gap-12" style={{ marginTop: 22 }}>
               <Button variant="ghost" onClick={() => { setStep(STEP.CANCELLED); setTimeout(onClose, 300); }}>Cancel</Button>
-              <Button variant={demo ? "amber" : "nimiq"} onClick={handleConfirm} style={{ flex: 1 }} disabled={disabled || nimiq.isConnecting}>
-                {nimiq.isConnecting ? "Checking environment…" : `Confirm with Nimiq Pay · ${request.amount} ${request.asset}`}
+              <Button variant={demo ? "amber" : "nimiq"} onClick={handleConfirm} style={{ flex: 1 }} disabled={disabled || checkingEnvironment}>
+                {checkingEnvironment ? "Checking environment…" : `Confirm with Nimiq Pay · ${request.amount} ${request.asset}`}
               </Button>
             </div>
           </div>
@@ -235,6 +270,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               product={pack.title}
               amount={request.amount}
               asset={result.asset}
+              chain={result.chain}
               recipient={request.recipient}
               transactionHash={result.transactionHash}
               status={result.transactionState}

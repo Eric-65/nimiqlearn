@@ -10,13 +10,10 @@
    blockchain transaction.
    ============================================================ */
 
-import {
-  getWalletState,
-  NIMIQ_STATUS,
-  sendNimPayment,
-  getUsdtSupportStatus,
-} from "./nimiqWalletService.js";
+import { getWalletState, NIMIQ_STATUS, sendNimPayment } from "./nimiqWalletService.js";
+import { getEvmState, EVM_STATUS, sendUsdtPayment } from "./evmWalletService.js";
 import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_REASON } from "../config/paymentConfig.js";
+import { USDT_LEARNING_RECIPIENT, USDT_PAYMENTS_ENABLED, USDT_PAYMENTS_DISABLED_REASON } from "../config/evmPaymentConfig.js";
 
 /** Part 22 — the exact transaction-state machine the spec asks for. A
  * transaction hash is never equated with "confirmed": UNKNOWN is its own
@@ -35,7 +32,23 @@ export const TRANSACTION_STATE = {
 
 const PAYMENT_TIMEOUT_MS = 60_000;
 
-export function buildPaymentRequest(pack) {
+/** Builds the concrete payment request for one pack + asset. USDT's amount
+ * and recipient are NOT derived from the NIM price via any exchange rate —
+ * this app has no price oracle and will not fabricate one (same principle
+ * as getNimBalance() refusing to guess a balance). A pack that supports
+ * USDT sets its own flat `usdtPrice`, the same way a real merchant would
+ * set multi-currency prices independently rather than convert live. */
+export function buildPaymentRequest(pack, asset = "NIM") {
+  if (asset === "USDT") {
+    return {
+      productId: pack.id,
+      amount: pack.usdtPrice,
+      asset: "USDT",
+      recipient: USDT_LEARNING_RECIPIENT, // resolves through src/config/evmPaymentConfig.js — null if unconfigured
+      purpose: pack.purpose || "Educational learning pack",
+      title: pack.title,
+    };
+  }
   return {
     productId: pack.id,
     amount: pack.price,
@@ -46,17 +59,33 @@ export function buildPaymentRequest(pack) {
   };
 }
 
-/** NIM is real (sendBasicTransaction, verified real via the official Nimiq
- * Mini Apps skill). USDT is real at the PLATFORM level (Nimiq Pay's
- * window.ethereum, per the skill) but not yet implemented in NimiqLearn —
- * "Coming soon", never presented as available today. See
- * docs/nimiq-pay-integration.md, "External wallet / EVM roadmap". */
+/** App-level capability list (Wallet page's "Supported assets" card — no
+ * specific pack in view). NIM is real (sendBasicTransaction, verified real
+ * via the official Nimiq Mini Apps skill). USDT is real once
+ * VITE_USDT_LEARNING_RECIPIENT is configured — see evmWalletService.js and
+ * docs/nimiq-pay-integration.md, "USDT status". */
 export function getSupportedAssets() {
-  const usdtStatus = getUsdtSupportStatus();
   return [
     { asset: "NIM", network: "Nimiq", real: true },
-    { asset: "USDT", network: usdtStatus === "COMING_SOON" ? "Coming soon (Nimiq Pay EVM)" : "Not available", real: false },
+    {
+      asset: "USDT",
+      network: USDT_PAYMENTS_ENABLED ? "Polygon · Ethereum · Arbitrum · Optimism (Nimiq Pay EVM)" : "Coming soon (Nimiq Pay EVM)",
+      real: USDT_PAYMENTS_ENABLED,
+    },
   ];
+}
+
+/** Pack-level options (the payment modal's asset dropdown) — which assets
+ * THIS pack can actually be paid in. A pack only offers USDT if it has set
+ * its own `usdtPrice`; `real` additionally requires the app-wide USDT
+ * recipient to be configured, matching NIM's own disabled-until-configured
+ * behavior. */
+export function getPackPaymentOptions(pack) {
+  const options = [{ asset: "NIM", amount: pack.price, real: true }];
+  if (pack.usdtPrice != null) {
+    options.push({ asset: "USDT", amount: pack.usdtPrice, real: USDT_PAYMENTS_ENABLED });
+  }
+  return options;
 }
 
 function randomId(length = 6) {
@@ -109,81 +138,126 @@ export function getLastPaymentState() {
  * `onStateChange(transactionState)` fires through TRANSACTION_STATE so the
  * UI can show real stage labels (never a fake percentage).
  */
+/** Shared outcome mapping for a failed/rejected/timed-out provider call —
+ * identical logic for the NIM (Nimiq provider) and USDT (EVM provider)
+ * branches below, so it isn't duplicated between them. */
+function handleProviderError(err, emit) {
+  if (err.message === "PAYMENT_TIMEOUT") {
+    emit(TRANSACTION_STATE.UNKNOWN);
+    lastPayment = { ...lastPayment, error: "Payment status could not be confirmed." };
+    return {
+      transactionState: TRANSACTION_STATE.UNKNOWN,
+      simulated: false,
+      error: "Payment submitted. Confirmation still needs to be verified — please check your wallet before trying again.",
+      detail: "Nimiq Pay did not respond within the expected time.",
+    };
+  }
+  const rejected = looksLikeUserRejection(err.message) || err.code === 4001;
+  const finalState = rejected ? TRANSACTION_STATE.REJECTED : TRANSACTION_STATE.UNKNOWN;
+  emit(finalState);
+  lastPayment = { ...lastPayment, error: err.message || null };
+  return {
+    transactionState: finalState,
+    simulated: false,
+    error: rejected
+      ? "Payment was cancelled. Your wallet was not charged."
+      : "Payment submitted. Confirmation still needs to be verified — please check your wallet before trying again.",
+    detail: err.message || "Nimiq Pay did not confirm this payment.",
+  };
+}
+
 export async function processPayment(request, { onStateChange } = {}) {
   const emit = (s) => {
     lastPayment = { ...lastPayment, transactionState: s };
     onStateChange?.(s);
   };
-  const wallet = getWalletState();
 
-  if (!PAYMENTS_ENABLED || !request.recipient) {
-    emit(TRANSACTION_STATE.FAILED);
-    lastPayment = { ...lastPayment, error: PAYMENTS_DISABLED_REASON };
-    return {
-      transactionState: TRANSACTION_STATE.FAILED,
-      simulated: false,
-      error: PAYMENTS_DISABLED_REASON || "No recipient address is configured for this product.",
-      detail: "Payment is disabled until a real recipient address is configured.",
-    };
-  }
-
-  if (wallet.status === NIMIQ_STATUS.CONNECTED) {
-    if (request.asset !== "NIM") {
+  if (request.asset === "NIM") {
+    if (!PAYMENTS_ENABLED || !request.recipient) {
       emit(TRANSACTION_STATE.FAILED);
+      lastPayment = { ...lastPayment, error: PAYMENTS_DISABLED_REASON };
       return {
         transactionState: TRANSACTION_STATE.FAILED,
         simulated: false,
-        error: "USDT payment support is coming soon and is not available yet.",
-        detail: "Only NIM payments are currently implemented.",
+        error: PAYMENTS_DISABLED_REASON || "No recipient address is configured for this product.",
+        detail: "Payment is disabled until a real recipient address is configured.",
       };
     }
 
-    emit(TRANSACTION_STATE.AWAITING_APPROVAL);
-    try {
-      const result = await withTimeout(
-        sendNimPayment({ recipient: request.recipient, amountNim: request.amount }),
-        PAYMENT_TIMEOUT_MS
-      );
-      emit(TRANSACTION_STATE.SUBMITTED);
-      emit(TRANSACTION_STATE.CONFIRMED);
-      lastPayment = { ...lastPayment, transactionHash: result.hash, error: null };
-      return {
-        transactionState: TRANSACTION_STATE.CONFIRMED,
-        simulated: false,
-        purchaserAddress: wallet.address,
-        transactionHash: result.hash,
-        provider: "Nimiq Pay",
-        asset: "NIM",
-        detail: "Transaction signed and submitted by Nimiq Pay.",
-      };
-    } catch (err) {
-      if (err.message === "PAYMENT_TIMEOUT") {
-        emit(TRANSACTION_STATE.UNKNOWN);
-        lastPayment = { ...lastPayment, error: "Payment status could not be confirmed." };
+    const wallet = getWalletState();
+    if (wallet.status === NIMIQ_STATUS.CONNECTED) {
+      emit(TRANSACTION_STATE.AWAITING_APPROVAL);
+      try {
+        const result = await withTimeout(
+          sendNimPayment({ recipient: request.recipient, amountNim: request.amount }),
+          PAYMENT_TIMEOUT_MS
+        );
+        emit(TRANSACTION_STATE.SUBMITTED);
+        emit(TRANSACTION_STATE.CONFIRMED);
+        lastPayment = { ...lastPayment, transactionHash: result.hash, error: null };
         return {
-          transactionState: TRANSACTION_STATE.UNKNOWN,
+          transactionState: TRANSACTION_STATE.CONFIRMED,
           simulated: false,
-          error: "Payment submitted. Confirmation still needs to be verified — please check your wallet before trying again.",
-          detail: "Nimiq Pay did not respond within the expected time.",
+          purchaserAddress: wallet.address,
+          transactionHash: result.hash,
+          provider: "Nimiq Pay",
+          asset: "NIM",
+          detail: "Transaction signed and submitted by Nimiq Pay.",
         };
+      } catch (err) {
+        return handleProviderError(err, emit);
       }
-      const rejected = looksLikeUserRejection(err.message);
-      const finalState = rejected ? TRANSACTION_STATE.REJECTED : TRANSACTION_STATE.UNKNOWN;
-      emit(finalState);
-      lastPayment = { ...lastPayment, error: err.message || null };
+    }
+  } else if (request.asset === "USDT") {
+    if (!USDT_PAYMENTS_ENABLED || !request.recipient) {
+      emit(TRANSACTION_STATE.FAILED);
+      lastPayment = { ...lastPayment, error: USDT_PAYMENTS_DISABLED_REASON };
       return {
-        transactionState: finalState,
+        transactionState: TRANSACTION_STATE.FAILED,
         simulated: false,
-        error: rejected
-          ? "Payment was cancelled. Your wallet was not charged."
-          : "Payment submitted. Confirmation still needs to be verified — please check your wallet before trying again.",
-        detail: err.message || "Nimiq Pay did not confirm this payment.",
+        error: USDT_PAYMENTS_DISABLED_REASON || "No recipient address is configured for USDT payments.",
+        detail: "USDT payment is disabled until a real recipient address is configured.",
       };
     }
+
+    const evm = getEvmState();
+    if (evm.status === EVM_STATUS.CONNECTED) {
+      emit(TRANSACTION_STATE.AWAITING_APPROVAL);
+      try {
+        const result = await withTimeout(
+          sendUsdtPayment({ chainKey: request.chainKey, recipient: request.recipient, amountUsdt: request.amount }),
+          PAYMENT_TIMEOUT_MS
+        );
+        emit(TRANSACTION_STATE.SUBMITTED);
+        emit(TRANSACTION_STATE.CONFIRMED);
+        lastPayment = { ...lastPayment, transactionHash: result.hash, error: null };
+        return {
+          transactionState: TRANSACTION_STATE.CONFIRMED,
+          simulated: false,
+          purchaserAddress: evm.address,
+          transactionHash: result.hash,
+          provider: "Nimiq Pay (EVM)",
+          asset: "USDT",
+          chain: result.chain,
+          detail: `Transaction sent on ${result.chain}.`,
+        };
+      } catch (err) {
+        return handleProviderError(err, emit);
+      }
+    }
+  } else {
+    emit(TRANSACTION_STATE.FAILED);
+    return {
+      transactionState: TRANSACTION_STATE.FAILED,
+      simulated: false,
+      error: `${request.asset} payment support is not available.`,
+      detail: "Only NIM and USDT payments are currently implemented.",
+    };
   }
 
   // ---- Browser DEMO simulation — explicit, always labelled, never a
-  // real transaction. Runs only when no wallet is connected at all. ----
+  // real transaction. Runs whenever the relevant provider for this asset
+  // (Nimiq Pay for NIM, the EVM wallet for USDT) is not connected. ----
   emit(TRANSACTION_STATE.REVIEW);
   await new Promise((r) => setTimeout(r, 1400));
   emit(TRANSACTION_STATE.CONFIRMED);

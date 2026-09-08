@@ -112,7 +112,7 @@ export default function Marketplace() {
       <div className="notice info" style={{ marginTop: 24 }}>
         <span aria-hidden="true">🛡️</span>
         <span>
-          <strong>Unlocks go through Nimiq Pay's native confirmation.</strong> Your keys never leave the wallet. NIM is supported natively; USDT is coming soon. Wallet and payment services are fully separated from the AI — the model never sees your address.
+          <strong>Unlocks go through Nimiq Pay's native confirmation.</strong> Your keys never leave the wallet. NIM is supported on every pack; USDT is available on packs that list a USDT price, over Nimiq Pay's Ethereum provider. Wallet and payment services are fully separated from the AI — the model never sees your address.
         </span>
       </div>
 

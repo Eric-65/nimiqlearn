@@ -2,6 +2,7 @@ import React from "react";
 import { useNimiq } from "../hooks/useNimiq.js";
 import { useLearner } from "../hooks/useLearner.js";
 import NimiqWalletStatus from "../components/wallet/NimiqWalletStatus.jsx";
+import EvmWalletStatus from "../components/wallet/EvmWalletStatus.jsx";
 import PaymentHistory from "../components/payments/PaymentHistory.jsx";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -30,6 +31,8 @@ export default function Wallet() {
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
           <NimiqWalletStatus />
+
+          <EvmWalletStatus />
 
           <Card title="Supported assets" sub="Detected from the current environment — never hard-coded to an unsupported chain.">
             <div style={{ display: "grid", gap: 10 }}>

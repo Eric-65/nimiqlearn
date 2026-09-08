@@ -72,10 +72,18 @@ nimiqWalletService.js        ← single source of truth, module-level state
    │                | CONNECTED | ERROR   (one flat enum, Part 6)
    │  initializeNimiqProvider() / connectWallet() / disconnectWallet()
    │  getAddress() / listAccounts() / getConsensusStatus() / getBlockNumber()
-   │  getNimBalance() / getUsdtSupportStatus()
-   │  sendNimPayment() / requestUsdtPayment() (always throws) / waitForTransaction()
+   │  getNimBalance()
+   │  sendNimPayment() / waitForTransaction()
    │  signMessage() / authenticateWithNimiqPay()
    │  subscribeToWalletChanges(fn) — pub/sub, no polling
+   ▼
+evmWalletService.js           ← separate provider (window.ethereum), same
+   │                             shape, real USDT payments (see "USDT status")
+   │  EVM_STATUS: EVM_AVAILABLE | BROWSER_MODE | INITIALIZING
+   │              | CONNECTED | ERROR
+   │  detectEvmProvider() / connectEvmWallet() / disconnectEvmWallet()
+   │  sendUsdtPayment({ chainKey, recipient, amountUsdt })
+   │  subscribeToEvmChanges(fn)
    ▼
 authService.js                ← session metadata only, no provider access
    │  createAuthChallenge() / createSession() / getStoredSession() / clearSession()
@@ -345,42 +353,44 @@ When that environment is available, the skill documents the concrete setup:
 
 Real, verified via both the installed package and the official skill:
 `listAccounts()`, `sign()`, `isConsensusEstablished()`, `getBlockNumber()`,
-`sendBasicTransaction()`. NIM is the only asset this app can actually pay
-with today.
+`sendBasicTransaction()`.
 
 ## 11. USDT status
 
-**Not "unsupported" — coming soon.** The skill confirms Nimiq Pay injects a
-real `window.ethereum` (EIP-1193, EIP-6963 discovery) with ERC-20 support —
-including USDT and USDC — across Ethereum, Polygon, Arbitrum, Optimism,
-Base, and BNB Smart Chain (plus Sepolia for development only). That is a
-genuine platform capability. NimiqLearn has simply not implemented it in
-this pass: Prompt 10 explicitly scopes this milestone to the native Nimiq
-provider first. Every USDT-facing label in the UI (`getUsdtSupportStatus()`,
-the Marketplace asset picker, the Wallet page's "Supported assets" card)
-now reads "Coming soon," not "unsupported" — an honest status, not a
-platform limitation.
+**Real, not "coming soon" — implemented via Nimiq Pay's own `window.ethereum`.**
+The skill confirms Nimiq Pay injects a real EIP-1193 provider (EIP-6963
+discoverable) with ERC-20 support across Ethereum, Polygon, Arbitrum, and
+Optimism (the skill's own USDT contract-address table — Base and BNB Smart
+Chain support other EVM tokens but aren't in that table, so USDT here is
+scoped to the four verified chains). `evmWalletService.js` implements:
+
+- `detectEvmProvider()` / `connectEvmWallet()` — same detect-vs-connect
+  split as the Nimiq provider, for the same reason (never an approval
+  dialog on page load).
+- `sendUsdtPayment({ chainKey, recipient, amountUsdt })` — switches chain
+  via `wallet_switchEthereumChain` if needed, then a real ERC-20 `transfer`
+  call via `eth_sendTransaction`, ABI-encoded with **viem**
+  (`encodeFunctionData`/`parseUnits`) — never manually encoded, per the
+  skill's explicit rule.
+
+USDT is priced independently per pack (`usdtPrice` in
+`mockLearningPacks.js`), never derived from the NIM price via a live
+exchange rate — this app has no price oracle and won't fabricate one (same
+principle as `getNimBalance()` refusing to guess a balance). A pack only
+offers USDT if it sets `usdtPrice`, and the option is only enabled once
+`VITE_USDT_LEARNING_RECIPIENT` is configured (see
+`src/config/evmPaymentConfig.js`) — otherwise it shows "Coming soon,"
+matching NIM's own disabled-until-configured behavior.
 
 ## 12. External wallet / EVM roadmap
 
-Per Parts 50/51, this pass does **not** implement MetaMask, OKX, Phantom,
-WalletConnect, or any USDT/EVM payment flow. When that work is scoped:
-
-- The first EVM integration should be Nimiq Pay's own `window.ethereum` —
-  it is still "native Nimiq Pay," not a third-party wallet, and needs no
-  SDK (standard EIP-1193; wagmi/RainbowKit and similar libraries detect it
-  automatically via EIP-6963).
-- The documented pattern for an ERC-20 send: `wallet_switchEthereumChain`
-  to the correct chain, then `eth_call` (reads, e.g. `balanceOf`) or
-  `eth_sendTransaction` (writes, e.g. `transfer`), using a real ABI-encoding
-  library (viem, ethers.js, or wagmi) — never manual encoding.
-- USDT/USDC use 6 decimals, not the 18 most ERC-20 tokens use — always read
-  the token's actual `decimals`.
-- External third-party wallets (MetaMask, WalletConnect, etc.) are a later,
-  separate milestone after the native Nimiq and native-EVM paths are both
-  verified working, per Part 50's explicit staging.
-- Reference implementation: `github.com/Albermonte/evm-mini-wallet` (full
-  EVM wallet mini app), linked from the skill.
+The native Nimiq and native-EVM (USDT) paths are both now implemented.
+**Not implemented**: MetaMask, OKX, Phantom, WalletConnect, or any other
+third-party wallet — per the skill's own staging, those are a later,
+separate milestone after the native paths (this one) are verified working.
+Reference implementation for that later work:
+`github.com/Albermonte/evm-mini-wallet` (full EVM wallet mini app), linked
+from the skill.
 
 ## 13. Known limitations
 
@@ -395,10 +405,17 @@ WalletConnect, or any USDT/EVM payment flow. When that work is scoped:
   allowing a repeat purchase, rather than guessing or auto-retrying.
 - **Real Android/Nimiq Pay testing is BLOCKED** in this sandbox (see
   "Android testing" above) — every acceptance item that requires an actual
-  native confirmation dialog is reported BLOCKED, never PASS.
-- **USDT/EVM payments are not implemented yet** (see "USDT status" and
-  "External wallet / EVM roadmap" above) — a real platform capability,
-  deliberately out of scope for this pass.
+  native confirmation dialog is reported BLOCKED for BOTH providers (NIM
+  and the new USDT/EVM path), never PASS. `evmWalletService.js` is
+  implemented against the skill's documented method signatures and the
+  EIP-1193 standard, and verified with Playwright in a plain (non-Nimiq
+  Pay) browser — `window.ethereum` correctly absent, EVM wallet card
+  correctly shows "Not available," USDT correctly falls back to the DEMO
+  simulation path. A real `eth_requestAccounts`/`wallet_switchEthereumChain`/
+  `eth_sendTransaction` round-trip against actual Nimiq Pay has not been
+  exercised and must not be reported as tested until it is.
+- **No third-party wallets** (MetaMask, WalletConnect, etc.) — see
+  "External wallet / EVM roadmap" above, a deliberately later milestone.
 - `network` (from `provider.getNetwork()`) is always the literal string
   `"nimiq"` — a provider identifier, not mainnet/testnet information. It is
   not surfaced as if it reveals which network the wallet is on.
@@ -419,6 +436,15 @@ Run against this app; failures found and fixed in this pass:
   access, no approval-dialog bypass, no hardcoded secrets, user rejection
   handled gracefully, no horizontal scrolling at 360/390/414px, confirmation
   calls not fired in rapid sequence).
+
+Re-run against `evmWalletService.js` / `EvmWalletStatus.jsx` when USDT was
+added: PASS on every item re-checked at 390px in a live Playwright render —
+`detectEvmProvider()` never calls `eth_requestAccounts` on mount (mirrors
+the Nimiq-side fix above), no approval-dialog bypass, no hardcoded
+addresses (`VITE_USDT_LEARNING_RECIPIENT` unset correctly disables the
+option rather than falling back to a placeholder), `EvmWalletStatus.jsx`'s
+Connect/Disconnect buttons use the same default (~46px) size as the Nimiq
+card, no horizontal scrolling introduced by the new chain selector.
 
 ## Testing instructions
 
