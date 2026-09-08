@@ -107,10 +107,10 @@ verify a real Claude reply end to end.
 
 ## Update: ExplainBack now has an AI Tutor — just not this one
 
-An "AI Tutor" panel now exists inside ExplainBack, but it calls GLM-5.3
-(via Hugging Face), not Claude — see `docs/explainback-ai-tutor.md` for
-the full design. It uses a sibling pair of routes on this same `server/`
-process (`/api/tutor/health`, `/api/tutor/feedback`, gated by `HF_TOKEN`
+An "AI Tutor" panel now exists inside ExplainBack, but it calls OpenAI
+(ChatGPT), not Claude — see `docs/explainback-ai-tutor.md` for the full
+design. It uses a sibling pair of routes on this same `server/` process
+(`/api/tutor/health`, `/api/tutor/feedback`, gated by `OPENAI_API_KEY`
 rather than `ANTHROPIC_API_KEY`). This file's Claude plumbing
 (`server/index.js`'s `/api/teach`, `claudeTeachingService.js`,
 `teachingConfig.js`) remains unused by any page, kept as-is in case a

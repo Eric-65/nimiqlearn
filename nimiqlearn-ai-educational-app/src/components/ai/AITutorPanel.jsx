@@ -7,7 +7,7 @@ import { askExplainBackTutor } from "../../services/explainBackTutorService.js";
 
 /**
  * Optional, opt-in AI Tutor feedback for an ExplainBack result — asks
- * GLM-5.3 (via NimiqLearn's own backend, never client-side, see
+ * OpenAI (ChatGPT, via NimiqLearn's own backend, never client-side, see
  * docs/explainback-ai-tutor.md) to critique the learner's explanation
  * against the app's own rubric grading, and complete or correct it when
  * it's partial or wrong.
@@ -52,7 +52,7 @@ export default function AITutorPanel({ topic, referenceAnswer, learnerExplanatio
         <h3 style={{ margin: 0, fontSize: 15, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-text-dim)" }}>
           NimiqLearn AI Tutor
         </h3>
-        <Badge tone="violet">GLM-5.3</Badge>
+        <Badge tone="violet">ChatGPT</Badge>
       </div>
 
       {state === "idle" && (
@@ -69,7 +69,7 @@ export default function AITutorPanel({ topic, referenceAnswer, learnerExplanatio
       {state === "loading" && (
         <div className="flex items-center gap-12 muted small">
           <span className="thinking-dots" aria-hidden="true"><span /><span /><span /></span>
-          Asking GLM-5.3…
+          Asking ChatGPT…
         </div>
       )}
 

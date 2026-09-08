@@ -1,14 +1,14 @@
 /* ============================================================
-   NimiqLearn — ExplainBack AI Tutor service (GLM-5.3)
+   NimiqLearn — ExplainBack AI Tutor service (OpenAI / ChatGPT)
    ------------------------------------------------------------
    Talks ONLY to NimiqLearn's own backend (../../server/) — never
-   to Hugging Face directly, and never holds an HF token. Mirrors
+   to OpenAI directly, and never holds an OpenAI API key. Mirrors
    claudeTeachingService.js's transport pattern (fetch + timeout,
    never a fake reply on failure) but is otherwise independent:
    different config, different route, different provider.
 
    This is an opt-in, user-triggered call (see AITutorPanel.jsx) —
-   GLM-5.3 is a paid, metered API, so it is never fired
+   OpenAI's API is paid and metered, so it is never fired
    automatically the way the rubric baseline is.
    ============================================================ */
 
@@ -24,8 +24,8 @@ function withTimeout(promise, ms) {
 
 /**
  * Checks whether the configured backend is actually reachable AND holds a
- * real HF_TOKEN — distinct from TUTOR_CONFIGURED (which only means a URL
- * was set). Never assumes reachability from configuration alone.
+ * real OPENAI_API_KEY — distinct from TUTOR_CONFIGURED (which only means a
+ * URL was set). Never assumes reachability from configuration alone.
  */
 export async function checkTutorAvailable() {
   if (!TUTOR_CONFIGURED) {
@@ -35,7 +35,7 @@ export async function checkTutorAvailable() {
     const res = await fetch(`${TUTOR_API_URL}/api/tutor/health`, { method: "GET" });
     if (!res.ok) return { available: false, reason: `AI Tutor backend responded with ${res.status}.` };
     const data = await res.json();
-    if (!data.configured) return { available: false, reason: "The AI Tutor backend is running but has no HF_TOKEN configured." };
+    if (!data.configured) return { available: false, reason: "The AI Tutor backend is running but has no OPENAI_API_KEY configured." };
     return { available: true, reason: null };
   } catch {
     return { available: false, reason: `Could not reach the AI Tutor backend at ${TUTOR_API_URL}.` };
@@ -43,9 +43,9 @@ export async function checkTutorAvailable() {
 }
 
 /**
- * Ask GLM-5.3, via the backend proxy, to critique the learner's explanation
- * against the app's own rubric grading (never the raw dataset) and
- * complete/correct it when it's partial or wrong.
+ * Ask OpenAI (ChatGPT), via the backend proxy, to critique the learner's
+ * explanation against the app's own rubric grading (never the raw dataset)
+ * and complete/correct it when it's partial or wrong.
  * @param {object} params
  * @param {string} [params.topic] - human-readable topic name
  * @param {string} [params.referenceAnswer] - the topic's canonical definition

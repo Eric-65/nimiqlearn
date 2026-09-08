@@ -12,9 +12,9 @@
                                     (Learn Concept, currently unused
                                     by any page — see docs/learn-concept.md)
      /api/tutor/health,
-     /api/tutor/feedback         — GLM-5.3 (via Hugging Face's router),
-                                    HF_TOKEN — the ExplainBack AI Tutor,
-                                    see docs/explainback-ai-tutor.md
+     /api/tutor/feedback         — OpenAI (ChatGPT), OPENAI_API_KEY —
+                                    the ExplainBack AI Tutor, see
+                                    docs/explainback-ai-tutor.md
 
    Per the official Nimiq Mini Apps skill: "Mini apps can and
    should call external APIs and use server-side backends... the
@@ -27,6 +27,7 @@
 import express from "express";
 import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 const PORT = process.env.PORT || 8787;
 const ALLOWED_ORIGIN = process.env.TEACHING_ALLOWED_ORIGIN || "*";
@@ -45,17 +46,18 @@ if (!apiKey) {
   );
 }
 
-// GLM-5.3 (zai-org/GLM-5.3 — 320B total / 18B active parameters) is far too
-// large to ever run on-device like aiService.js's SmolLM2; it's called
-// through Hugging Face's OpenAI-compatible router, server-side only, the
-// same secret-handling shape as the Claude client above.
-const HF_TUTOR_MODEL = "zai-org/GLM-5.3";
-const HF_ROUTER_URL = "https://router.huggingface.co/v1/chat/completions";
-const hfToken = process.env.HF_TOKEN || null;
+// OpenAI (ChatGPT) — same secret-handling shape as the Claude client
+// above, never bundled into the frontend. OPENAI_MODEL is configurable
+// rather than hard-coded to one snapshot, since the right model for a
+// given account/credits can change; defaults to a current, cost-effective
+// chat model suited to short tutoring replies.
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const openaiApiKey = process.env.OPENAI_API_KEY || null;
+const openaiClient = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
 
-if (!hfToken) {
+if (!openaiApiKey) {
   console.warn(
-    "[teaching-server] HF_TOKEN is not set. The server will run, but " +
+    "[teaching-server] OPENAI_API_KEY is not set. The server will run, but " +
       "/api/tutor/feedback will report itself as not configured rather " +
       "than silently failing or faking a response."
   );
@@ -138,10 +140,10 @@ app.post("/api/teach", async (req, res) => {
   }
 });
 
-/* ---------------- ExplainBack AI Tutor (GLM-5.3) ---------------- */
+/* ---------------- ExplainBack AI Tutor (OpenAI / ChatGPT) ---------------- */
 
 app.get("/api/tutor/health", (_req, res) => {
-  res.json({ ok: true, configured: Boolean(hfToken) });
+  res.json({ ok: true, configured: Boolean(openaiClient) });
 });
 
 function buildTutorSystemPrompt(topic) {
@@ -156,10 +158,10 @@ function buildTutorSystemPrompt(topic) {
 }
 
 app.post("/api/tutor/feedback", async (req, res) => {
-  if (!hfToken) {
+  if (!openaiClient) {
     res.status(503).json({
       ok: false,
-      error: "The GLM-5.3 AI Tutor is not configured on this server. Set HF_TOKEN and restart.",
+      error: "The AI Tutor is not configured on this server. Set OPENAI_API_KEY and restart.",
     });
     return;
   }
@@ -203,51 +205,36 @@ app.post("/api/tutor/feedback", async (req, res) => {
     .join("\n\n");
 
   try {
-    const hfRes = await fetch(HF_ROUTER_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${hfToken}`,
-      },
-      body: JSON.stringify({
-        model: HF_TUTOR_MODEL,
-        messages: [
-          { role: "system", content: buildTutorSystemPrompt(topic) },
-          { role: "user", content: userMessage },
-        ],
-        max_tokens: 400,
-        temperature: 0.4,
-      }),
+    const completion = await openaiClient.chat.completions.create({
+      model: OPENAI_MODEL,
+      max_tokens: 400,
+      temperature: 0.4,
+      messages: [
+        { role: "system", content: buildTutorSystemPrompt(topic) },
+        { role: "user", content: userMessage },
+      ],
     });
 
-    if (hfRes.status === 401 || hfRes.status === 403) {
-      const body = await hfRes.text().catch(() => "");
-      console.error("[teaching-server] HF authentication error:", hfRes.status, body);
-      res.status(500).json({ ok: false, error: "AI Tutor authentication failed. Check the server's HF_TOKEN." });
-      return;
-    }
-    if (hfRes.status === 429) {
-      res.status(429).json({ ok: false, error: "Too many requests right now — please try again in a moment." });
-      return;
-    }
-    if (!hfRes.ok) {
-      const body = await hfRes.text().catch(() => "");
-      console.error("[teaching-server] HF API error:", hfRes.status, body);
-      res.status(502).json({ ok: false, error: "The AI Tutor could not complete this request." });
-      return;
-    }
-
-    const data = await hfRes.json();
-    const feedback = data?.choices?.[0]?.message?.content || "";
+    const feedback = completion.choices?.[0]?.message?.content || "";
     res.json({ ok: true, feedback });
   } catch (err) {
-    console.error("[teaching-server] Unexpected HF Tutor error:", err);
-    res.status(500).json({ ok: false, error: "An unexpected error occurred." });
+    if (err instanceof OpenAI.AuthenticationError) {
+      console.error("[teaching-server] OpenAI authentication error:", err.message);
+      res.status(500).json({ ok: false, error: "AI Tutor authentication failed. Check the server's OPENAI_API_KEY." });
+    } else if (err instanceof OpenAI.RateLimitError) {
+      res.status(429).json({ ok: false, error: "Too many requests right now — please try again in a moment." });
+    } else if (err instanceof OpenAI.APIError) {
+      console.error("[teaching-server] OpenAI API error:", err.status, err.message);
+      res.status(502).json({ ok: false, error: "The AI Tutor could not complete this request." });
+    } else {
+      console.error("[teaching-server] Unexpected OpenAI Tutor error:", err);
+      res.status(500).json({ ok: false, error: "An unexpected error occurred." });
+    }
   }
 });
 
 app.listen(PORT, () => {
   console.log(
-    `[teaching-server] Listening on port ${PORT} (Claude teaching configured: ${Boolean(client)}, GLM-5.3 AI Tutor configured: ${Boolean(hfToken)})`
+    `[teaching-server] Listening on port ${PORT} (Claude teaching configured: ${Boolean(client)}, OpenAI AI Tutor configured: ${Boolean(openaiClient)})`
   );
 });

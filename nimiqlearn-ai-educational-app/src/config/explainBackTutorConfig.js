@@ -1,13 +1,12 @@
 /* ============================================================
-   NimiqLearn — ExplainBack AI Tutor (GLM-5.3) configuration
+   NimiqLearn — ExplainBack AI Tutor (OpenAI / ChatGPT) configuration
    ------------------------------------------------------------
-   GLM-5.3 (zai-org/GLM-5.3 — 320B total / 18B active parameters)
-   is far too large to ever run on-device like aiService.js's
-   SmolLM2, so this always goes through NimiqLearn's own backend
-   (../../server/) — same process as the Claude teaching config,
-   a different route (POST /api/tutor/feedback), a different
-   secret (HF_TOKEN, never this ANTHROPIC_API_KEY). See
-   docs/explainback-ai-tutor.md and server/index.js.
+   OpenAI's chat models are cloud-only — this always goes through
+   NimiqLearn's own backend (../../server/), same process as the
+   Claude teaching config, a different route
+   (POST /api/tutor/feedback), a different secret (OPENAI_API_KEY,
+   never this ANTHROPIC_API_KEY). See docs/explainback-ai-tutor.md
+   and server/index.js.
 
    Same disable-if-unconfigured pattern as paymentConfig.js /
    teachingConfig.js: no backend URL configured means the AI

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Minimal backend proxy that holds ANTHROPIC_API_KEY and HF_TOKEN server-side, exposing a Claude teaching endpoint (Learn Concept) and a GLM-5.3 endpoint (the ExplainBack AI Tutor). Never bundle either key into the frontend — see ../nimiqlearn-ai-educational-app for why.",
+  "description": "Minimal backend proxy that holds ANTHROPIC_API_KEY and OPENAI_API_KEY server-side, exposing a Claude teaching endpoint (Learn Concept) and an OpenAI endpoint (the ExplainBack AI Tutor). Never bundle either key into the frontend — see ../nimiqlearn-ai-educational-app for why.",
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js"
@@ -11,6 +11,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "openai": "^7.10.0"
   }
 }
