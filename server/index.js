@@ -28,6 +28,20 @@ import express from "express";
 import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+// Loads server/.env into process.env — Node does NOT do this on its own.
+// Uses Node's native loadEnvFile() (no extra dependency needed) rather than
+// relying on the working directory, so `npm start` works the same whether
+// it's launched from server/ or anywhere else. Missing .env is expected
+// and fine in a real deployment, where the platform injects env vars
+// directly instead of shipping a physical file.
+try {
+  process.loadEnvFile(path.join(path.dirname(fileURLToPath(import.meta.url)), ".env"));
+} catch {
+  /* no .env file present — env vars may be set another way */
+}
 
 const PORT = process.env.PORT || 8787;
 const ALLOWED_ORIGIN = process.env.TEACHING_ALLOWED_ORIGIN || "*";
