@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
-import { useAI, AI_STATUS } from "../hooks/useAI.js";
+import { useAiBackend } from "../hooks/useAiBackend.js";
 import { LEAF_TOPICS, findTopic } from "../data/mockTopics.js";
 import { decideNextActivity, generateActivityContent } from "../services/learnLoopService.js";
 import { computeReviewRecommendation } from "../services/forgetMeNotService.js";
@@ -15,7 +15,7 @@ import AIStatus from "../components/ai/AIStatus.jsx";
 export default function Learn() {
   const { route, navigate } = useNav();
   const { knowledge, getEntry, recordActivityResult, learner } = useLearner();
-  const ai = useAI();
+  const ai = useAiBackend();
 
   const initialTopic = route.params?.topic || null;
   const [topicId, setTopicId] = useState(initialTopic);
@@ -164,14 +164,11 @@ export default function Learn() {
             </div>
           )}
 
-          {ai.status === AI_STATUS.ERROR && (
+          {!ai.checking && !ai.available && (
             <div className="notice warn anim-pop" role="status">
               <span aria-hidden="true">⚠️</span>
               <span>
-                <strong>AI unavailable right now.</strong> Activities are using built-in templates — everything keeps working.{" "}
-                <button className="btn btn-ghost btn-sm" onClick={() => ai.initialize()} style={{ marginLeft: 6 }}>
-                  Retry AI →
-                </button>
+                <strong>AI unavailable right now.</strong> Activities are using built-in templates — everything keeps working.
               </span>
             </div>
           )}

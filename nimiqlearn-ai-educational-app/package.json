@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.2.0",
     "@nimiq/mini-app-sdk": "^0.1.0",
     "clsx": "2.1.1",
     "react": "19.2.6",

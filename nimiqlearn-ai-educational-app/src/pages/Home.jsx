@@ -2,7 +2,7 @@ import React from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useNimiq } from "../hooks/useNimiq.js";
-import { useAI } from "../hooks/useAI.js";
+import { useAiBackend } from "../hooks/useAiBackend.js";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -62,7 +62,7 @@ export default function Home() {
   const { navigate } = useNav();
   const { learner, knowledge, reviewQueue } = useLearner();
   const nimiq = useNimiq();
-  const ai = useAI();
+  const ai = useAiBackend();
 
   const recommended = pickRecommended(knowledge, reviewQueue);
   const dueCount = reviewQueue.filter((r) => r.dueNow).length;
@@ -178,7 +178,7 @@ export default function Home() {
             <div style={{ fontSize: 30, marginBottom: 8 }} aria-hidden="true">🗣️</div>
             <h3 style={{ fontSize: 17, margin: "0 0 6px" }}>ExplainBack</h3>
             <p className="small muted" style={{ margin: "0 0 16px" }}>
-              Test what you really understand. {ai.isReady ? "AI ready — explain and get instant feedback." : "Explain a concept and the AI checks your understanding."}
+              Test what you really understand. {ai.available ? "AI ready — explain and get instant feedback." : "Explain a concept and the AI checks your understanding."}
             </p>
             <Button variant="teal" onClick={() => navigate("explain")}>Explain a concept →</Button>
           </Card>

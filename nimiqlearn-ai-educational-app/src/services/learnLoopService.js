@@ -7,7 +7,7 @@
    honest while still using the model where it shines.
    ============================================================ */
 
-import { generateLearningResponse, isAIReady, initializeAI } from "./aiService.js";
+import { generateActivityContentRemote, isActivityBackendConfigured } from "./learnActivityService.js";
 import { TOPIC_CONTENT, findTopic, ALL_TOPICS } from "../data/mockTopics.js";
 import { MASTERY_BANDS, REVIEW_PRIORITY, REVIEW_INSERTION_MIN_STUDY_MINUTES } from "../config/learningThresholds.js";
 
@@ -205,69 +205,36 @@ function cannedContent(type, topic, { targetMisconception } = {}) {
   }
 }
 
+/** Never blocks the learning UI: if the AI backend isn't configured, is
+ * unreachable, or returns something unusable, the deterministic template
+ * (cannedContent()) is returned immediately — the learner is never stuck
+ * waiting on a network call that might not resolve. */
 export async function generateActivityContent({ type, topic, level = "beginner", targetMisconception } = {}) {
   const fallback = cannedContent(type, topic, { targetMisconception });
 
-  // CRITICAL: never block the learning UI on model initialization.
-  // If the AI is not ready, serve the deterministic template immediately
-  // and warm the model in the background (fire-and-forget, never awaited).
-  if (!isAIReady()) {
-    initializeAI().catch(() => {});
+  if (!isActivityBackendConfigured()) {
     return { ...fallback, source: "template" };
   }
 
-  try {
-    const instruction = `You are NimiqLearn, an adaptive tutor. Generate a short, clear learning activity.
-Learner level: ${level}.
-Activity type: ${type}.
-Topic: ${topic.name}.
-Description: ${topic.description || ""}.
-${targetMisconception ? `Target the misconception: "${targetMisconception}".` : ""}
+  const result = await generateActivityContentRemote({
+    type,
+    topic,
+    level,
+    targetMisconception,
+    topicContent: TOPIC_CONTENT[topic.id] || {},
+  });
 
-Return ONLY valid JSON matching this shape:
-${JSON.stringify({
-  prompt: "one-line instruction to the learner",
-  body: "optional 1-2 sentence content",
-  question: "the question or task",
-  options: ["array of options — only for MULTIPLE_CHOICE and PRACTICE"],
-  correctIndex: 0,
-  explanation: "brief explanation of the correct answer",
-})}
-No markdown, no text outside JSON.`;
-
-    const raw = await generateLearningResponse({
-      systemPrompt: instruction,
-      userPrompt: `Topic content reference: ${JSON.stringify(TOPIC_CONTENT[topic.id] || {})}`,
-      maxNewTokens: 320,
-      temperature: 0.4,
-    });
-    const parsed = extractActivityJson(raw);
-    if (parsed && (parsed.prompt || parsed.question)) {
-      return {
-        ...fallback,
-        ...parsed,
-        options: Array.isArray(parsed.options) && parsed.options.length >= 2 ? parsed.options : fallback.options,
-        correctIndex: Number.isFinite(parsed.correctIndex) ? parsed.correctIndex : fallback.correctIndex,
-        source: "model",
-      };
-    }
-    return { ...fallback, source: "template" };
-  } catch {
-    return { ...fallback, source: "template" };
+  if (result.ok && result.value && (result.value.prompt || result.value.question)) {
+    const parsed = result.value;
+    return {
+      ...fallback,
+      ...parsed,
+      options: Array.isArray(parsed.options) && parsed.options.length >= 2 ? parsed.options : fallback.options,
+      correctIndex: Number.isFinite(parsed.correctIndex) ? parsed.correctIndex : fallback.correctIndex,
+      source: "model",
+    };
   }
-}
-
-function extractActivityJson(text) {
-  if (!text) return null;
-  const clean = String(text).replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
-  const start = clean.indexOf("{");
-  const end = clean.lastIndexOf("}");
-  if (start === -1 || end === -1) return null;
-  try {
-    return JSON.parse(clean.slice(start, end + 1));
-  } catch {
-    return null;
-  }
+  return { ...fallback, source: "template" };
 }
 
 

@@ -140,7 +140,7 @@ export function LearnerProvider({ children }) {
    * got saved.
    */
   const evaluateExplanationAction = useCallback(
-    async ({ topicId, learnerExplanation, learnerLevel = "beginner", preferAI = true, onToken = null }) => {
+    async ({ topicId, learnerExplanation, learnerLevel = "beginner", preferAI = true }) => {
       // 1. validateInput
       const topic = findTopic(topicId);
       if (!topic) throw new Error("Unknown topic.");
@@ -148,12 +148,12 @@ export function LearnerProvider({ children }) {
         throw new Error("An explanation is required before evaluation.");
       }
 
-      // 2. evaluateExplanation (deterministic rubric + SmolLM2 feedback —
+      // 2. evaluateExplanation (deterministic rubric + OpenAI feedback —
       //    see assessmentService.js; already returns the normalized result
       //    contract: conceptId/score/masteryEstimate/strengths/
       //    missingConcepts/misconceptions/feedback/nextAction)
       logEvent({ eventType: "EXPLANATION_SUBMITTED", topicId });
-      const evaluation = await evaluateExplanation({ topic, learnerExplanation, learnerLevel, preferAI, onToken });
+      const evaluation = await evaluateExplanation({ topic, learnerExplanation, learnerLevel, preferAI });
       logEvent({ eventType: "EXPLANATION_EVALUATED", topicId, score: evaluation.masteryEstimate });
 
       // 3/4. updateLearnerState / updateKnowledgeMap — compute from the

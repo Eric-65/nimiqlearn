@@ -1,15 +1,14 @@
 {
-  "name": "nimiqlearn-teaching-server",
-  "version": "1.0.0",
+  "name": "nimiqlearn-server",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Minimal backend proxy that holds ANTHROPIC_API_KEY and OPENAI_API_KEY server-side, exposing a Claude teaching endpoint (Learn Concept) and an OpenAI endpoint (the ExplainBack AI Tutor). Never bundle either key into the frontend — see ../nimiqlearn-ai-educational-app for why.",
+  "description": "Minimal backend proxy that holds OPENAI_API_KEY server-side and exposes NimiqLearn's three OpenAI-backed routes: the ExplainBack AI Tutor, ExplainBack primary grading, and Learn tab activity generation. Never bundle this key into the frontend — see ../nimiqlearn-ai-educational-app for why.",
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.68.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "openai": "^7.10.0"

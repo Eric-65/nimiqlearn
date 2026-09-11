@@ -1,10 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { NavProvider, useNav } from "./context/NavContext.jsx";
 import { LearnerProvider } from "./context/LearnerContext.jsx";
 import { useNimiq } from "./hooks/useNimiq.js";
-import { startPrewarm } from "./services/aiService.js";
 import AIStatus from "./components/ai/AIStatus.jsx";
-import AIDiagnostics from "./components/ai/AIDiagnostics.jsx";
 import WalletDiagnostics from "./components/payments/WalletDiagnostics.jsx";
 // @ts-ignore - plain JavaScript/JSX in this phase
 import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
@@ -58,29 +56,6 @@ function Shell() {
   const nimiq = useNimiq();
   const page = (route.path || "/home").replace(/^\//, "");
   const Page = PAGES[page] || Home;
-
-  // Trigger #1 — background AI prewarm as soon as the app is interactive.
-  // Fire-and-forget, never blocks rendering, navigation, wallet, or payments.
-  // The model starts downloading in the background so that by the time the
-  // learner reaches ExplainBack, the AI is ready (no post-submit warm-up).
-  useEffect(() => {
-    let cancelled = false;
-    const run = () => {
-      if (!cancelled) startPrewarm({ background: true });
-    };
-    if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(run, { timeout: 5000 });
-      return () => {
-        cancelled = true;
-        window.cancelIdleCallback?.(id);
-      };
-    }
-    const id = setTimeout(run, 2500);
-    return () => {
-      cancelled = true;
-      clearTimeout(id);
-    };
-  }, []);
 
   return (
     <div className="app-shell">
@@ -163,7 +138,6 @@ function Shell() {
       </div>
 
       {/* Development-only diagnostics (no-op in production builds) */}
-      <AIDiagnostics />
       <WalletDiagnostics />
     </div>
   );

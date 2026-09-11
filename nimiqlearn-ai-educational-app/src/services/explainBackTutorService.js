@@ -2,10 +2,10 @@
    NimiqLearn — ExplainBack AI Tutor service (OpenAI / ChatGPT)
    ------------------------------------------------------------
    Talks ONLY to NimiqLearn's own backend (../../server/) — never
-   to OpenAI directly, and never holds an OpenAI API key. Mirrors
-   claudeTeachingService.js's transport pattern (fetch + timeout,
-   never a fake reply on failure) but is otherwise independent:
-   different config, different route, different provider.
+   to OpenAI directly, and never holds an OpenAI API key. Same
+   fetch + timeout transport pattern as
+   explainBackAssessmentService.js and learnActivityService.js —
+   different route, same backend, same key.
 
    This is an opt-in, user-triggered call (see AITutorPanel.jsx) —
    OpenAI's API is paid and metered, so it is never fired

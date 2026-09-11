@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
-import { useAI, AI_STATUS } from "../hooks/useAI.js";
+import { useAiBackend } from "../hooks/useAiBackend.js";
 import { findTopic } from "../data/mockTopics.js";
 import { buildReviewQueue } from "../services/forgetMeNotService.js";
 import { generateActivityContent } from "../services/learnLoopService.js";
@@ -15,7 +15,7 @@ import ProgressBar from "../components/ui/ProgressBar.jsx";
 export default function ForgetMeNot() {
   const { route } = useNav();
   const { knowledge, recordReview, getEntry } = useLearner();
-  const ai = useAI();
+  const ai = useAiBackend();
 
   const [activeTopicId, setActiveTopicId] = useState(route.params?.topic || null);
   const [activity, setActivity] = useState(null);
@@ -121,14 +121,11 @@ export default function ForgetMeNot() {
             </div>
           )}
 
-          {ai.status === AI_STATUS.ERROR && (
+          {!ai.checking && !ai.available && (
             <div className="notice warn anim-pop" role="status">
               <span aria-hidden="true">⚠️</span>
               <span>
-                <strong>AI unavailable right now.</strong> Reviews use built-in recall prompts — your schedule is unaffected.{" "}
-                <button className="btn btn-ghost btn-sm" onClick={() => ai.initialize()} style={{ marginLeft: 6 }}>
-                  Retry AI →
-                </button>
+                <strong>AI unavailable right now.</strong> Reviews use built-in recall prompts — your schedule is unaffected.
               </span>
             </div>
           )}

@@ -1,17 +1,17 @@
 /* ============================================================
-   NimiqLearn — ExplainBack AI Tutor (OpenAI / ChatGPT) configuration
+   NimiqLearn — OpenAI backend URL configuration
    ------------------------------------------------------------
-   OpenAI's chat models are cloud-only — this always goes through
-   NimiqLearn's own backend (../../server/), same process as the
-   Claude teaching config, a different route
-   (POST /api/tutor/feedback), a different secret (OPENAI_API_KEY,
-   never this ANTHROPIC_API_KEY). See docs/explainback-ai-tutor.md
-   and server/index.js.
+   One backend URL, shared by every OpenAI-backed feature: the
+   AI Tutor (/api/tutor/feedback), ExplainBack's primary grading
+   (/api/assess/feedback), and Learn tab activity generation
+   (/api/learn/activity) — same server, same OPENAI_API_KEY. See
+   docs/explainback-ai-tutor.md and server/index.js.
 
-   Same disable-if-unconfigured pattern as paymentConfig.js /
-   teachingConfig.js: no backend URL configured means the AI
-   Tutor panel in ExplainBack simply doesn't render, rather than
-   showing a broken button.
+   Same disable-if-unconfigured pattern as paymentConfig.js: no
+   backend URL configured means the AI Tutor panel in ExplainBack
+   simply doesn't render (and grading/activity generation fall
+   back to their deterministic engines), rather than showing a
+   broken button.
    ============================================================ */
 
 const RAW_URL = import.meta.env.VITE_EXPLAINBACK_TUTOR_API_URL;
