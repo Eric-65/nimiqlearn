@@ -36,9 +36,21 @@ export default function ExplainBack() {
   topicIdRef.current = topicId;
   // Guards every async continuation below: if the learner navigates away
   // (unmounting this page) while a request is still in flight, no further
-  // state updates are attempted on the unmounted component.
+  // state updates are attempted on the unmounted component. Must set
+  // current = true in the effect body itself, not just false in cleanup —
+  // React StrictMode (dev only) deliberately runs mount -> cleanup -> mount
+  // once on every initial mount, and without this the cleanup's `false`
+  // would stick permanently, silently killing every async flow on this
+  // page in development (a real bug found via live testing: the request
+  // to the backend succeeded, but the result never rendered because this
+  // ref was already stuck false before the user ever clicked anything).
   const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const topic = findTopic(topicId);
   const entry = getEntry(topicId);
@@ -87,6 +99,20 @@ export default function ExplainBack() {
 
     try {
       await runEvaluation(true);
+    } catch (err) {
+      // Never leave the learner stuck on "Checking your understanding…"
+      // forever — an unexpected error anywhere in the pipeline still gets
+      // a real result via the deterministic rubric, which cannot fail the
+      // same way (no network, no external call).
+      console.error("[NimiqLearn] ExplainBack evaluation failed unexpectedly; falling back to the built-in engine.", err);
+      if (mountedRef.current) {
+        try {
+          await runEvaluation(false);
+        } catch (fallbackErr) {
+          console.error("[NimiqLearn] Built-in fallback also failed.", fallbackErr);
+          if (mountedRef.current) setPhase("input");
+        }
+      }
     } finally {
       generatingRef.current = false;
       if (mountedRef.current) setIsGenerating(false);
