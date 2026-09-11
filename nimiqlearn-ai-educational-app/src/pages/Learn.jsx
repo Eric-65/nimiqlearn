@@ -61,12 +61,6 @@ export default function Learn() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId]);
 
-  // Trigger #2 — entering an AI learning activity starts preparation.
-  useEffect(() => {
-    ai.prewarm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleAnswer = (correct, text) => {
     if (!topicId) return;
     if (activity?.activityType === "EXPLAIN_BACK") {
