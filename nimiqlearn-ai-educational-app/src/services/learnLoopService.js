@@ -154,22 +154,70 @@ function buildChoiceSet(correct, distractors, seedKey) {
 function cannedContent(type, topic, { targetMisconception } = {}) {
   const content = TOPIC_CONTENT[topic.id] || {};
   switch (type) {
-    case "SHORT_EXPLANATION":
+    /* The three teaching activities below explain first, then check that it
+       landed. They carry options for the same reason the quiz types do: a
+       question with nothing to answer it with is a dead end. */
+    case "SHORT_EXPLANATION": {
+      const correct = content.keyPoints?.[0] || content.definition || `The core idea behind ${topic.name}.`;
+      const { options, correctIndex } = buildChoiceSet(
+        correct,
+        [
+          content.misconception,
+          `${topic.name} only matters in theory, never in practice.`,
+          "None of the above.",
+        ],
+        `${topic.id}-short`
+      );
       return {
         prompt: content.definition || `Here is a short explanation of ${topic.name}.`,
         body: content.definition || `${topic.name}: ${topic.description}`,
         points: content.keyPoints || [],
+        question: `Which statement best captures ${topic.name}?`,
+        options,
+        correctIndex,
+        explanation: content.definition || "",
       };
-    case "ANALOGY":
+    }
+    case "ANALOGY": {
+      const correct = content.analogy || `${topic.name} behaves like a familiar everyday process.`;
+      const { options, correctIndex } = buildChoiceSet(
+        correct,
+        [
+          content.misconception,
+          `${topic.name} has no everyday equivalent at all.`,
+          "The analogy only works for advanced cases.",
+        ],
+        `${topic.id}-analogy`
+      );
       return {
         prompt: `Think of ${topic.name} like this…`,
         body: content.analogy || "Let's find a familiar everyday situation that behaves the same way.",
+        question: `Which comparison best describes ${topic.name}?`,
+        options,
+        correctIndex,
+        explanation: content.analogy || "",
       };
-    case "EXAMPLE":
+    }
+    case "EXAMPLE": {
+      const correct = content.example || `A worked example of ${topic.name} follows the core rule step by step.`;
+      const { options, correctIndex } = buildChoiceSet(
+        correct,
+        [
+          content.misconception,
+          `In this example, ${topic.name} can be skipped entirely.`,
+          "The steps can be applied in any order.",
+        ],
+        `${topic.id}-example`
+      );
       return {
         prompt: `Work through this example of ${topic.name}:`,
         body: content.example || "Try a simple example and check each step.",
+        question: `Which statement correctly describes this example of ${topic.name}?`,
+        options,
+        correctIndex,
+        explanation: content.example || "",
       };
+    }
     case "MULTIPLE_CHOICE": {
       const correct = content.keyPoints?.[0] || content.definition || `The core definition of ${topic.name} holds.`;
       const { options, correctIndex } = buildChoiceSet(
@@ -277,13 +325,18 @@ export async function generateActivityContent({ type, topic, level = "beginner",
       parsed.correctIndex >= 0 &&
       parsed.correctIndex < parsed.options.length;
 
-    return {
-      ...fallback,
-      ...parsed,
-      options: optionsValid ? parsed.options : fallback.options,
-      correctIndex: optionsValid ? parsed.correctIndex : fallback.correctIndex,
-      source: "model",
-    };
+    const merged = { ...fallback, ...parsed, source: "model" };
+    if (!optionsValid) {
+      // The question, its options, its answer key and its explanation are
+      // one unit. Keeping a generated question while falling back to the
+      // template's options would put the wrong answers under the right
+      // question, so the whole set reverts together.
+      merged.question = fallback.question;
+      merged.options = fallback.options;
+      merged.correctIndex = fallback.correctIndex;
+      merged.explanation = fallback.explanation;
+    }
+    return merged;
   }
   return { ...fallback, source: "template" };
 }

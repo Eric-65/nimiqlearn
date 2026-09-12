@@ -253,14 +253,25 @@ app.post("/api/assess/feedback", async (req, res) => {
    itself still decides WHICH activity comes next (unchanged, deterministic)
    — this only generates the content for the activity already chosen. */
 
-/** Activity types that must come back as an answerable multiple-choice
- * question. REVIEW is included deliberately: a spaced review the learner
- * can only self-rate ("I recalled it") teaches nothing about whether they
- * actually did — a real question with real options does. */
-const CHOICE_ACTIVITY_TYPES = new Set(["MULTIPLE_CHOICE", "PRACTICE", "REVIEW"]);
+/** Quiz-style activities: the question IS the whole activity. REVIEW is
+ * included deliberately — a spaced review the learner can only self-rate
+ * ("I recalled it") teaches nothing about whether they actually did. */
+const QUIZ_ACTIVITY_TYPES = new Set(["MULTIPLE_CHOICE", "PRACTICE", "REVIEW"]);
+
+/** Teaching activities: explain the idea first, then check that it landed.
+ * These previously rendered a question with nothing to answer it with —
+ * the model produced a question, the UI showed it, and the only control
+ * was "Got it — continue". */
+const EXPLANATION_ACTIVITY_TYPES = new Set(["SHORT_EXPLANATION", "ANALOGY", "EXAMPLE"]);
+
+/** Everything that must come back with an answerable options array.
+ * OPEN_RESPONSE and EXPLAIN_BACK are deliberately absent: those are
+ * free-text by design and options would break them. */
+const ANSWERABLE_ACTIVITY_TYPES = new Set([...QUIZ_ACTIVITY_TYPES, ...EXPLANATION_ACTIVITY_TYPES]);
 
 function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception }) {
-  const needsChoices = CHOICE_ACTIVITY_TYPES.has(type);
+  const needsChoices = ANSWERABLE_ACTIVITY_TYPES.has(type);
+  const isExplanation = EXPLANATION_ACTIVITY_TYPES.has(type);
   return [
     "You are NimiqLearn, an adaptive tutor. Generate a short, clear learning activity.",
     `Learner level: ${level}.`,
@@ -269,6 +280,9 @@ function buildActivitySystemPrompt({ type, level, topicName, topicDescription, t
     topicDescription ? `Description: ${topicDescription}.` : "",
     targetMisconception ? `Target the misconception: "${targetMisconception}".` : "",
     'Return ONLY a JSON object with this exact shape: {"prompt": "one-line instruction to the learner", "body": "optional 1-2 sentence content", "question": "the question or task", "options": ["answer choices"], "correctIndex": 0, "explanation": "brief explanation of the correct answer"}',
+    isExplanation
+      ? "Teach first: put the explanation itself in 'prompt' and 'body'. Then 'question' must check understanding of what you just explained — never ask about something the explanation did not cover."
+      : "",
     needsChoices
       ? [
           "This activity type MUST include a real, answerable question about the topic plus an 'options' array of 3 or 4 answer choices.",
@@ -276,8 +290,9 @@ function buildActivitySystemPrompt({ type, level, topicName, topicDescription, t
           "'correctIndex' is the 0-based position of the correct option and MUST match it.",
           "Vary which position the correct answer sits in — do not always put it first.",
           "Keep each option to one short sentence, and never label options with letters or numbers.",
+          "Never return a 'question' without a matching 'options' array — a question the learner cannot answer is worse than no question at all.",
         ].join(" ")
-      : "This activity type does not need an 'options' array; omit it.",
+      : "This activity type is answered in free text; do not include an 'options' array.",
   ]
     .filter(Boolean)
     .join(" ");
@@ -292,7 +307,7 @@ function buildActivitySystemPrompt({ type, level, topicName, topicDescription, t
  * the question text so the same question keeps a stable layout instead of
  * reshuffling under the learner on a re-render. */
 function spreadCorrectAnswer(value, type) {
-  if (!CHOICE_ACTIVITY_TYPES.has(type)) return value;
+  if (!ANSWERABLE_ACTIVITY_TYPES.has(type)) return value;
   const options = value?.options;
   const correctIndex = value?.correctIndex;
   const valid =

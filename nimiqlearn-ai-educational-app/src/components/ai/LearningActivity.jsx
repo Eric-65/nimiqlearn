@@ -17,11 +17,12 @@ export default function LearningActivity({ activity, onAnswer, busy = false }) {
   if (!activity) return null;
   const type = activity.activityType;
   const hasOptions = Array.isArray(activity.options) && activity.options.length >= 2;
-  // Spaced review is answered by picking an option like any other check.
-  // It only falls back to the self-rated "I recalled it" buttons when no
-  // options were produced at all, so the learner is never left with a
-  // question and nothing to answer it with.
-  const isChoice = type === "MULTIPLE_CHOICE" || type === "PRACTICE" || (type === "REVIEW" && hasOptions);
+  // Free-text activities are answered by writing, never by picking.
+  const isFreeText = type === "OPEN_RESPONSE" || type === "EXPLAIN_BACK";
+  // Everything else is answered by picking an option whenever options
+  // exist — including spaced review and the teaching activities, which
+  // both used to render a question with nothing to answer it with.
+  const isChoice = !isFreeText && (type === "MULTIPLE_CHOICE" || type === "PRACTICE" || hasOptions);
 
   const handleChoice = (idx) => {
     if (selected !== null) return;
@@ -56,7 +57,9 @@ export default function LearningActivity({ activity, onAnswer, busy = false }) {
         </ul>
       )}
 
-      {activity.question && (
+      {/* Only ever show a question the learner can actually answer —
+          either by picking an option or by typing a free-text response. */}
+      {activity.question && (isChoice || isFreeText) && (
         <p className="strong" style={{ fontSize: 15.5, margin: "0 0 14px" }}>{activity.question}</p>
       )}
 
@@ -121,7 +124,10 @@ export default function LearningActivity({ activity, onAnswer, busy = false }) {
         </div>
       )}
 
-      {(type === "SHORT_EXPLANATION" || type === "ANALOGY" || type === "EXAMPLE") && (
+      {/* Read-and-continue only when there is nothing to answer. With a
+          comprehension question present, picking an option is what
+          completes the activity. */}
+      {(type === "SHORT_EXPLANATION" || type === "ANALOGY" || type === "EXAMPLE") && !hasOptions && (
         <Button variant="teal" loading={busy} onClick={() => onAnswer(true)} style={{ marginTop: 6 }}>
           Got it — continue
         </Button>
