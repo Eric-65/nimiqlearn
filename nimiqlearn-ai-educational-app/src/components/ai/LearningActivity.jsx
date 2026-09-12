@@ -16,7 +16,12 @@ export default function LearningActivity({ activity, onAnswer, busy = false }) {
 
   if (!activity) return null;
   const type = activity.activityType;
-  const isChoice = type === "MULTIPLE_CHOICE" || type === "PRACTICE";
+  const hasOptions = Array.isArray(activity.options) && activity.options.length >= 2;
+  // Spaced review is answered by picking an option like any other check.
+  // It only falls back to the self-rated "I recalled it" buttons when no
+  // options were produced at all, so the learner is never left with a
+  // question and nothing to answer it with.
+  const isChoice = type === "MULTIPLE_CHOICE" || type === "PRACTICE" || (type === "REVIEW" && hasOptions);
 
   const handleChoice = (idx) => {
     if (selected !== null) return;
@@ -122,7 +127,7 @@ export default function LearningActivity({ activity, onAnswer, busy = false }) {
         </Button>
       )}
 
-      {type === "REVIEW" && (
+      {type === "REVIEW" && !hasOptions && (
         <div className="flex gap-8 wrap" style={{ marginTop: 6 }}>
           <Button variant="teal" loading={busy} onClick={() => onAnswer(true)}>
             I recalled it

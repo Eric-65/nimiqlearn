@@ -109,8 +109,10 @@ export function updateKnowledgeAfterEvaluation(entry, evaluation, now = Date.now
 
   let updated = {
     ...(entry || {}),
-    topicId: entry.topicId,
-    topicName: entry.topicName,
+    // Optional like every other read in this function — callers may pass a
+    // topic the learner has no entry for yet.
+    topicId: entry?.topicId ?? null,
+    topicName: entry?.topicName ?? null,
     mastery,
     status: statusFromMastery(mastery, true),
     lastEvaluatedAt: now,

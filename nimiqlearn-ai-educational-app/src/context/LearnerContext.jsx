@@ -112,11 +112,22 @@ export function LearnerProvider({ children }) {
       history: [entry, ...(l.history || [])].slice(0, 60),
     }));
 
+  /** Applies patchFn to a topic's knowledge entry, creating that entry if the
+   * learner is touching the topic for the first time. Without the create
+   * branch, map() would match nothing for a brand-new topic and the update
+   * would be silently dropped — the learner would answer questions and see
+   * no mastery movement at all. */
   const patchKnowledge = (topicId, patchFn) =>
-    setLearner((l) => ({
-      ...l,
-      knowledge: l.knowledge.map((k) => (k.topicId === topicId ? patchFn(k) : k)),
-    }));
+    setLearner((l) => {
+      const existing = l.knowledge.find((k) => k.topicId === topicId);
+      const patched = patchFn(existing || makeKnowledgeEntry(topicId, findTopic(topicId)?.name || topicId));
+      return {
+        ...l,
+        knowledge: existing
+          ? l.knowledge.map((k) => (k.topicId === topicId ? patched : k))
+          : [...l.knowledge, patched],
+      };
+    });
 
   const getEntry = (topicId) => learner.knowledge.find((k) => k.topicId === topicId) || null;
 
@@ -166,10 +177,14 @@ export function LearnerProvider({ children }) {
 
       setLearner((l) => {
         const entry = l.knowledge.find((k) => k.topicId === topicId);
-        const updated = updateKnowledgeAfterEvaluation(entry, evaluation);
+        // Same first-touch case as patchKnowledge: a topic with no entry yet
+        // must be appended, not mapped over, or the evaluation is lost.
+        const updated = updateKnowledgeAfterEvaluation(entry || makeKnowledgeEntry(topicId, topic.name), evaluation);
         return {
           ...l,
-          knowledge: l.knowledge.map((k) => (k.topicId === topicId ? updated : k)),
+          knowledge: entry
+            ? l.knowledge.map((k) => (k.topicId === topicId ? updated : k))
+            : [...l.knowledge, updated],
           xp: l.xp + 12,
           history: [
             { type: "EXPLAIN_BACK", topicId, at: Date.now(), detail: "AI evaluation completed" },

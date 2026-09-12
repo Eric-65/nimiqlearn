@@ -8,6 +8,7 @@ import { isAssessmentBackendConfigured } from "../services/explainBackAssessment
 import AIStatus from "../components/ai/AIStatus.jsx";
 import ExplanationResult from "../components/ai/ExplanationResult.jsx";
 import AITutorPanel from "../components/ai/AITutorPanel.jsx";
+import NextChallengeCard from "../components/ai/NextChallengeCard.jsx";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -296,18 +297,25 @@ export default function ExplainBack() {
         <div style={{ maxWidth: 720, margin: "0 auto", display: "grid", gap: 18 }}>
           <ExplanationResult
             evaluation={evaluation}
-            topic={topic}
             beforeMastery={beforeMastery}
             afterMastery={afterMastery}
             statusAfter={statusAfter}
-            onChallenge={() => navigate("learn", { topic: topicId })}
           />
 
+          {/* The tutor's deeper critique comes BEFORE the next challenge —
+              the learner should read the feedback on what they just wrote
+              before being pushed on to the next thing. */}
           <AITutorPanel
             topic={topic}
             referenceAnswer={TOPIC_CONTENT[topicId]?.definition}
             learnerExplanation={text}
             evaluation={evaluation}
+          />
+
+          <NextChallengeCard
+            evaluation={evaluation}
+            topic={topic}
+            onChallenge={() => navigate("learn", { topic: topicId })}
           />
 
           {evaluation.confidence === "heuristic" && (

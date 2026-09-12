@@ -253,7 +253,14 @@ app.post("/api/assess/feedback", async (req, res) => {
    itself still decides WHICH activity comes next (unchanged, deterministic)
    — this only generates the content for the activity already chosen. */
 
+/** Activity types that must come back as an answerable multiple-choice
+ * question. REVIEW is included deliberately: a spaced review the learner
+ * can only self-rate ("I recalled it") teaches nothing about whether they
+ * actually did — a real question with real options does. */
+const CHOICE_ACTIVITY_TYPES = new Set(["MULTIPLE_CHOICE", "PRACTICE", "REVIEW"]);
+
 function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception }) {
+  const needsChoices = CHOICE_ACTIVITY_TYPES.has(type);
   return [
     "You are NimiqLearn, an adaptive tutor. Generate a short, clear learning activity.",
     `Learner level: ${level}.`,
@@ -261,10 +268,53 @@ function buildActivitySystemPrompt({ type, level, topicName, topicDescription, t
     `Topic: ${topicName}.`,
     topicDescription ? `Description: ${topicDescription}.` : "",
     targetMisconception ? `Target the misconception: "${targetMisconception}".` : "",
-    'Return ONLY a JSON object with this exact shape: {"prompt": "one-line instruction to the learner", "body": "optional 1-2 sentence content", "question": "the question or task", "options": ["array of options - only for MULTIPLE_CHOICE and PRACTICE"], "correctIndex": 0, "explanation": "brief explanation of the correct answer"}',
+    'Return ONLY a JSON object with this exact shape: {"prompt": "one-line instruction to the learner", "body": "optional 1-2 sentence content", "question": "the question or task", "options": ["answer choices"], "correctIndex": 0, "explanation": "brief explanation of the correct answer"}',
+    needsChoices
+      ? [
+          "This activity type MUST include a real, answerable question about the topic plus an 'options' array of 3 or 4 answer choices.",
+          "Exactly one option is correct; the rest must be plausible but genuinely wrong (a common misunderstanding makes the best wrong answer).",
+          "'correctIndex' is the 0-based position of the correct option and MUST match it.",
+          "Vary which position the correct answer sits in — do not always put it first.",
+          "Keep each option to one short sentence, and never label options with letters or numbers.",
+        ].join(" ")
+      : "This activity type does not need an 'options' array; omit it.",
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+/** Moves the correct answer out of position 0.
+ *
+ * The prompt asks the model to vary where the correct option sits, but it
+ * reliably puts it first anyway — and a quiz whose answer is always the
+ * first option teaches position, not the topic. Enforced here in code
+ * rather than trusted to the prompt, and rotated deterministically from
+ * the question text so the same question keeps a stable layout instead of
+ * reshuffling under the learner on a re-render. */
+function spreadCorrectAnswer(value, type) {
+  if (!CHOICE_ACTIVITY_TYPES.has(type)) return value;
+  const options = value?.options;
+  const correctIndex = value?.correctIndex;
+  const valid =
+    Array.isArray(options) &&
+    options.length >= 2 &&
+    Number.isInteger(correctIndex) &&
+    correctIndex >= 0 &&
+    correctIndex < options.length;
+  if (!valid) return value;
+
+  const seed = String(value.question || "")
+    .split("")
+    .reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const shift = seed % options.length;
+  if (shift === 0) return value;
+
+  const rotated = [...options.slice(shift), ...options.slice(0, shift)];
+  return {
+    ...value,
+    options: rotated,
+    correctIndex: (correctIndex - shift + options.length) % options.length,
+  };
 }
 
 app.post("/api/learn/activity", async (req, res) => {
@@ -299,7 +349,7 @@ app.post("/api/learn/activity", async (req, res) => {
       res.status(502).json({ ok: false, error: "Activity generation returned unreadable output." });
       return;
     }
-    res.json({ ok: true, value });
+    res.json({ ok: true, value: spreadCorrectAnswer(value, type) });
   } catch (err) {
     respondToOpenAiError(err, res, "Activity generation");
   }

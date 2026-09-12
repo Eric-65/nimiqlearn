@@ -106,7 +106,10 @@ export default function Learn() {
         })}
       </div>
 
-      {topic && entry && (
+      {/* Gated on the topic only, never on `entry`: a topic the learner has
+          never opened has no knowledge entry yet, and requiring one here
+          left every not-yet-started topic rendering a blank page. */}
+      {topic && (
         <div style={{ display: "grid", gap: 18 }}>
           <Card>
             <div className="flex items-center justify-between wrap gap-12">
@@ -116,10 +119,10 @@ export default function Learn() {
                 <p className="small muted" style={{ margin: 0 }}>{topic.description}</p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <Badge tone={entry.status === "MASTERED" ? "gold" : entry.status === "STRONG" ? "teal" : entry.status === "DEVELOPING" ? "blue" : entry.status === "LEARNING" ? "amber" : "slate"}>
-                  {STATUS_META[entry.status]?.label}
+                <Badge tone={entry?.status === "MASTERED" ? "gold" : entry?.status === "STRONG" ? "teal" : entry?.status === "DEVELOPING" ? "blue" : entry?.status === "LEARNING" ? "amber" : "slate"}>
+                  {STATUS_META[entry?.status]?.label || "New"}
                 </Badge>
-                <p className="tiny muted" style={{ margin: "6px 0 0" }}>App mastery: {entry.mastery}%</p>
+                <p className="tiny muted" style={{ margin: "6px 0 0" }}>App mastery: {entry?.mastery ?? 0}%</p>
               </div>
             </div>
             <div className="flex gap-12 wrap" style={{ marginTop: 14 }}>

@@ -100,8 +100,12 @@ export function computeReviewRecommendation(entry, now = Date.now()) {
   const levelLabel = reviewLevelLabel(priorityScore);
 
   return {
-    topicId: entry.topicId,
-    topicName: entry.topicName,
+    // Optional, like every other read above: a topic the learner has never
+    // touched has no knowledge entry yet (getEntry returns null for it), and
+    // asking for its review schedule is a normal thing to do — it must not
+    // throw just because there's no history to schedule from.
+    topicId: entry?.topicId ?? null,
+    topicName: entry?.topicName ?? null,
     mastery,
     priorityScore,
     daysSinceReview: Math.round(daysSinceReview),

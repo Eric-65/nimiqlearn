@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Card from "../ui/Card.jsx";
 import Button from "../ui/Button.jsx";
-import Badge from "../ui/Badge.jsx";
 import { TUTOR_CONFIGURED } from "../../config/explainBackTutorConfig.js";
 import { askExplainBackTutor } from "../../services/explainBackTutorService.js";
 
@@ -52,7 +51,6 @@ export default function AITutorPanel({ topic, referenceAnswer, learnerExplanatio
         <h3 style={{ margin: 0, fontSize: 15, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-text-dim)" }}>
           NimiqLearn AI Tutor
         </h3>
-        <Badge tone="violet">ChatGPT</Badge>
       </div>
 
       {state === "idle" && (
@@ -69,7 +67,7 @@ export default function AITutorPanel({ topic, referenceAnswer, learnerExplanatio
       {state === "loading" && (
         <div className="flex items-center gap-12 muted small">
           <span className="thinking-dots" aria-hidden="true"><span /><span /><span /></span>
-          Asking ChatGPT…
+          Thinking through your explanation…
         </div>
       )}
 

@@ -137,6 +137,20 @@ export function suggestNextTopic(topic) {
 
 /* ------------------ Content generation ------------------ */
 
+/** Builds a multiple-choice set whose correct answer is not always first.
+ * Rotation is derived from the topic id rather than Math.random() so the
+ * same topic always renders the same layout — a learner revisiting a
+ * question sees a stable one, and nothing shifts under them on re-render. */
+function buildChoiceSet(correct, distractors, seedKey) {
+  const options = [correct, ...distractors.filter(Boolean)].slice(0, 4);
+  const seed = String(seedKey || "")
+    .split("")
+    .reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const shift = options.length ? seed % options.length : 0;
+  const rotated = [...options.slice(shift), ...options.slice(0, shift)];
+  return { options: rotated, correctIndex: rotated.indexOf(correct) };
+}
+
 function cannedContent(type, topic, { targetMisconception } = {}) {
   const content = TOPIC_CONTENT[topic.id] || {};
   switch (type) {
@@ -156,19 +170,25 @@ function cannedContent(type, topic, { targetMisconception } = {}) {
         prompt: `Work through this example of ${topic.name}:`,
         body: content.example || "Try a simple example and check each step.",
       };
-    case "MULTIPLE_CHOICE":
+    case "MULTIPLE_CHOICE": {
+      const correct = content.keyPoints?.[0] || content.definition || `The core definition of ${topic.name} holds.`;
+      const { options, correctIndex } = buildChoiceSet(
+        correct,
+        [
+          content.misconception,
+          `${topic.name} only applies in theory, never to real situations.`,
+          "It is impossible to tell without more information.",
+        ],
+        topic.id
+      );
       return {
         prompt: "Quick check:",
         question: `Which statement about ${topic.name} is correct?`,
-        options: [
-          (content.keyPoints?.[0] || "The core definition holds."),
-          (content.misconception || "A common but incorrect statement."),
-          "It is impossible to tell without more information.",
-          "None of the above.",
-        ],
-        correctIndex: 0,
+        options,
+        correctIndex,
         explanation: content.definition || "Check the core definition above.",
       };
+    }
     case "OPEN_RESPONSE":
       return {
         prompt: "Open response:",
@@ -179,27 +199,47 @@ function cannedContent(type, topic, { targetMisconception } = {}) {
         prompt: "Explain it back:",
         question: `Explain ${topic.name} as if teaching a friend. Include the most important idea first.`,
       };
-    case "PRACTICE":
+    case "PRACTICE": {
+      const correct = content.keyPoints?.[0] || content.definition || `The accurate statement about ${topic.name}.`;
+      const { options, correctIndex } = buildChoiceSet(
+        correct,
+        [
+          targetMisconception || content.misconception,
+          `${topic.name} works the opposite way round.`,
+          "None of these can be determined.",
+        ],
+        `${topic.id}-practice`
+      );
       return {
         prompt: "Targeted practice:",
         question: targetMisconception
           ? `Which statement fixes this misunderstanding: "${targetMisconception}"?`
           : `Choose the correct statement about ${topic.name}.`,
-        options: [
-          "The corrected, accurate statement.",
-          "The common misconception.",
-          "A partially right statement.",
-          "An unrelated claim.",
-        ],
-        correctIndex: 0,
+        options,
+        correctIndex,
         explanation: content.definition || "Compare each option against the core definition.",
       };
-    case "REVIEW":
+    }
+    case "REVIEW": {
+      const correct = content.keyPoints?.[0] || content.definition || `The core idea behind ${topic.name}.`;
+      const { options, correctIndex } = buildChoiceSet(
+        correct,
+        [
+          content.misconception,
+          `${topic.name} has no effect on the outcome.`,
+          `There is no reliable way to describe ${topic.name}.`,
+        ],
+        `${topic.id}-review`
+      );
       return {
         prompt: "Spaced review:",
-        question: `Recall: what is the single most important idea in ${topic.name}?`,
-        body: content.definition || "",
+        question: `Which statement about ${topic.name} is correct?`,
+        body: "",
+        options,
+        correctIndex,
+        explanation: content.definition || "",
       };
+    }
     default:
       return { prompt: `Let's study ${topic.name}.` };
   }
@@ -226,11 +266,22 @@ export async function generateActivityContent({ type, topic, level = "beginner",
 
   if (result.ok && result.value && (result.value.prompt || result.value.question)) {
     const parsed = result.value;
+    // Options and their answer key are validated as ONE unit: a generated
+    // option list paired with the template's correctIndex (or vice versa)
+    // would mark the wrong answer correct, which is worse than falling
+    // back to the template entirely.
+    const optionsValid =
+      Array.isArray(parsed.options) &&
+      parsed.options.length >= 2 &&
+      Number.isInteger(parsed.correctIndex) &&
+      parsed.correctIndex >= 0 &&
+      parsed.correctIndex < parsed.options.length;
+
     return {
       ...fallback,
       ...parsed,
-      options: Array.isArray(parsed.options) && parsed.options.length >= 2 ? parsed.options : fallback.options,
-      correctIndex: Number.isFinite(parsed.correctIndex) ? parsed.correctIndex : fallback.correctIndex,
+      options: optionsValid ? parsed.options : fallback.options,
+      correctIndex: optionsValid ? parsed.correctIndex : fallback.correctIndex,
       source: "model",
     };
   }
