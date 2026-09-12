@@ -269,9 +269,13 @@ const EXPLANATION_ACTIVITY_TYPES = new Set(["SHORT_EXPLANATION", "ANALOGY", "EXA
  * free-text by design and options would break them. */
 const ANSWERABLE_ACTIVITY_TYPES = new Set([...QUIZ_ACTIVITY_TYPES, ...EXPLANATION_ACTIVITY_TYPES]);
 
-function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception }) {
+function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception, previousQuestions = [] }) {
   const needsChoices = ANSWERABLE_ACTIVITY_TYPES.has(type);
   const isExplanation = EXPLANATION_ACTIVITY_TYPES.has(type);
+  const alreadyAsked = previousQuestions
+    .filter((q) => typeof q === "string" && q.trim())
+    .slice(-6)
+    .map((q) => `"${q.trim().slice(0, 200)}"`);
   return [
     "You are NimiqLearn, an adaptive tutor. Generate a short, clear learning activity.",
     `Learner level: ${level}.`,
@@ -293,6 +297,9 @@ function buildActivitySystemPrompt({ type, level, topicName, topicDescription, t
           "Never return a 'question' without a matching 'options' array — a question the learner cannot answer is worse than no question at all.",
         ].join(" ")
       : "This activity type is answered in free text; do not include an 'options' array.",
+    alreadyAsked.length
+      ? `The learner has already answered these questions on this topic: ${alreadyAsked.join(", ")}. Cover a DIFFERENT aspect of the topic — do not repeat any of them, and do not simply reword one with different phrasing.`
+      : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -338,7 +345,7 @@ app.post("/api/learn/activity", async (req, res) => {
     return;
   }
 
-  const { type, topicName, topicDescription, topicContent, level, targetMisconception } = req.body || {};
+  const { type, topicName, topicDescription, topicContent, level, targetMisconception, previousQuestions } = req.body || {};
 
   if (typeof type !== "string" || !type.trim() || typeof topicName !== "string" || !topicName.trim()) {
     res.status(400).json({ ok: false, error: "'type' and 'topicName' are required strings." });
@@ -352,7 +359,17 @@ app.post("/api/learn/activity", async (req, res) => {
       temperature: 0.4,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: buildActivitySystemPrompt({ type, level: level || "beginner", topicName, topicDescription, targetMisconception }) },
+        {
+          role: "system",
+          content: buildActivitySystemPrompt({
+            type,
+            level: level || "beginner",
+            topicName,
+            topicDescription,
+            targetMisconception,
+            previousQuestions: Array.isArray(previousQuestions) ? previousQuestions : [],
+          }),
+        },
         { role: "user", content: `Topic content reference: ${JSON.stringify(topicContent || {}).slice(0, 2000)}` },
       ],
     });

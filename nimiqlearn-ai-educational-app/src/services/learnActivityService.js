@@ -24,7 +24,7 @@ export function isActivityBackendConfigured() {
 /**
  * @returns {Promise<{ok: true, value: object} | {ok: false, error: string}>}
  */
-export async function generateActivityContentRemote({ type, topic, level = "beginner", targetMisconception, topicContent }) {
+export async function generateActivityContentRemote({ type, topic, level = "beginner", targetMisconception, topicContent, previousQuestions = [] }) {
   if (!TUTOR_CONFIGURED) {
     return { ok: false, error: "Activity generation backend isn't configured." };
   }
@@ -43,6 +43,7 @@ export async function generateActivityContentRemote({ type, topic, level = "begi
         topicContent,
         level,
         targetMisconception,
+        previousQuestions,
       }),
       signal: controller.signal,
     });

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useAiBackend } from "../hooks/useAiBackend.js";
@@ -27,6 +27,14 @@ export default function Learn() {
   const topic = topicId ? findTopic(topicId) : null;
   const entry = topicId ? getEntry(topicId) : null;
 
+  // Questions already asked per topic THIS session, so "Next activity" asks
+  // about something new instead of the model rewording the same question
+  // (e.g. "net force" -> "force applied" with an otherwise identical
+  // question) — a real bug found via live testing, not a hypothetical one.
+  // A ref, not state: this is a live-session dedupe hint for the prompt,
+  // not part of the learner's persisted record.
+  const askedQuestionsRef = useRef({});
+
   const loadActivity = useCallback(
     async (tid) => {
       const t = findTopic(tid);
@@ -49,9 +57,13 @@ export default function Learn() {
         topic: t,
         level: entry?.mastery < 40 ? "beginner" : "intermediate",
         targetMisconception: d.targetMisconception,
+        previousQuestions: askedQuestionsRef.current[tid] || [],
       });
       setActivity({ ...d, ...content });
       setBusy(false);
+      if (content.question) {
+        askedQuestionsRef.current[tid] = [...(askedQuestionsRef.current[tid] || []), content.question].slice(-10);
+      }
     },
     [learner.history, getEntry]
   );

@@ -35,7 +35,17 @@ export const ACTIVITY_LABELS = {
 
 /* ------------------ Decision engine ------------------ */
 
-const last = (arr) => (arr && arr.length ? arr[arr.length - 1] : null);
+/** The most recently completed activity's type.
+ *
+ * Learner history is stored NEWEST FIRST (see LearnerContext), and each
+ * entry records the activity under `type`. This previously read the last
+ * array element (the OLDEST entry) and looked for `activityType` (a key
+ * that is never written), so it always came back undefined and the
+ * "don't repeat the last activity" logic below never actually fired. */
+const mostRecentActivityType = (history) => {
+  const newest = history && history.length ? history[0] : null;
+  return newest?.type ?? newest?.activityType ?? null;
+};
 
 export function decideNextActivity({
   topic,
@@ -47,7 +57,7 @@ export function decideNextActivity({
 }) {
   const mastery = knowledge?.mastery ?? 0;
   const status = knowledge?.status ?? "NEW";
-  const lastActivity = last(history)?.activityType;
+  const lastActivity = mostRecentActivityType(history);
   const recentPerformance = knowledge?.recentPerformance ?? [];
 
   const pick = (options, avoid) => {
@@ -297,7 +307,7 @@ function cannedContent(type, topic, { targetMisconception } = {}) {
  * unreachable, or returns something unusable, the deterministic template
  * (cannedContent()) is returned immediately — the learner is never stuck
  * waiting on a network call that might not resolve. */
-export async function generateActivityContent({ type, topic, level = "beginner", targetMisconception } = {}) {
+export async function generateActivityContent({ type, topic, level = "beginner", targetMisconception, previousQuestions = [] } = {}) {
   const fallback = cannedContent(type, topic, { targetMisconception });
 
   if (!isActivityBackendConfigured()) {
@@ -310,6 +320,9 @@ export async function generateActivityContent({ type, topic, level = "beginner",
     level,
     targetMisconception,
     topicContent: TOPIC_CONTENT[topic.id] || {},
+    // What this learner has already been asked on this topic, so the next
+    // activity covers new ground instead of rewording the last question.
+    previousQuestions,
   });
 
   if (result.ok && result.value && (result.value.prompt || result.value.question)) {
