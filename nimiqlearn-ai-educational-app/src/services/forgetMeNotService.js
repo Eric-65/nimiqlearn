@@ -12,15 +12,55 @@ import { REVIEW_PRIORITY, reviewLevelLabel } from "../config/learningThresholds.
 
 const DAY = 24 * 60 * 60 * 1000;
 
-const STATUS_INTERVAL_DAYS = {
-  NEW: 1,
-  LEARNING: 3,
-  DEVELOPING: 7,
-  STRONG: 14,
-  MASTERED: 21,
-};
-
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+
+/**
+ * Base review interval as a CONTINUOUS function of mastery (0-100), not a
+ * lookup keyed by the 5-band status label. The status bands (NEW/LEARNING/
+ * DEVELOPING/STRONG/MASTERED at 0/40/65/85) still mark the same milestones
+ * — this just interpolates between them — but knowledgeService's mastery is
+ * now a smooth probability estimate (see applyEvidence there), and snapping
+ * it to one of 5 fixed intervals threw most of that precision away: a 41%
+ * and a 64% mastery both got the same 7-day gap as a 64% right at the
+ * DEVELOPING/STRONG boundary. Piecewise-linear through the same anchor
+ * points keeps the milestones meaningful while letting the interval move
+ * with every point of mastery in between.
+ */
+const INTERVAL_ANCHORS = [
+  [0, 1],
+  [40, 3],
+  [65, 7],
+  [85, 14],
+  [100, 21],
+];
+
+function masteryToBaseInterval(mastery) {
+  const m = clamp(mastery ?? 0, 0, 100);
+  for (let i = 0; i < INTERVAL_ANCHORS.length - 1; i++) {
+    const [m0, d0] = INTERVAL_ANCHORS[i];
+    const [m1, d1] = INTERVAL_ANCHORS[i + 1];
+    if (m <= m1) {
+      const t = m1 === m0 ? 0 : (m - m0) / (m1 - m0);
+      return d0 + t * (d1 - d0);
+    }
+  }
+  return INTERVAL_ANCHORS[INTERVAL_ANCHORS.length - 1][1];
+}
+
+/**
+ * How much a base interval is trusted, from the entry's `confidence` (see
+ * knowledgeService#calculateConfidence — evidence volume + consistency,
+ * deliberately separate from mastery). A mastery figure backed by one
+ * lucky guess shouldn't earn the same long gap as the same figure backed
+ * by eight consistent answers, so low confidence compresses the interval
+ * toward the low end (0.6x) and full confidence keeps it uncompressed
+ * (1.0x) — replacing the old flat `reviewCount` multiplier, which grew
+ * interval length from repetition alone without asking whether that
+ * repetition actually agreed with itself.
+ */
+function confidenceFactor(confidence) {
+  return 0.6 + 0.4 * (clamp(confidence ?? 0, 0, 100) / 100);
+}
 
 /**
  * Review priority, normalized to 0-1 (higher = review sooner). Documented
@@ -33,8 +73,10 @@ const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
  *                           scaled by that same interval.
  *   20% recent failures   — fraction of the recent-performance window
  *                           that was wrong.
- *  -10% review stability  — more completed reviews slightly lower
- *                           priority (the concept has held up before).
+ *  -10% review stability  — higher `confidence` (evidence volume +
+ *                           consistency, see knowledgeService) slightly
+ *                           lowers priority: the concept has held up
+ *                           across several checks, not just one review.
  *
  * NOTE: earlier versions of this function clamped the weighted sum with
  * a 0-1 clamp before scaling to a 0-100 "priorityScore" — since the
@@ -48,18 +90,18 @@ const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 export function calculateReviewPriority(entry, now = Date.now()) {
   const mastery = entry?.mastery ?? 0;
   const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
-  const reviewCount = entry?.reviewCount ?? 0;
+  const confidence = entry?.confidence ?? 0;
   const recent = entry?.recentPerformance ?? [];
 
   const daysSinceReview = Math.max(0, (now - lastReviewedAt) / DAY);
-  const baseInterval = STATUS_INTERVAL_DAYS[entry?.status] || 3;
+  const baseInterval = masteryToBaseInterval(mastery);
 
   const masteryScore = 100 - mastery;
   const overdue = Math.max(0, daysSinceReview - baseInterval);
   const recencyScore = Math.min(100, (overdue / Math.max(baseInterval, 1)) * 100);
   const failures = recent.filter((r) => r === 0).length;
   const failureScore = recent.length ? (failures / recent.length) * 100 : 0;
-  const stabilityScore = Math.min(100, reviewCount * 12);
+  const stabilityScore = clamp(confidence, 0, 100);
 
   const weightedScore = 0.4 * masteryScore + 0.3 * recencyScore + 0.2 * failureScore - 0.1 * stabilityScore;
   return clamp(weightedScore, 0, 100) / 100;
@@ -74,10 +116,9 @@ export function calculateReviewPriority(entry, now = Date.now()) {
  */
 export function calculateNextReview(entry, now = Date.now()) {
   const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
-  const reviewCount = entry?.reviewCount ?? 0;
-  const baseInterval = STATUS_INTERVAL_DAYS[entry?.status] || 3;
+  const baseInterval = masteryToBaseInterval(entry?.mastery ?? 0);
 
-  const intervalDays = Math.round(baseInterval * (1 + Math.min(2, reviewCount * 0.35)));
+  const intervalDays = Math.max(1, Math.round(baseInterval * confidenceFactor(entry?.confidence)));
   const nextReviewAt = lastReviewedAt + intervalDays * DAY;
   return { nextReviewAt, intervalDays };
 }
@@ -124,8 +165,9 @@ export function buildReviewQueue(knowledgeEntries, now = Date.now()) {
     .sort((a, b) => b.priorityScore - a.priorityScore);
 }
 
-/** After a successful review, the next interval grows. */
+/** After a successful review, the next interval grows — same curve as
+ * calculateNextReview(), exposed standalone for callers that only need the
+ * day count (e.g. previewing the interval before a review is recorded). */
 export function nextReviewIntervalDays(entry) {
-  const base = STATUS_INTERVAL_DAYS[entry?.status] || 3;
-  return Math.round(base * (1 + Math.min(2, (entry?.reviewCount ?? 0) * 0.35)));
+  return Math.max(1, Math.round(masteryToBaseInterval(entry?.mastery ?? 0) * confidenceFactor(entry?.confidence)));
 }

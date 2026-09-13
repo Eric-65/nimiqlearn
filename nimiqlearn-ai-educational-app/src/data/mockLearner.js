@@ -35,6 +35,15 @@ const DAY = 24 * 60 * 60 * 1000;
  *   calculateNextReview() — recomputed on every state change, never
  *   hand-edited, but stored so the UI/queue don't need to recompute it
  *   from scratch just to sort/display it.
+ * - `coveredQuestions` / `coveredAngles`: the generated-activity questions
+ *   and sub-aspect "angles" this learner has already been asked on this
+ *   topic (see learnLoopService/server buildActivitySystemPrompt), so the
+ *   next one can be told what to avoid. Persisted rather than session-only
+ *   — without this, closing and reopening the app reset the AI's memory of
+ *   what it already asked, and a returning learner could get the exact
+ *   same activity as their last session. Capped well past what any single
+ *   prompt sends (see cleanList server-side) so a long-running topic still
+ *   has a real pool of prior ground to avoid, not just the last couple.
  */
 export function makeKnowledgeEntry(topicId, topicName, overrides = {}) {
   return {
@@ -55,6 +64,8 @@ export function makeKnowledgeEntry(topicId, topicName, overrides = {}) {
     correctAttempts: 0,
     incorrectAttempts: 0,
     recentPerformance: [],
+    coveredQuestions: [],
+    coveredAngles: [],
     ...overrides,
   };
 }
@@ -62,7 +73,8 @@ export function makeKnowledgeEntry(topicId, topicName, overrides = {}) {
 // Bump when the persisted shape changes in a way that needs migration —
 // see migrateLearnerState() in LearnerContext.jsx, which upgrades any
 // stored blob from an older (or missing) version before use.
-export const LEARNER_STATE_SCHEMA_VERSION = 1;
+// v2: added coveredQuestions/coveredAngles to each knowledge entry.
+export const LEARNER_STATE_SCHEMA_VERSION = 2;
 
 export const INITIAL_LEARNER = {
   version: LEARNER_STATE_SCHEMA_VERSION,

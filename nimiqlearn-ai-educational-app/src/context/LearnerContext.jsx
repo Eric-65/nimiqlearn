@@ -245,6 +245,25 @@ export function LearnerProvider({ children }) {
     []
   );
 
+  /**
+   * Remembers a generated activity's question + angle against the topic so
+   * future prompts (Learn.jsx, ForgetMeNot.jsx) can tell the AI what's
+   * already been covered — persisted on the knowledge entry, not a
+   * component ref, so it survives closing the app and coming back. Capped
+   * at 30 of each: far more than the ~8 any single prompt sends (see
+   * cleanList in server/index.js), so a topic studied over many sessions
+   * still has real history to draw on rather than only "since I last
+   * reopened the tab".
+   */
+  const recordActivityCoverageAction = useCallback(({ topicId, question, angle }) => {
+    if (!question && !angle) return;
+    patchKnowledge(topicId, (entry) => ({
+      ...entry,
+      coveredQuestions: question ? [...(entry.coveredQuestions || []), question].slice(-30) : entry.coveredQuestions || [],
+      coveredAngles: angle ? [...(entry.coveredAngles || []), angle].slice(-30) : entry.coveredAngles || [],
+    }));
+  }, []);
+
   const recordReviewAction = useCallback(({ topicId, correct, optionCount = null }) => {
     logEvent({ eventType: "REVIEW_COMPLETED", topicId, correct });
     const latest = learnerRef.current;
@@ -315,6 +334,7 @@ export function LearnerProvider({ children }) {
       getEntry,
       evaluateExplanation: evaluateExplanationAction,
       recordActivityResult: recordActivityResultAction,
+      recordActivityCoverage: recordActivityCoverageAction,
       recordReview: recordReviewAction,
       unlockPack: unlockPackAction,
       recordPendingPayment: recordPendingPaymentAction,
@@ -325,6 +345,7 @@ export function LearnerProvider({ children }) {
     learner,
     evaluateExplanationAction,
     recordActivityResultAction,
+    recordActivityCoverageAction,
     recordReviewAction,
     unlockPackAction,
     recordPendingPaymentAction,

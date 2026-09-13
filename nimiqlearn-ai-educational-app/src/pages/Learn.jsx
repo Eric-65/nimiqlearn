@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useAiBackend } from "../hooks/useAiBackend.js";
@@ -14,7 +14,7 @@ import AIStatus from "../components/ai/AIStatus.jsx";
 
 export default function Learn() {
   const { route, navigate } = useNav();
-  const { knowledge, getEntry, recordActivityResult, learner } = useLearner();
+  const { knowledge, getEntry, recordActivityResult, recordActivityCoverage, learner } = useLearner();
   const ai = useAiBackend();
 
   const initialTopic = route.params?.topic || null;
@@ -26,14 +26,6 @@ export default function Learn() {
 
   const topic = topicId ? findTopic(topicId) : null;
   const entry = topicId ? getEntry(topicId) : null;
-
-  // What this learner has already covered per topic THIS session — both the
-  // questions asked and the sub-aspect ("angle") each activity taught — so
-  // "Next activity" covers genuinely new ground. Questions alone weren't
-  // enough: the model would vary the question but re-teach the same
-  // definition in the body every time. A ref, not state: this is a
-  // live-session hint for the prompt, not part of the persisted record.
-  const coveredRef = useRef({}); // { [topicId]: { questions: string[], angles: string[] } }
 
   const loadActivity = useCallback(
     async (tid) => {
@@ -52,14 +44,19 @@ export default function Learn() {
       setDecision(d);
       setFeedback(null);
       setBusy(true);
-      const covered = coveredRef.current[tid] || { questions: [], angles: [] };
+      // What this learner has already been asked on this topic — both the
+      // questions and the sub-aspect ("angle") each activity taught — so
+      // "Next activity" covers genuinely new ground. Persisted on the
+      // knowledge entry (not a session-only ref): a returning learner
+      // reopening the app the next day should not get the same activity
+      // they already had last time.
       const content = await generateActivityContent({
         type: d.activityType,
         topic: t,
         level: entry?.mastery < 40 ? "beginner" : "intermediate",
         targetMisconception: d.targetMisconception,
-        previousQuestions: covered.questions,
-        previousAngles: covered.angles,
+        previousQuestions: e?.coveredQuestions || [],
+        previousAngles: e?.coveredAngles || [],
       });
       // loadedAt keys the <LearningActivity> below so React MOUNTS A FRESH
       // ONE per activity. Without it the same instance is reused, and its
@@ -68,12 +65,9 @@ export default function Learn() {
       // disabled, one pre-ticked, no way to answer, no Next button.
       setActivity({ ...d, ...content, loadedAt: Date.now() });
       setBusy(false);
-      coveredRef.current[tid] = {
-        questions: content.question ? [...covered.questions, content.question].slice(-10) : covered.questions,
-        angles: content.angle ? [...covered.angles, content.angle].slice(-10) : covered.angles,
-      };
+      recordActivityCoverage({ topicId: tid, question: content.question, angle: content.angle });
     },
-    [learner.history, getEntry]
+    [learner.history, getEntry, recordActivityCoverage]
   );
 
   useEffect(() => {

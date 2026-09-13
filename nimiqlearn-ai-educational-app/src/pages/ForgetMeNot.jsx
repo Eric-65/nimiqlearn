@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useAiBackend } from "../hooks/useAiBackend.js";
@@ -14,7 +14,7 @@ import ProgressBar from "../components/ui/ProgressBar.jsx";
 
 export default function ForgetMeNot() {
   const { route } = useNav();
-  const { knowledge, recordReview, getEntry } = useLearner();
+  const { knowledge, recordReview, recordActivityCoverage, getEntry } = useLearner();
   const ai = useAiBackend();
 
   const [activeTopicId, setActiveTopicId] = useState(route.params?.topic || null);
@@ -26,10 +26,6 @@ export default function ForgetMeNot() {
   const due = queue.filter((r) => r.dueNow);
   const active = activeTopicId ? queue.find((r) => r.topicId === activeTopicId) : null;
 
-  // Same session-only coverage tracking as Learn.jsx: "Review again" on the
-  // same topic must ask something new, not re-ask the last question.
-  const coveredRef = useRef({});
-
   const startReview = useCallback(
     async (topicId) => {
       const topic = findTopic(topicId);
@@ -37,24 +33,24 @@ export default function ForgetMeNot() {
       setActiveTopicId(topicId);
       setLastResult(null);
       setBusy(true);
-      const covered = coveredRef.current[topicId] || { questions: [], angles: [] };
+      // Same persisted coverage as Learn.jsx: "Review again" on the same
+      // topic must ask something new, not re-ask the last question — and
+      // that memory has to survive a closed tab, not just this session.
+      const e = getEntry(topicId);
       const content = await generateActivityContent({
         type: "REVIEW",
         topic,
         level: "intermediate",
-        previousQuestions: covered.questions,
-        previousAngles: covered.angles,
+        previousQuestions: e?.coveredQuestions || [],
+        previousAngles: e?.coveredAngles || [],
       });
       // loadedAt keys <LearningActivity> so each review mounts fresh — see
       // the same note in Learn.jsx for the bug this prevents.
       setActivity({ ...content, activityType: "REVIEW", reason: "ForgetMeNot scheduled this for reinforcement.", loadedAt: Date.now() });
       setBusy(false);
-      coveredRef.current[topicId] = {
-        questions: content.question ? [...covered.questions, content.question].slice(-10) : covered.questions,
-        angles: content.angle ? [...covered.angles, content.angle].slice(-10) : covered.angles,
-      };
+      recordActivityCoverage({ topicId, question: content.question, angle: content.angle });
     },
-    []
+    [getEntry, recordActivityCoverage]
   );
 
   useEffect(() => {
