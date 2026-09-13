@@ -27,13 +27,13 @@ export default function Learn() {
   const topic = topicId ? findTopic(topicId) : null;
   const entry = topicId ? getEntry(topicId) : null;
 
-  // Questions already asked per topic THIS session, so "Next activity" asks
-  // about something new instead of the model rewording the same question
-  // (e.g. "net force" -> "force applied" with an otherwise identical
-  // question) — a real bug found via live testing, not a hypothetical one.
-  // A ref, not state: this is a live-session dedupe hint for the prompt,
-  // not part of the learner's persisted record.
-  const askedQuestionsRef = useRef({});
+  // What this learner has already covered per topic THIS session — both the
+  // questions asked and the sub-aspect ("angle") each activity taught — so
+  // "Next activity" covers genuinely new ground. Questions alone weren't
+  // enough: the model would vary the question but re-teach the same
+  // definition in the body every time. A ref, not state: this is a
+  // live-session hint for the prompt, not part of the persisted record.
+  const coveredRef = useRef({}); // { [topicId]: { questions: string[], angles: string[] } }
 
   const loadActivity = useCallback(
     async (tid) => {
@@ -52,12 +52,14 @@ export default function Learn() {
       setDecision(d);
       setFeedback(null);
       setBusy(true);
+      const covered = coveredRef.current[tid] || { questions: [], angles: [] };
       const content = await generateActivityContent({
         type: d.activityType,
         topic: t,
         level: entry?.mastery < 40 ? "beginner" : "intermediate",
         targetMisconception: d.targetMisconception,
-        previousQuestions: askedQuestionsRef.current[tid] || [],
+        previousQuestions: covered.questions,
+        previousAngles: covered.angles,
       });
       // loadedAt keys the <LearningActivity> below so React MOUNTS A FRESH
       // ONE per activity. Without it the same instance is reused, and its
@@ -66,9 +68,10 @@ export default function Learn() {
       // disabled, one pre-ticked, no way to answer, no Next button.
       setActivity({ ...d, ...content, loadedAt: Date.now() });
       setBusy(false);
-      if (content.question) {
-        askedQuestionsRef.current[tid] = [...(askedQuestionsRef.current[tid] || []), content.question].slice(-10);
-      }
+      coveredRef.current[tid] = {
+        questions: content.question ? [...covered.questions, content.question].slice(-10) : covered.questions,
+        angles: content.angle ? [...covered.angles, content.angle].slice(-10) : covered.angles,
+      };
     },
     [learner.history, getEntry]
   );
@@ -85,8 +88,13 @@ export default function Learn() {
       navigate("explain", { topic: topicId });
       return;
     }
-    recordActivityResult({ topicId, correct, activityType: activity?.activityType });
-    setFeedback({ correct, text });
+    const result = recordActivityResult({
+      topicId,
+      correct,
+      activityType: activity?.activityType,
+      optionCount: Array.isArray(activity?.options) ? activity.options.length : null,
+    });
+    setFeedback({ correct, text, delta: result?.delta ?? 0, after: result?.after ?? 0 });
   };
 
   const handleNext = () => {
@@ -168,7 +176,11 @@ export default function Learn() {
                   <span aria-hidden="true">{feedback.correct ? "✅" : "🔁"}</span>
                   <span>
                     <strong>{feedback.correct ? "Nice — that's locked in." : "Good try — the loop will target this."}</strong>{" "}
-                    Your knowledge state was updated ({feedback.correct ? "+3" : "−6"} mastery).
+                    {feedback.delta > 0
+                      ? `Mastery +${feedback.delta} → ${feedback.after}%.`
+                      : feedback.delta < 0
+                      ? `Mastery ${feedback.delta} → ${feedback.after}%.`
+                      : `Mastery stays at ${feedback.after}% — nothing to lose yet.`}
                   </span>
                   <Button variant="teal" size="sm" onClick={handleNext} style={{ marginLeft: "auto" }}>
                     Next activity →

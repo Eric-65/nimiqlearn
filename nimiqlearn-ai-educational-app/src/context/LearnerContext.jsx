@@ -215,14 +215,22 @@ export function LearnerProvider({ children }) {
   );
 
   const recordActivityResultAction = useCallback(
-    ({ topicId, correct, activityType = "ACTIVITY" }) => {
+    ({ topicId, correct, activityType = "ACTIVITY", optionCount = null }) => {
       logEvent({
         eventType: activityType === "EXPLAIN_BACK" ? "CHALLENGE_COMPLETED" : "ANSWER_SUBMITTED",
         topicId,
         activityId: activityType,
         correct,
       });
-      patchKnowledge(topicId, (entry) => applyActivityResult(entry, { correct, activityType }));
+      // Computed once from the latest committed state (learnerRef) so the
+      // caller gets the REAL before/after mastery to show the learner,
+      // instead of a hardcoded "+3" that had nothing to do with the model.
+      const latest = learnerRef.current;
+      const base =
+        latest.knowledge.find((k) => k.topicId === topicId) ||
+        makeKnowledgeEntry(topicId, findTopic(topicId)?.name || topicId);
+      const updated = applyActivityResult(base, { correct, activityType, optionCount });
+      patchKnowledge(topicId, () => updated);
       setLearner((l) => ({
         ...l,
         xp: l.xp + (correct ? 10 : 3),
@@ -231,13 +239,20 @@ export function LearnerProvider({ children }) {
           ...(l.history || []),
         ].slice(0, 60),
       }));
+      const before = base.mastery ?? 0;
+      return { before, after: updated.mastery, delta: updated.mastery - before };
     },
     []
   );
 
-  const recordReviewAction = useCallback(({ topicId, correct }) => {
+  const recordReviewAction = useCallback(({ topicId, correct, optionCount = null }) => {
     logEvent({ eventType: "REVIEW_COMPLETED", topicId, correct });
-    patchKnowledge(topicId, (entry) => recordReview(entry, { correct }));
+    const latest = learnerRef.current;
+    const base =
+      latest.knowledge.find((k) => k.topicId === topicId) ||
+      makeKnowledgeEntry(topicId, findTopic(topicId)?.name || topicId);
+    const updated = recordReview(base, { correct, optionCount });
+    patchKnowledge(topicId, () => updated);
     setLearner((l) => ({
       ...l,
       xp: l.xp + (correct ? 8 : 2),
@@ -246,6 +261,8 @@ export function LearnerProvider({ children }) {
         ...(l.history || []),
       ].slice(0, 60),
     }));
+    const before = base.mastery ?? 0;
+    return { before, after: updated.mastery, delta: updated.mastery - before };
   }, []);
 
   const unlockPackAction = useCallback(({ productId, purchaserAddress, transactionHash, simulated }) => {

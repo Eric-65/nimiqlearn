@@ -269,13 +269,20 @@ const EXPLANATION_ACTIVITY_TYPES = new Set(["SHORT_EXPLANATION", "ANALOGY", "EXA
  * free-text by design and options would break them. */
 const ANSWERABLE_ACTIVITY_TYPES = new Set([...QUIZ_ACTIVITY_TYPES, ...EXPLANATION_ACTIVITY_TYPES]);
 
-function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception, previousQuestions = [] }) {
+/** Cleans a list of short strings from the client for use inside a prompt. */
+function cleanList(list, max, maxLen) {
+  return (Array.isArray(list) ? list : [])
+    .filter((s) => typeof s === "string" && s.trim())
+    .slice(-max)
+    .map((s) => `"${s.trim().slice(0, maxLen)}"`);
+}
+
+function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception, previousQuestions = [], previousAngles = [] }) {
   const needsChoices = ANSWERABLE_ACTIVITY_TYPES.has(type);
   const isExplanation = EXPLANATION_ACTIVITY_TYPES.has(type);
-  const alreadyAsked = previousQuestions
-    .filter((q) => typeof q === "string" && q.trim())
-    .slice(-6)
-    .map((q) => `"${q.trim().slice(0, 200)}"`);
+  const alreadyAsked = cleanList(previousQuestions, 8, 200);
+  const anglesCovered = cleanList(previousAngles, 8, 80);
+  const hasHistory = alreadyAsked.length > 0 || anglesCovered.length > 0;
   return [
     "You are NimiqLearn, an adaptive tutor. Generate a short, clear learning activity.",
     `Learner level: ${level}.`,
@@ -283,9 +290,10 @@ function buildActivitySystemPrompt({ type, level, topicName, topicDescription, t
     `Topic: ${topicName}.`,
     topicDescription ? `Description: ${topicDescription}.` : "",
     targetMisconception ? `Target the misconception: "${targetMisconception}".` : "",
-    'Return ONLY a JSON object with this exact shape: {"prompt": "one-line instruction to the learner", "body": "optional 1-2 sentence content", "question": "the question or task", "options": ["answer choices"], "correctIndex": 0, "explanation": "brief explanation of the correct answer"}',
+    'Return ONLY a JSON object with this exact shape: {"angle": "the one specific sub-aspect of the topic this activity is about, 3-8 words", "prompt": "one-line instruction to the learner", "body": "optional 1-2 sentence content", "question": "the question or task", "options": ["answer choices"], "correctIndex": 0, "explanation": "brief explanation of the correct answer"}',
+    "Every topic has many distinct sub-aspects: individual rules or formulas, each variable's role, edge cases, common mistakes, a worked numeric example, a real-world application, a comparison with a related idea, what happens when one quantity changes. Pick exactly ONE for this activity and name it in 'angle'.",
     isExplanation
-      ? "Teach first: put the explanation itself in 'prompt' and 'body'. Then 'question' must check understanding of what you just explained — never ask about something the explanation did not cover."
+      ? "Teach first: put the explanation itself in 'prompt' and 'body', focused on THIS activity's angle only. Then 'question' must check understanding of what you just explained — never ask about something the explanation did not cover."
       : "",
     needsChoices
       ? [
@@ -297,8 +305,16 @@ function buildActivitySystemPrompt({ type, level, topicName, topicDescription, t
           "Never return a 'question' without a matching 'options' array — a question the learner cannot answer is worse than no question at all.",
         ].join(" ")
       : "This activity type is answered in free text; do not include an 'options' array.",
-    alreadyAsked.length
-      ? `The learner has already answered these questions on this topic: ${alreadyAsked.join(", ")}. Cover a DIFFERENT aspect of the topic — do not repeat any of them, and do not simply reword one with different phrasing.`
+    hasHistory
+      ? [
+          "This learner has ALREADY done activities on this topic, so this one must be genuinely new — not a variation.",
+          anglesCovered.length ? `Sub-aspects already covered: ${anglesCovered.join(", ")}. Choose an 'angle' that is NOT any of these and not a rewording of them.` : "",
+          alreadyAsked.length ? `Questions already asked: ${alreadyAsked.join(", ")}. Do not repeat any of them or reword one with different phrasing.` : "",
+          "Do NOT restate the topic's general definition again in 'body' — it has been taught. Teach only the new angle.",
+          "Also change the FORMAT from earlier activities: if previous ones were conceptual, make this a concrete worked/numeric example, a real-world scenario, a compare-and-contrast, or a spot-the-mistake; if previous ones were examples, go conceptual.",
+        ]
+          .filter(Boolean)
+          .join(" ")
       : "",
   ]
     .filter(Boolean)
@@ -345,47 +361,103 @@ app.post("/api/learn/activity", async (req, res) => {
     return;
   }
 
-  const { type, topicName, topicDescription, topicContent, level, targetMisconception, previousQuestions } = req.body || {};
+  const { type, topicName, topicDescription, topicContent, level, targetMisconception, previousQuestions, previousAngles } = req.body || {};
 
   if (typeof type !== "string" || !type.trim() || typeof topicName !== "string" || !topicName.trim()) {
     res.status(400).json({ ok: false, error: "'type' and 'topicName' are required strings." });
     return;
   }
 
-  try {
+  const prevQs = Array.isArray(previousQuestions) ? previousQuestions : [];
+  const prevAngles = Array.isArray(previousAngles) ? previousAngles : [];
+  const systemPrompt = buildActivitySystemPrompt({
+    type,
+    level: level || "beginner",
+    topicName,
+    topicDescription,
+    targetMisconception,
+    previousQuestions: prevQs,
+    previousAngles: prevAngles,
+  });
+  const userMessage = `Topic content reference: ${JSON.stringify(topicContent || {}).slice(0, 2000)}`;
+
+  const generate = async (extraInstruction, temperature) => {
     const completion = await openaiClient.chat.completions.create({
       model: OPENAI_MODEL,
       max_tokens: 400,
-      temperature: 0.4,
+      temperature,
       response_format: { type: "json_object" },
       messages: [
-        {
-          role: "system",
-          content: buildActivitySystemPrompt({
-            type,
-            level: level || "beginner",
-            topicName,
-            topicDescription,
-            targetMisconception,
-            previousQuestions: Array.isArray(previousQuestions) ? previousQuestions : [],
-          }),
-        },
-        { role: "user", content: `Topic content reference: ${JSON.stringify(topicContent || {}).slice(0, 2000)}` },
+        { role: "system", content: extraInstruction ? `${systemPrompt} ${extraInstruction}` : systemPrompt },
+        { role: "user", content: userMessage },
       ],
     });
     const raw = completion.choices?.[0]?.message?.content || "{}";
-    let value;
     try {
-      value = JSON.parse(raw);
+      return JSON.parse(raw);
     } catch {
+      return null;
+    }
+  };
+
+  try {
+    let value = await generate("", 0.4);
+    if (!value) {
       res.status(502).json({ ok: false, error: "Activity generation returned unreadable output." });
       return;
     }
+
+    // The prompt tells the model not to repeat a question, and it still
+    // does — verbatim, under a freshly-worded "angle" — often enough to
+    // matter. So it's checked here rather than trusted: one retry at a
+    // higher temperature with the specific repeat called out. (Same
+    // principle as spreadCorrectAnswer(): verify what a prompt only asks
+    // for.)
+    const repeated = findRepeatedQuestion(value?.question, prevQs);
+    if (repeated) {
+      const retry = await generate(
+        `IMPORTANT: your previous attempt repeated an already-asked question: "${repeated}". That is not acceptable. Choose a completely different sub-aspect of ${topicName} and ask something that shares no more than a couple of words with any question listed above.`,
+        0.75
+      );
+      if (retry && !findRepeatedQuestion(retry?.question, prevQs)) value = retry;
+    }
+
     res.json({ ok: true, value: spreadCorrectAnswer(value, type) });
   } catch (err) {
     respondToOpenAiError(err, res, "Activity generation");
   }
 });
+
+/** Normalises a question for comparison: lowercase, no punctuation,
+ * collapsed whitespace. */
+function normaliseQuestion(q) {
+  return String(q || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Returns the previously-asked question this one repeats, or null.
+ * Catches an exact match after normalisation, and also a near-rewording
+ * (Jaccard word overlap >= 0.8) so "net force" -> "force applied" swaps
+ * don't slip through as "different". */
+function findRepeatedQuestion(question, previousQuestions) {
+  const current = normaliseQuestion(question);
+  if (!current) return null;
+  const currentWords = new Set(current.split(" "));
+  for (const prev of previousQuestions) {
+    const normPrev = normaliseQuestion(prev);
+    if (!normPrev) continue;
+    if (normPrev === current) return prev;
+    const prevWords = new Set(normPrev.split(" "));
+    let shared = 0;
+    for (const w of currentWords) if (prevWords.has(w)) shared++;
+    const jaccard = shared / (currentWords.size + prevWords.size - shared);
+    if (jaccard >= 0.8) return prev;
+  }
+  return null;
+}
 
 app.listen(PORT, () => {
   console.log(`[nimiqlearn-server] Listening on port ${PORT} (OpenAI configured: ${Boolean(openaiClient)})`);

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useAiBackend } from "../hooks/useAiBackend.js";
@@ -26,6 +26,10 @@ export default function ForgetMeNot() {
   const due = queue.filter((r) => r.dueNow);
   const active = activeTopicId ? queue.find((r) => r.topicId === activeTopicId) : null;
 
+  // Same session-only coverage tracking as Learn.jsx: "Review again" on the
+  // same topic must ask something new, not re-ask the last question.
+  const coveredRef = useRef({});
+
   const startReview = useCallback(
     async (topicId) => {
       const topic = findTopic(topicId);
@@ -33,11 +37,22 @@ export default function ForgetMeNot() {
       setActiveTopicId(topicId);
       setLastResult(null);
       setBusy(true);
-      const content = await generateActivityContent({ type: "REVIEW", topic, level: "intermediate" });
+      const covered = coveredRef.current[topicId] || { questions: [], angles: [] };
+      const content = await generateActivityContent({
+        type: "REVIEW",
+        topic,
+        level: "intermediate",
+        previousQuestions: covered.questions,
+        previousAngles: covered.angles,
+      });
       // loadedAt keys <LearningActivity> so each review mounts fresh — see
       // the same note in Learn.jsx for the bug this prevents.
       setActivity({ ...content, activityType: "REVIEW", reason: "ForgetMeNot scheduled this for reinforcement.", loadedAt: Date.now() });
       setBusy(false);
+      coveredRef.current[topicId] = {
+        questions: content.question ? [...covered.questions, content.question].slice(-10) : covered.questions,
+        angles: content.angle ? [...covered.angles, content.angle].slice(-10) : covered.angles,
+      };
     },
     []
   );
@@ -49,8 +64,12 @@ export default function ForgetMeNot() {
 
   const handleAnswer = (correct) => {
     if (!activeTopicId) return;
-    recordReview({ topicId: activeTopicId, correct });
-    setLastResult({ correct, topicId: activeTopicId });
+    const result = recordReview({
+      topicId: activeTopicId,
+      correct,
+      optionCount: Array.isArray(activity?.options) ? activity.options.length : null,
+    });
+    setLastResult({ correct, topicId: activeTopicId, delta: result?.delta ?? 0, after: result?.after ?? 0 });
     setActivity(null);
   };
 
@@ -144,6 +163,11 @@ export default function ForgetMeNot() {
               <span aria-hidden="true">{lastResult.correct ? "🧠" : "🔁"}</span>
               <span>
                 <strong>{lastResult.correct ? "Recalled — interval extended." : "Needs another pass — priority raised."}</strong>{" "}
+                {lastResult.delta > 0
+                  ? `Mastery +${lastResult.delta} → ${lastResult.after}%.`
+                  : lastResult.delta < 0
+                  ? `Mastery ${lastResult.delta} → ${lastResult.after}%.`
+                  : `Mastery stays at ${lastResult.after}%.`}{" "}
                 The review schedule updated automatically.
               </span>
               <Button variant="outline" size="sm" onClick={() => startReview(lastResult.topicId)} style={{ marginLeft: "auto" }}>

@@ -97,19 +97,19 @@ export function decideNextActivity({
     };
   }
 
-  // 4. Weak → simple explanation or analogy
+  // 4. Weak → teach it from several directions, not the same two forever
   if (mastery < MASTERY_BANDS.MID) {
     return {
-      activityType: pick(["SHORT_EXPLANATION", "ANALOGY"], lastActivity),
+      activityType: pick(["SHORT_EXPLANATION", "ANALOGY", "EXAMPLE", "MULTIPLE_CHOICE"], lastActivity),
       reason: "Building the foundation before we go deeper.",
       tier: "LOW",
     };
   }
 
-  // 5. Developing → example + quick check
+  // 5. Developing → apply it in varied formats
   if (mastery < MASTERY_BANDS.HIGH) {
     return {
-      activityType: pick(["EXAMPLE", "MULTIPLE_CHOICE"], lastActivity),
+      activityType: pick(["EXAMPLE", "MULTIPLE_CHOICE", "PRACTICE", "ANALOGY"], lastActivity),
       reason: "You get the idea — now let's apply it.",
       tier: "MID",
     };
@@ -307,7 +307,7 @@ function cannedContent(type, topic, { targetMisconception } = {}) {
  * unreachable, or returns something unusable, the deterministic template
  * (cannedContent()) is returned immediately — the learner is never stuck
  * waiting on a network call that might not resolve. */
-export async function generateActivityContent({ type, topic, level = "beginner", targetMisconception, previousQuestions = [] } = {}) {
+export async function generateActivityContent({ type, topic, level = "beginner", targetMisconception, previousQuestions = [], previousAngles = [] } = {}) {
   const fallback = cannedContent(type, topic, { targetMisconception });
 
   if (!isActivityBackendConfigured()) {
@@ -320,9 +320,11 @@ export async function generateActivityContent({ type, topic, level = "beginner",
     level,
     targetMisconception,
     topicContent: TOPIC_CONTENT[topic.id] || {},
-    // What this learner has already been asked on this topic, so the next
-    // activity covers new ground instead of rewording the last question.
+    // What this learner has already been asked, and which sub-aspects were
+    // already taught, so the next activity covers new ground instead of
+    // rewording the last question or re-teaching the same definition.
     previousQuestions,
+    previousAngles,
   });
 
   if (result.ok && result.value && (result.value.prompt || result.value.question)) {
