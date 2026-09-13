@@ -149,7 +149,13 @@ export default function Learn() {
 
           {decision && activity && (
             <>
-              <LearningActivity activity={activity} onAnswer={handleAnswer} busy={busy} />
+              <LearningActivity
+                activity={activity}
+                onAnswer={handleAnswer}
+                busy={busy}
+                aiConfigured={ai.available}
+                onRetryAI={() => loadActivity(topicId)}
+              />
 
               {feedback && (
                 <div className={`notice ${feedback.correct ? "success" : "warn"} anim-pop`} role="status">

@@ -15,7 +15,10 @@
 
 import { TUTOR_API_URL, TUTOR_CONFIGURED } from "../config/explainBackTutorConfig.js";
 
-const REQUEST_TIMEOUT_MS = 20_000;
+// Real observed OpenAI latency for this endpoint is 1-3s; 20s meant a
+// genuine outage looked identical to "frozen forever" from the learner's
+// side before the fallback ever kicked in.
+const REQUEST_TIMEOUT_MS = 12_000;
 
 export function isActivityBackendConfigured() {
   return TUTOR_CONFIGURED;

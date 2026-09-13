@@ -111,7 +111,13 @@ export default function ForgetMeNot() {
           )}
 
           {activity && (
-            <LearningActivity activity={activity} onAnswer={handleAnswer} busy={busy} />
+            <LearningActivity
+              activity={activity}
+              onAnswer={handleAnswer}
+              busy={busy}
+              aiConfigured={ai.available}
+              onRetryAI={() => startReview(activeTopicId)}
+            />
           )}
 
           {busy && (

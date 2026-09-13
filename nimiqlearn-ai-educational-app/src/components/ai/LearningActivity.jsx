@@ -9,7 +9,7 @@ import { ACTIVITY_LABELS } from "../../services/learnLoopService.js";
  * MCQ/PRACTICE get instant feedback; open responses hand control
  * to the caller (e.g. an ExplainBack evaluation).
  */
-export default function LearningActivity({ activity, onAnswer, busy = false }) {
+export default function LearningActivity({ activity, onAnswer, busy = false, aiConfigured = false, onRetryAI }) {
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
   const [openText, setOpenText] = useState("");
@@ -32,9 +32,29 @@ export default function LearningActivity({ activity, onAnswer, busy = false }) {
   };
 
   const showSource = activity.source === "model";
+  // AI is configured, but THIS activity still came from the built-in
+  // template — meaning the AI call was attempted and failed (timed out,
+  // backend unreachable, malformed response), not that AI was skipped on
+  // purpose. That distinction matters: silently swapping in a template
+  // with no indication looks identical to a real AI activity, which is
+  // exactly what made a real outage invisible instead of retryable.
+  const aiAttemptFailed = aiConfigured && activity.source === "template";
 
   return (
     <Card className="anim-pop">
+      {aiAttemptFailed && (
+        <div className="notice warn" style={{ marginBottom: 12 }} role="status">
+          <span aria-hidden="true">⚠️</span>
+          <span>
+            <strong>AI generation didn't respond in time.</strong> This activity is using a built-in question instead.{" "}
+            {onRetryAI && (
+              <button className="btn btn-ghost btn-sm" onClick={onRetryAI} disabled={busy} style={{ marginLeft: 6 }}>
+                Retry AI →
+              </button>
+            )}
+          </span>
+        </div>
+      )}
       <div className="flex items-center gap-8 wrap" style={{ marginBottom: 12 }}>
         <Badge tone={type === "REVIEW" ? "violet" : type === "PRACTICE" ? "amber" : "blue"}>
           {ACTIVITY_LABELS[type] || type}
