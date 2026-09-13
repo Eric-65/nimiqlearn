@@ -59,7 +59,12 @@ export default function Learn() {
         targetMisconception: d.targetMisconception,
         previousQuestions: askedQuestionsRef.current[tid] || [],
       });
-      setActivity({ ...d, ...content });
+      // loadedAt keys the <LearningActivity> below so React MOUNTS A FRESH
+      // ONE per activity. Without it the same instance is reused, and its
+      // internal "which option did I pick" state carries over — every
+      // activity after the first rendered already-answered: options
+      // disabled, one pre-ticked, no way to answer, no Next button.
+      setActivity({ ...d, ...content, loadedAt: Date.now() });
       setBusy(false);
       if (content.question) {
         askedQuestionsRef.current[tid] = [...(askedQuestionsRef.current[tid] || []), content.question].slice(-10);
@@ -150,6 +155,7 @@ export default function Learn() {
           {decision && activity && (
             <>
               <LearningActivity
+                key={activity.loadedAt}
                 activity={activity}
                 onAnswer={handleAnswer}
                 busy={busy}

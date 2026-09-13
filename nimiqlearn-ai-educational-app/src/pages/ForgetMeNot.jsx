@@ -34,7 +34,9 @@ export default function ForgetMeNot() {
       setLastResult(null);
       setBusy(true);
       const content = await generateActivityContent({ type: "REVIEW", topic, level: "intermediate" });
-      setActivity({ ...content, activityType: "REVIEW", reason: "ForgetMeNot scheduled this for reinforcement." });
+      // loadedAt keys <LearningActivity> so each review mounts fresh — see
+      // the same note in Learn.jsx for the bug this prevents.
+      setActivity({ ...content, activityType: "REVIEW", reason: "ForgetMeNot scheduled this for reinforcement.", loadedAt: Date.now() });
       setBusy(false);
     },
     []
@@ -112,6 +114,7 @@ export default function ForgetMeNot() {
 
           {activity && (
             <LearningActivity
+              key={activity.loadedAt}
               activity={activity}
               onAnswer={handleAnswer}
               busy={busy}
