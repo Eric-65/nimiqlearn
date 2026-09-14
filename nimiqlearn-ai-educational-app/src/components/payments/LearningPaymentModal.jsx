@@ -110,7 +110,9 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
 
   return (
     <Modal open={open} onClose={step === STEP.PENDING ? undefined : () => { setStep(STEP.CANCELLED); setTimeout(onClose, 350); }} title="Unlock learning pack">
-      <div style={{ padding: 26 }}>
+      {/* Padding now lives on .modal-panel itself (same 26px), so every
+          modal gets it by default instead of each one remembering. */}
+      <div>
         {step === STEP.NEEDS_VERIFICATION && (
           <div className="anim-fade" style={{ textAlign: "center", padding: "12px 0" }}>
             <h3 style={{ margin: "0 0 8px" }}>Payment status needs verification</h3>

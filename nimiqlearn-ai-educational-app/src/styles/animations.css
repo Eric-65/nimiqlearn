@@ -129,6 +129,13 @@
   max-width: 520px;
   max-height: min(88vh, 760px);
   overflow-y: auto;
+  /* Padding belongs here, not in each modal's own content: without it,
+     content sits flush against the panel edges and the border-radius
+     visually clips it (the concept-detail modal lost the first letter of
+     its breadcrumb and part of its close button to the rounded corners).
+     26px matches what LearningPaymentModal was already applying on its own
+     inner wrapper, so that modal renders unchanged. */
+  padding: 26px;
   background: linear-gradient(180deg, #182242, #10172e);
   border: 1px solid var(--c-border-strong);
   border-radius: var(--r-xl);
