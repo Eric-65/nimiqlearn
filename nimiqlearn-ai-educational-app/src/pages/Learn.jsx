@@ -6,6 +6,7 @@ import { LEAF_TOPICS, findTopic } from "../data/mockTopics.js";
 import { decideNextActivity, generateActivityContent } from "../services/learnLoopService.js";
 import { computeReviewRecommendation } from "../services/forgetMeNotService.js";
 import { STATUS_META } from "../services/knowledgeService.js";
+import { useI18n } from "../hooks/useI18n.js";
 import LearningActivity from "../components/ai/LearningActivity.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import Card from "../components/ui/Card.jsx";
@@ -16,6 +17,7 @@ export default function Learn() {
   const { route, navigate } = useNav();
   const { knowledge, getEntry, recordActivityResult, recordActivityCoverage, learner } = useLearner();
   const ai = useAiBackend();
+  const { t, tOr } = useI18n();
 
   const initialTopic = route.params?.topic || null;
   const [topicId, setTopicId] = useState(initialTopic);
@@ -100,8 +102,8 @@ export default function Learn() {
     <div>
       <header className="page-header">
         <div>
-          <h1 className="page-title">Learn</h1>
-          <p className="page-sub">LearnLoop picks the next activity from your knowledge state. The AI generates the content; the loop decides the move.</p>
+          <h1 className="page-title">{t("nav.learn")}</h1>
+          <p className="page-sub">{t("learn.sub")}</p>
         </div>
         <AIStatus />
       </header>
@@ -119,7 +121,7 @@ export default function Learn() {
               aria-pressed={active}
             >
               <span className="status-dot" style={{ background: STATUS_META[e?.status]?.color || "var(--st-new)" }} aria-hidden="true" />
-              {t.name}
+              {tOr(`topic.${t.id}.name`, t.name)}
             </button>
           );
         })}
@@ -133,23 +135,29 @@ export default function Learn() {
           <Card>
             <div className="flex items-center justify-between wrap gap-12">
               <div>
-                <Badge tone="blue">{topic.parentName || "Concept"}</Badge>
-                <h2 style={{ fontSize: 20, margin: "8px 0 4px" }}>{topic.name}</h2>
-                <p className="small muted" style={{ margin: 0 }}>{topic.description}</p>
+                <Badge tone="blue">
+                  {topic.parentId ? tOr(`topic.${topic.parentId}.name`, topic.parentName) : t("learn.concept")}
+                </Badge>
+                <h2 style={{ fontSize: 20, margin: "8px 0 4px" }}>{tOr(`topic.${topic.id}.name`, topic.name)}</h2>
+                <p className="small muted" style={{ margin: 0 }}>
+                  {tOr(`topic.${topic.id}.description`, topic.description)}
+                </p>
               </div>
               <div style={{ textAlign: "right" }}>
                 <Badge tone={entry?.status === "MASTERED" ? "gold" : entry?.status === "STRONG" ? "teal" : entry?.status === "DEVELOPING" ? "blue" : entry?.status === "LEARNING" ? "amber" : "slate"}>
-                  {STATUS_META[entry?.status]?.label || "New"}
+                  {t(`status.${String(entry?.status || "NEW").toLowerCase()}`)}
                 </Badge>
-                <p className="tiny muted" style={{ margin: "6px 0 0" }}>App mastery: {entry?.mastery ?? 0}%</p>
+                <p className="tiny muted" style={{ margin: "6px 0 0" }}>
+                  {t("learn.appMastery", { pct: entry?.mastery ?? 0 })}
+                </p>
               </div>
             </div>
             <div className="flex gap-12 wrap" style={{ marginTop: 14 }}>
               <Button variant="outline" size="sm" onClick={() => navigate("explain", { topic: topicId })}>
-                🗣️ Explain this concept
+                🗣️ {t("learn.explainConcept")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => navigate("review", { topic: topicId })}>
-                ⏳ Review schedule
+                ⏳ {t("learn.reviewSchedule")}
               </Button>
             </div>
           </Card>
@@ -169,15 +177,16 @@ export default function Learn() {
                 <div className={`notice ${feedback.correct ? "success" : "warn"} anim-pop`} role="status">
                   <span aria-hidden="true">{feedback.correct ? "✅" : "🔁"}</span>
                   <span>
-                    <strong>{feedback.correct ? "Nice — that's locked in." : "Good try — the loop will target this."}</strong>{" "}
-                    {feedback.delta > 0
-                      ? `Mastery +${feedback.delta} → ${feedback.after}%.`
-                      : feedback.delta < 0
-                      ? `Mastery ${feedback.delta} → ${feedback.after}%.`
-                      : `Mastery stays at ${feedback.after}% — nothing to lose yet.`}
+                    <strong>{t(feedback.correct ? "learn.feedback.ok" : "learn.feedback.miss")}</strong>{" "}
+                    {feedback.delta === 0
+                      ? t("learn.mastery.same", { after: feedback.after })
+                      : t("review.mastery.moved", {
+                          delta: feedback.delta > 0 ? `+${feedback.delta}` : feedback.delta,
+                          after: feedback.after,
+                        })}
                   </span>
                   <Button variant="teal" size="sm" onClick={handleNext} style={{ marginLeft: "auto" }}>
-                    Next activity →
+                    {t("learn.nextActivity")}
                   </Button>
                 </div>
               )}
@@ -187,7 +196,7 @@ export default function Learn() {
           {busy && (
             <div className="flex items-center gap-12 muted small" aria-live="polite">
               <span className="thinking-dots" aria-hidden="true"><span /><span /><span /></span>
-              Preparing your next activity…
+              {t("learn.preparing")}
             </div>
           )}
 
@@ -195,7 +204,7 @@ export default function Learn() {
             <div className="notice warn anim-pop" role="status">
               <span aria-hidden="true">⚠️</span>
               <span>
-                <strong>AI unavailable right now.</strong> Activities are using built-in templates — everything keeps working.
+                <strong>{t("ai.unavailable")}</strong> {t("learn.aiFallback")}
               </span>
             </div>
           )}

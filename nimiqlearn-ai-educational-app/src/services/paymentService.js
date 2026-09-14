@@ -12,8 +12,8 @@
 
 import { getWalletState, NIMIQ_STATUS, sendNimPayment } from "./nimiqWalletService.js";
 import { getEvmState, EVM_STATUS, sendUsdtPayment } from "./evmWalletService.js";
-import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_REASON } from "../config/paymentConfig.js";
-import { USDT_LEARNING_RECIPIENT, USDT_PAYMENTS_ENABLED, USDT_PAYMENTS_DISABLED_REASON } from "../config/evmPaymentConfig.js";
+import { PAYMENTS_ENABLED, PAYMENTS_DISABLED_REASON_KEY } from "../config/paymentConfig.js";
+import { USDT_LEARNING_RECIPIENT, USDT_PAYMENTS_ENABLED, USDT_PAYMENTS_DISABLED_REASON_KEY } from "../config/evmPaymentConfig.js";
 
 /** Part 22 — the exact transaction-state machine the spec asks for. A
  * transaction hash is never equated with "confirmed": UNKNOWN is its own
@@ -175,11 +175,11 @@ export async function processPayment(request, { onStateChange } = {}) {
   if (request.asset === "NIM") {
     if (!PAYMENTS_ENABLED || !request.recipient) {
       emit(TRANSACTION_STATE.FAILED);
-      lastPayment = { ...lastPayment, error: PAYMENTS_DISABLED_REASON };
+      lastPayment = { ...lastPayment, errorKey: PAYMENTS_DISABLED_REASON_KEY };
       return {
         transactionState: TRANSACTION_STATE.FAILED,
         simulated: false,
-        error: PAYMENTS_DISABLED_REASON || "No recipient address is configured for this product.",
+        errorKey: PAYMENTS_DISABLED_REASON_KEY || "market.noRecipient",
         detail: "Payment is disabled until a real recipient address is configured.",
       };
     }
@@ -211,11 +211,11 @@ export async function processPayment(request, { onStateChange } = {}) {
   } else if (request.asset === "USDT") {
     if (!USDT_PAYMENTS_ENABLED || !request.recipient) {
       emit(TRANSACTION_STATE.FAILED);
-      lastPayment = { ...lastPayment, error: USDT_PAYMENTS_DISABLED_REASON };
+      lastPayment = { ...lastPayment, errorKey: USDT_PAYMENTS_DISABLED_REASON_KEY };
       return {
         transactionState: TRANSACTION_STATE.FAILED,
         simulated: false,
-        error: USDT_PAYMENTS_DISABLED_REASON || "No recipient address is configured for USDT payments.",
+        errorKey: USDT_PAYMENTS_DISABLED_REASON_KEY || "market.noUsdtRecipient",
         detail: "USDT payment is disabled until a real recipient address is configured.",
       };
     }

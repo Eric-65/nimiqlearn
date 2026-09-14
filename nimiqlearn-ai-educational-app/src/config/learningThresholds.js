@@ -50,12 +50,15 @@ export const REVIEW_PRIORITY = {
   KEEP_AN_EYE: 40,
 };
 
-export function reviewLevelLabel(priorityScore) {
+/* Returns a translation key rather than a label: the band a learner sees
+   has to follow the app's language, and config returning finished English
+   would be the one place it silently did not. */
+export function reviewLevelKey(priorityScore) {
   const p = Number(priorityScore) || 0;
-  if (p >= REVIEW_PRIORITY.URGENT) return "Urgent";
-  if (p >= REVIEW_PRIORITY.DUE_SOON) return "Due soon";
-  if (p >= REVIEW_PRIORITY.KEEP_AN_EYE) return "Keep an eye";
-  return "Fresh";
+  if (p >= REVIEW_PRIORITY.URGENT) return "review.level.urgent";
+  if (p >= REVIEW_PRIORITY.DUE_SOON) return "review.level.dueSoon";
+  if (p >= REVIEW_PRIORITY.KEEP_AN_EYE) return "review.level.keepAnEye";
+  return "review.level.fresh";
 }
 
 // Minimum study time (minutes) required before a REVIEW activity is

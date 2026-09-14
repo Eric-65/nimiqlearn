@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { LEAF_TOPICS, findTopic, findTopicPath, TOPIC_CONTENT } from "../data/mockTopics.js";
-import { ACTIVITY_LABELS } from "../services/learnLoopService.js";
+import { ACTIVITY_LABEL_KEYS } from "../services/learnLoopService.js";
 import { STATUS_META } from "../services/knowledgeService.js";
+import { useI18n } from "../hooks/useI18n.js";
 import { isAssessmentBackendConfigured } from "../services/explainBackAssessmentService.js";
 import AIStatus from "../components/ai/AIStatus.jsx";
 import ExplanationResult from "../components/ai/ExplanationResult.jsx";
@@ -20,6 +21,7 @@ function wordCount(text) {
 export default function ExplainBack() {
   const { route, navigate } = useNav();
   const { getEntry, evaluateExplanation } = useLearner();
+  const { t, tOr, tPlural } = useI18n();
 
   const [topicId, setTopicId] = useState(route.params?.topic || "newtons-second-law");
   const [text, setText] = useState("");
@@ -154,8 +156,8 @@ export default function ExplainBack() {
       {/* HEADER */}
       <header className="page-header">
         <div>
-          <h1 className="page-title">ExplainBack</h1>
-          <p className="page-sub">Teach the concept back in your own words.</p>
+          <h1 className="page-title">{t("nav.explain")}</h1>
+          <p className="page-sub">{t("explain.sub")}</p>
         </div>
         <AIStatus />
       </header>
@@ -174,7 +176,7 @@ export default function ExplainBack() {
               disabled={isGenerating}
             >
               <span className="status-dot" style={{ background: STATUS_META[e?.status]?.color || "var(--st-new)" }} aria-hidden="true" />
-              {t.name}
+              {tOr(`topic.${t.id}.name`, t.name)}
             </button>
           );
         })}
@@ -188,13 +190,15 @@ export default function ExplainBack() {
             <div className="flex items-center justify-between wrap gap-12">
               <div>
                 <div className="flex items-center gap-8 wrap" style={{ marginBottom: 6 }}>
-                  <span className="tiny muted">{path.map((p) => p.name).join(" • ")}</span>
+                  <span className="tiny muted">
+                    {path.map((p) => tOr(`topic.${p.id}.name`, p.name)).join(" • ")}
+                  </span>
                 </div>
-                <h2 style={{ fontSize: 24, margin: 0 }}>{topic.name}</h2>
+                <h2 style={{ fontSize: 24, margin: 0 }}>{tOr(`topic.${topic.id}.name`, topic.name)}</h2>
               </div>
               <div className="flex items-center gap-8">
                 <Badge tone={entry?.status === "MASTERED" ? "gold" : entry?.status === "STRONG" ? "teal" : entry?.status === "DEVELOPING" ? "blue" : entry?.status === "LEARNING" ? "amber" : "slate"}>
-                  {STATUS_META[entry?.status]?.label || "New"} {entry?.mastery > 0 ? `• ${entry.mastery}%` : ""}
+                  {t(`status.${String(entry?.status || "NEW").toLowerCase()}`)} {entry?.mastery > 0 ? `• ${entry.mastery}%` : ""}
                 </Badge>
               </div>
             </div>
@@ -203,16 +207,16 @@ export default function ExplainBack() {
           {/* LEARNER PROMPT + TEXTAREA */}
           <Card className="anim-rise delay-1" style={{ padding: "24px 24px 20px" }}>
             <p className="small" style={{ margin: "0 0 14px", color: "var(--c-text-dim)", fontSize: 14.5 }}>
-              Imagine you're teaching this to a friend who has never seen it before.
+              {t("explain.prompt")}
             </p>
 
             <label className="label" htmlFor="explain-text" style={{ marginBottom: 8 }}>
-              Your explanation
+              {t("explain.yourExplanation")}
             </label>
             <textarea
               id="explain-text"
               className="textarea"
-              placeholder="Start explaining here..."
+              placeholder={t("explain.placeholder")}
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={7}
@@ -222,16 +226,16 @@ export default function ExplainBack() {
             <div className="flex items-center justify-between wrap gap-12" style={{ marginTop: 12 }}>
               <div className="flex items-center gap-12">
                 <span className="tiny muted" aria-live="polite">
-                  {words} {words === 1 ? "word" : "words"}
+                  {tPlural("explain.words", words)}
                 </span>
                 <span className="tiny muted" aria-hidden="true">·</span>
                 {aiConfigured ? (
                   <span className="tiny" style={{ color: "var(--c-teal)" }} role="status">
-                    ● AI grading ready
+                    ● {t("explain.aiReady")}
                   </span>
                 ) : (
                   <span className="tiny" style={{ color: "var(--c-rose)" }} role="status">
-                    AI grading not configured — built-in assessment will be used
+                    {t("explain.aiNotConfigured")}
                   </span>
                 )}
               </div>
@@ -241,7 +245,7 @@ export default function ExplainBack() {
                 onClick={handleAnalyze}
                 disabled={!text.trim() || isGenerating}
               >
-                Check My Understanding →
+                {t("explain.check")}
               </Button>
             </div>
           </Card>
@@ -254,7 +258,7 @@ export default function ExplainBack() {
           <Card>
             <div className="flex items-center gap-12" style={{ marginBottom: 14 }}>
               <span className="thinking-dots" aria-hidden="true"><span /><span /><span /></span>
-              <h3 style={{ margin: 0, fontSize: 17 }}>Checking your understanding…</h3>
+              <h3 style={{ margin: 0, fontSize: 17 }}>{t("explain.checking")}</h3>
             </div>
 
             {/* keep the learner's original text visible while waiting */}
@@ -264,7 +268,7 @@ export default function ExplainBack() {
                 style={{ cursor: "pointer", color: "var(--c-text-dim)", marginBottom: 8 }}
                 onClick={(e) => { e.preventDefault(); setShowOriginal((s) => !s); }}
               >
-                {showOriginal ? "Hide your explanation" : "Show your explanation"}
+                {t(showOriginal ? "explain.hideYours" : "explain.showYours")}
               </summary>
               <p
                 style={{
@@ -285,7 +289,7 @@ export default function ExplainBack() {
 
             {aiConfigured && (
               <Button variant="ghost" size="sm" onClick={handleUseBuiltIn} style={{ marginTop: 12 }}>
-                Use built-in assessment now
+                {t("explain.useBuiltIn")}
               </Button>
             )}
           </Card>
@@ -322,11 +326,11 @@ export default function ExplainBack() {
             <div className="notice" style={{ margin: 0 }}>
               <span aria-hidden="true">🧩</span>
               <span>
-                <strong>This assessment used the built-in engine.</strong>{" "}
-                {evaluation.note || "AI grading is unavailable right now."}{" "}
+                <strong>{t("explain.usedBuiltIn")}</strong>{" "}
+                {evaluation.note || t("explain.aiUnavailable")}{" "}
                 {aiConfigured && (
                   <button className="btn btn-ghost btn-sm" onClick={handleRetryAI} style={{ marginLeft: 6 }}>
-                    Retry with AI →
+                    {t("explain.retryAI")}
                   </button>
                 )}
               </span>
@@ -340,16 +344,16 @@ export default function ExplainBack() {
                 <h3 style={{ margin: 0, fontSize: 15, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-text-dim)" }}>
                   ForgetMeNot
                 </h3>
-                <Badge tone={recommendation.priorityScore >= 65 ? "amber" : "teal"}>{recommendation.levelLabel}</Badge>
+                <Badge tone={recommendation.priorityScore >= 65 ? "amber" : "teal"}>{t(recommendation.levelKey)}</Badge>
               </div>
               <p className="small" style={{ margin: "0 0 6px" }}>
-                You should revisit this concept in <strong>{recommendation.intervalDays} day{recommendation.intervalDays === 1 ? "" : "s"}</strong>.
+                {t("explain.revisitIn")} <strong>{tPlural("explain.days", recommendation.intervalDays)}</strong>.
               </p>
               <p className="small muted" style={{ margin: "0 0 12px" }}>
-                Why? Your mastery improved, but one important concept is still developing. The schedule is computed by the app — the AI only creates review content.
+                {t("explain.whySchedule")}
               </p>
               <Button variant="outline" size="sm" onClick={() => navigate("review", { topic: topicId })}>
-                Review later
+                {t("explain.reviewLater")}
               </Button>
             </Card>
           )}
@@ -357,19 +361,23 @@ export default function ExplainBack() {
           {/* NEXT STEP — one clear action */}
           {nextDecision && (
             <Card className="anim-rise" style={{ borderColor: "rgba(77,141,255,0.4)" }}>
-              <span className="eyebrow" style={{ marginBottom: 6 }}>Next up</span>
+              <span className="eyebrow" style={{ marginBottom: 6 }}>{t("explain.nextUp")}</span>
               <h3 style={{ fontSize: 18, margin: "0 0 4px" }}>
-                {ACTIVITY_LABELS[nextDecision.activityType]}
+                {t(ACTIVITY_LABEL_KEYS[nextDecision.activityType] || nextDecision.activityType)}
               </h3>
-              <p className="small muted" style={{ margin: "0 0 14px" }}>{nextDecision.reason}</p>
+              <p className="small muted" style={{ margin: "0 0 14px" }}>
+                {t(nextDecision.reasonKey, nextDecision.reasonVars?.topicId
+                  ? { ...nextDecision.reasonVars, topic: tOr(`topic.${nextDecision.reasonVars.topicId}.name`, nextDecision.reasonVars.topic) }
+                  : nextDecision.reasonVars)}
+              </p>
               <Button variant="primary" onClick={() => navigate("learn", { topic: topicId })}>
-                Start next challenge →
+                {t("explain.startNext")}
               </Button>
             </Card>
           )}
 
           <div className="flex justify-center" style={{ marginTop: 4 }}>
-            <Button variant="ghost" onClick={handleReset}>Explain another concept</Button>
+            <Button variant="ghost" onClick={handleReset}>{t("explain.another")}</Button>
           </div>
         </div>
       )}

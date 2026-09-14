@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "../ui/Modal.jsx";
+import { useI18n } from "../../hooks/useI18n.js";
 import Button from "../ui/Button.jsx";
 import Badge from "../ui/Badge.jsx";
 import PaymentReceipt from "./PaymentReceipt.jsx";
@@ -29,10 +30,10 @@ const STEP = {
  */
 /** Part 27's exact progression copy, driven by the real transactionState
  * the provider reports — never a fake percentage or a guessed stage. */
-const PENDING_TEXT = {
-  [TRANSACTION_STATE.AWAITING_APPROVAL]: "Waiting for wallet approval...",
-  [TRANSACTION_STATE.SUBMITTED]: "Transaction submitted",
-  [TRANSACTION_STATE.CONFIRMED]: "Payment confirmed",
+const PENDING_TEXT_KEYS = {
+  [TRANSACTION_STATE.AWAITING_APPROVAL]: "pay.awaiting",
+  [TRANSACTION_STATE.SUBMITTED]: "pay.submitted",
+  [TRANSACTION_STATE.CONFIRMED]: "pay.confirmed",
 };
 
 export default function LearningPaymentModal({ pack, open, onClose, onSuccess }) {
@@ -40,8 +41,9 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
   const evm = useEvmWallet();
   const { learner, recordPendingPayment, clearPendingPayment } = useLearner();
   const [step, setStep] = useState(STEP.REVIEW);
+  const { t } = useI18n();
   const [result, setResult] = useState(null);
-  const [pendingText, setPendingText] = useState("Waiting for wallet approval...");
+  const [pendingKey, setPendingKey] = useState("pay.awaiting");
   const [selectedAsset, setSelectedAsset] = useState("NIM");
   const [selectedChain, setSelectedChain] = useState(DEFAULT_USDT_CHAIN);
   const submittingRef = useRef(false);
@@ -86,10 +88,10 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
     // brief explicit review moment before the request goes out
     await new Promise((r) => setTimeout(r, 500));
     setStep(STEP.PENDING);
-    setPendingText(demo ? "Simulating payment…" : PENDING_TEXT[TRANSACTION_STATE.AWAITING_APPROVAL]);
+    setPendingKey(demo ? "pay.simulating" : PENDING_TEXT_KEYS[TRANSACTION_STATE.AWAITING_APPROVAL]);
     const res = await nimiq.pay(request, {
       onStateChange: (s) => {
-        if (PENDING_TEXT[s]) setPendingText(PENDING_TEXT[s]);
+        if (PENDING_TEXT_KEYS[s]) setPendingKey(PENDING_TEXT_KEYS[s]);
       },
     });
     setResult(res);
@@ -109,13 +111,13 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
   };
 
   return (
-    <Modal open={open} onClose={step === STEP.PENDING ? undefined : () => { setStep(STEP.CANCELLED); setTimeout(onClose, 350); }} title="Unlock learning pack">
+    <Modal open={open} onClose={step === STEP.PENDING ? undefined : () => { setStep(STEP.CANCELLED); setTimeout(onClose, 350); }} title={t("pay.title")}>
       {/* Padding now lives on .modal-panel itself (same 26px), so every
           modal gets it by default instead of each one remembering. */}
       <div>
         {step === STEP.NEEDS_VERIFICATION && (
           <div className="anim-fade" style={{ textAlign: "center", padding: "12px 0" }}>
-            <h3 style={{ margin: "0 0 8px" }}>Payment status needs verification</h3>
+            <h3 style={{ margin: "0 0 8px" }}>{t("wallet.pending.title")}</h3>
             <p className="small muted" style={{ margin: "0 0 18px" }}>
               A previous payment attempt for <strong>{pack.title}</strong> could not be confirmed. To avoid paying twice,
               please check your Nimiq Pay transaction history before trying again.
@@ -131,7 +133,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               >
                 I've checked my wallet
               </Button>
-              <Button variant="ghost" block onClick={onClose}>Close</Button>
+              <Button variant="ghost" block onClick={onClose}>{t("common.close")}</Button>
             </div>
           </div>
         )}
@@ -141,11 +143,11 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
             <div className="flex items-center justify-between wrap gap-8" style={{ marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: 20 }}>Unlock {pack.title}</h3>
               {disabled ? (
-                <Badge tone="rose">Payment disabled</Badge>
+                <Badge tone="rose">{t("pay.disabled")}</Badge>
               ) : demo ? (
-                <Badge tone="amber">DEMO MODE — simulation</Badge>
+                <Badge tone="amber">{t("pay.demoBadge")}</Badge>
               ) : (
-                <Badge tone="teal">Nimiq Pay • live</Badge>
+                <Badge tone="teal">{t("pay.liveBadge")}</Badge>
               )}
             </div>
 
@@ -161,20 +163,20 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
 
             <dl style={{ margin: 0, display: "grid", gap: 13 }}>
               <div className="flex justify-between">
-                <dt className="muted small">Price</dt>
+                <dt className="muted small">{t("pay.price")}</dt>
                 <dd className="strong" style={{ margin: 0 }}>
                   {request.amount} {request.asset}
                 </dd>
               </div>
               <div className="flex justify-between items-center gap-12">
-                <dt className="muted small">Asset</dt>
+                <dt className="muted small">{t("pay.asset")}</dt>
                 <dd style={{ margin: 0 }}>
                   <select
                     className="select"
                     style={{ minWidth: 150, padding: "6px 34px 6px 12px", fontSize: 13.5 }}
                     value={selectedAsset}
                     onChange={(e) => setSelectedAsset(e.target.value)}
-                    aria-label="Select payment asset"
+                    aria-label={t("pay.selectAsset")}
                   >
                     {assets.map((a) => (
                       <option key={a.asset} value={a.asset} disabled={!a.real}>
@@ -186,14 +188,14 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               </div>
               {selectedAsset === "USDT" && (
                 <div className="flex justify-between items-center gap-12">
-                  <dt className="muted small">Chain</dt>
+                  <dt className="muted small">{t("pay.chain")}</dt>
                   <dd style={{ margin: 0 }}>
                     <select
                       className="select"
                       style={{ minWidth: 150, padding: "6px 34px 6px 12px", fontSize: 13.5 }}
                       value={selectedChain}
                       onChange={(e) => setSelectedChain(e.target.value)}
-                      aria-label="Select EVM chain"
+                      aria-label={t("pay.selectChain")}
                     >
                       {Object.entries(EVM_CHAINS).map(([key, c]) => (
                         <option key={key} value={key}>{c.name}</option>
@@ -203,13 +205,13 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                 </div>
               )}
               <div className="flex justify-between">
-                <dt className="muted small">Purpose</dt>
+                <dt className="muted small">{t("pay.purpose")}</dt>
                 <dd style={{ margin: 0, textAlign: "right" }}>{request.purpose}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="muted small">Recipient</dt>
+                <dt className="muted small">{t("pay.recipient")}</dt>
                 <dd style={{ margin: 0, fontFamily: "monospace", fontSize: 12.5, wordBreak: "break-all", textAlign: "right" }} title={request.recipient || undefined}>
-                  {request.recipient || "Not configured"}
+                  {request.recipient || t("common.notConfigured")}
                 </dd>
               </div>
             </dl>
@@ -231,9 +233,11 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
             ))}
 
             <div className="flex gap-12" style={{ marginTop: 22 }}>
-              <Button variant="ghost" onClick={() => { setStep(STEP.CANCELLED); setTimeout(onClose, 300); }}>Cancel</Button>
+              <Button variant="ghost" onClick={() => { setStep(STEP.CANCELLED); setTimeout(onClose, 300); }}>{t("common.cancel")}</Button>
               <Button variant={demo ? "amber" : "nimiq"} onClick={handleConfirm} style={{ flex: 1 }} disabled={disabled || checkingEnvironment}>
-                {checkingEnvironment ? "Checking environment…" : `Confirm with Nimiq Pay · ${request.amount} ${request.asset}`}
+                {checkingEnvironment
+                  ? t("pay.checkingEnv")
+                  : t("pay.confirmWith", { amount: request.amount, asset: request.asset })}
               </Button>
             </div>
           </div>
@@ -242,7 +246,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
         {step === STEP.CONFIRMING && (
           <div className="anim-fade" style={{ textAlign: "center", padding: "18px 0" }}>
             <div className="spinner" style={{ width: 30, height: 30, borderWidth: 3, margin: "0 auto 16px" }} aria-hidden="true" />
-            <h3 style={{ margin: "0 0 6px" }}>Please review the details</h3>
+            <h3 style={{ margin: "0 0 6px" }}>{t("pay.review")}</h3>
             <p className="small muted" style={{ margin: 0 }}>Your confirmation opens the wallet flow.</p>
           </div>
         )}
@@ -250,9 +254,9 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
         {step === STEP.PENDING && (
           <div className="anim-fade" style={{ textAlign: "center", padding: "18px 0" }}>
             <div className="spinner" style={{ width: 30, height: 30, borderWidth: 3, margin: "0 auto 16px" }} aria-hidden="true" />
-            <h3 style={{ margin: "0 0 6px" }}>{pendingText}</h3>
+            <h3 style={{ margin: "0 0 6px" }}>{t(pendingKey)}</h3>
             <p className="small muted" style={{ margin: 0 }}>
-              {demo ? "This is a demo simulation and will complete momentarily." : "Approve the request in Nimiq Pay to continue."}
+              {t(demo ? "pay.demoNote" : "pay.approveNote")}
             </p>
           </div>
         )}
@@ -264,7 +268,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </div>
-            <h3 style={{ margin: "0 0 8px" }}>{result.simulated ? "Learning pack unlocked (simulated)" : "Learning pack unlocked"}</h3>
+            <h3 style={{ margin: "0 0 8px" }}>{t(result.simulated ? "pay.unlocked.sim" : "pay.unlocked")}</h3>
             <p className="small muted" style={{ margin: "0 0 14px" }}>
               {result.detail}
             </p>
@@ -279,7 +283,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
               simulated={result.simulated}
               occurredAt={Date.now()}
             />
-            <Button variant="teal" block onClick={onClose} style={{ marginTop: 18 }}>Start learning</Button>
+            <Button variant="teal" block onClick={onClose} style={{ marginTop: 18 }}>{t("pay.startLearning")}</Button>
           </div>
         )}
 
@@ -292,28 +296,30 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
             </div>
             <h3 style={{ margin: "0 0 8px" }}>
               {result?.transactionState === TRANSACTION_STATE.UNKNOWN
-                ? "Payment submitted"
+                ? t("pay.submitted")
                 : result?.transactionState === TRANSACTION_STATE.REJECTED
-                ? "Payment cancelled"
-                : "Payment not confirmed"}
+                ? t("pay.cancelled")
+                : t("pay.notConfirmed")}
             </h3>
             <p className="small muted" style={{ margin: "0 0 18px" }}>
-              {result?.error || "Payment status could not be confirmed."}
+              {/* errorKey is an app-generated message and translates;
+                  `error` comes from the wallet SDK and cannot. */}
+              {result?.errorKey ? t(result.errorKey) : result?.error || t("pay.unconfirmed")}
             </p>
             <div className="flex gap-12">
               {result?.transactionState === TRANSACTION_STATE.UNKNOWN ? (
-                <Button variant="outline" block onClick={onClose}>I'll check my wallet first</Button>
+                <Button variant="outline" block onClick={onClose}>{t("pay.checkWalletFirst")}</Button>
               ) : (
-                <Button variant="outline" block onClick={() => setStep(STEP.REVIEW)}>Try again</Button>
+                <Button variant="outline" block onClick={() => setStep(STEP.REVIEW)}>{t("common.tryAgain")}</Button>
               )}
-              <Button variant="ghost" block onClick={onClose}>Close</Button>
+              <Button variant="ghost" block onClick={onClose}>{t("common.close")}</Button>
             </div>
           </div>
         )}
 
         {step === STEP.CANCELLED && (
           <div className="anim-fade" style={{ textAlign: "center", padding: "12px 0" }}>
-            <h3 style={{ margin: "0 0 8px" }}>Payment cancelled</h3>
+            <h3 style={{ margin: "0 0 8px" }}>{t("pay.cancelled")}</h3>
             <p className="small muted" style={{ margin: "0 0 18px" }}>Nothing was charged. You can come back any time.</p>
             <Button variant="outline" block onClick={onClose}>Done</Button>
           </div>

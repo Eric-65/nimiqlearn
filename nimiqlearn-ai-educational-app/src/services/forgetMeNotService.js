@@ -8,7 +8,7 @@
    claim of scientifically validated spaced repetition.
    ============================================================ */
 
-import { REVIEW_PRIORITY, reviewLevelLabel } from "../config/learningThresholds.js";
+import { REVIEW_PRIORITY, reviewLevelKey } from "../config/learningThresholds.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -138,7 +138,7 @@ export function computeReviewRecommendation(entry, now = Date.now()) {
   const { nextReviewAt, intervalDays } = calculateNextReview(entry, now);
   const daysSinceReview = Math.max(0, (now - lastReviewedAt) / DAY);
   const dueNow = now >= nextReviewAt || priorityScore >= REVIEW_PRIORITY.DUE_SOON;
-  const levelLabel = reviewLevelLabel(priorityScore);
+  const levelKey = reviewLevelKey(priorityScore);
 
   return {
     // Optional, like every other read above: a topic the learner has never
@@ -154,7 +154,7 @@ export function computeReviewRecommendation(entry, now = Date.now()) {
     recommendedReviewAt: nextReviewAt, // kept for existing callers
     nextReviewAt, // same value, contract-matching name
     dueNow,
-    levelLabel,
+    levelKey,
   };
 }
 

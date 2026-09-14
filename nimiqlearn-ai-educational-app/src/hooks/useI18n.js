@@ -19,6 +19,7 @@ import {
   setLocale as applyLocale,
   subscribeLocale,
   translate,
+  translateOr,
   translatePlural,
   formatNumber,
 } from "../services/i18nService.js";
@@ -31,6 +32,9 @@ export function useI18n() {
 
   const t = useCallback((key, vars) => translate(key, vars, locale), [locale]);
   const tPlural = useCallback((key, count, vars) => translatePlural(key, count, vars, locale), [locale]);
+  /* tOr(key, englishSource) — for curriculum content, which is stored as
+     source data rather than in the English catalogue. */
+  const tOr = useCallback((key, fallback, vars) => translateOr(key, fallback, vars, locale), [locale]);
   const n = useCallback((value) => formatNumber(value, locale), [locale]);
 
   return {
@@ -38,6 +42,7 @@ export function useI18n() {
     meta: getLocaleMeta(locale),
     setLocale: applyLocale,
     t,
+    tOr,
     tPlural,
     n,
   };

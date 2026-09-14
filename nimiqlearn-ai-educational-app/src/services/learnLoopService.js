@@ -22,15 +22,17 @@ export const ACTIVITY_TYPES = [
   "REVIEW",
 ];
 
-export const ACTIVITY_LABELS = {
-  SHORT_EXPLANATION: "Short explanation",
-  ANALOGY: "Analogy",
-  EXAMPLE: "Worked example",
-  MULTIPLE_CHOICE: "Quick check",
-  OPEN_RESPONSE: "Open response",
-  EXPLAIN_BACK: "Explain it back",
-  PRACTICE: "Targeted practice",
-  REVIEW: "Spaced review",
+/* Translation keys, not labels — the activity badge a learner reads has to
+   follow the app's language like the rest of the UI. */
+export const ACTIVITY_LABEL_KEYS = {
+  SHORT_EXPLANATION: "activity.shortExplanation",
+  ANALOGY: "activity.analogy",
+  EXAMPLE: "activity.example",
+  MULTIPLE_CHOICE: "activity.multipleChoice",
+  OPEN_RESPONSE: "activity.openResponse",
+  EXPLAIN_BACK: "activity.explainBack",
+  PRACTICE: "activity.practice",
+  REVIEW: "activity.review",
 };
 
 /* ------------------ Decision engine ------------------ */
@@ -71,7 +73,7 @@ export function decideNextActivity({
   if (status === "NEW" || mastery === 0) {
     return {
       activityType: "SHORT_EXPLANATION",
-      reason: "This concept is new to you — let's start with the core idea.",
+      reasonKey: "loop.reason.new",
       tier: "NEW",
     };
   }
@@ -80,7 +82,7 @@ export function decideNextActivity({
   if (reviewDue && reviewPriority >= REVIEW_PRIORITY.DUE_SOON && studyMinutes >= REVIEW_INSERTION_MIN_STUDY_MINUTES) {
     return {
       activityType: "REVIEW",
-      reason: "ForgetMeNot flagged this concept for reinforcement.",
+      reasonKey: "loop.reason.review",
       tier: "REVIEW",
     };
   }
@@ -91,7 +93,7 @@ export function decideNextActivity({
   if (lastResult === 0 && hasMisconception) {
     return {
       activityType: "PRACTICE",
-      reason: "You just slipped on this — let's attack the exact misconception.",
+      reasonKey: "loop.reason.misconception",
       targetMisconception: knowledge.misconceptions[0],
       tier: "MISCONCEPTION",
     };
@@ -101,7 +103,7 @@ export function decideNextActivity({
   if (mastery < MASTERY_BANDS.MID) {
     return {
       activityType: pick(["SHORT_EXPLANATION", "ANALOGY", "EXAMPLE", "MULTIPLE_CHOICE"], lastActivity),
-      reason: "Building the foundation before we go deeper.",
+      reasonKey: "loop.reason.low",
       tier: "LOW",
     };
   }
@@ -110,7 +112,7 @@ export function decideNextActivity({
   if (mastery < MASTERY_BANDS.HIGH) {
     return {
       activityType: pick(["EXAMPLE", "MULTIPLE_CHOICE", "PRACTICE", "ANALOGY"], lastActivity),
-      reason: "You get the idea — now let's apply it.",
+      reasonKey: "loop.reason.mid",
       tier: "MID",
     };
   }
@@ -119,7 +121,7 @@ export function decideNextActivity({
   if (mastery < MASTERY_BANDS.MASTERED) {
     return {
       activityType: pick(["EXPLAIN_BACK", "OPEN_RESPONSE", "MULTIPLE_CHOICE"], lastActivity),
-      reason: "You're strong here. Explaining it back will lock it in.",
+      reasonKey: "loop.reason.high",
       tier: "HIGH",
     };
   }
@@ -128,9 +130,10 @@ export function decideNextActivity({
   const nextTopic = suggestNextTopic(topic);
   return {
     activityType: "EXPLAIN_BACK",
-    reason: nextTopic
-      ? `Mastered! Time to level up to ${nextTopic.name}.`
-      : "Mastered! Keep it fresh with a final explanation.",
+    /* Key + vars rather than a built sentence: the topic name is
+       interpolated by the view, which also translates the name itself. */
+    reasonKey: nextTopic ? "loop.reason.masteredNext" : "loop.reason.mastered",
+    reasonVars: nextTopic ? { topicId: nextTopic.id, topic: nextTopic.name } : null,
     nextTopic,
     tier: "MASTERED",
   };

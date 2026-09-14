@@ -22,6 +22,5 @@ export const USDT_LEARNING_RECIPIENT = RAW_RECIPIENT && RAW_RECIPIENT.trim() ? R
 
 export const USDT_PAYMENTS_ENABLED = Boolean(USDT_LEARNING_RECIPIENT);
 
-export const USDT_PAYMENTS_DISABLED_REASON = USDT_PAYMENTS_ENABLED
-  ? null
-  : "No USDT recipient address is configured (VITE_USDT_LEARNING_RECIPIENT is unset). Unlocking with USDT is disabled until an educator EVM address is configured.";
+/* A key, not a sentence — see paymentConfig.js for the reasoning. */
+export const USDT_PAYMENTS_DISABLED_REASON_KEY = USDT_PAYMENTS_ENABLED ? null : "market.usdtDisabled";

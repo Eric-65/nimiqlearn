@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
+import { useI18n } from "../hooks/useI18n.js";
 import { TOPIC_CONTENT, ALL_TOPICS, findTopicPath } from "../data/mockTopics.js";
-import { STATUS_META } from "../services/knowledgeService.js";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -14,18 +14,30 @@ import Button from "../components/ui/Button.jsx";
  * glossary would drift out of sync with what ExplainBack actually marks
  * you on. One source, two surfaces.
  */
-function buildEntries() {
+function buildEntries(tOr, locale) {
+  /* Built once per locale, not once per comparison: sorting alphabetically
+     by the ENGLISH name would put a Korean or Chinese glossary in an order
+     that means nothing to the reader, and Intl.Collator sorts by the active
+     locale's own rules. */
+  const collator = new Intl.Collator(locale);
   return Object.entries(TOPIC_CONTENT)
     .map(([topicId, content]) => {
       const topic = ALL_TOPICS.find((t) => t.id === topicId);
+      const k = (field) => `content.${topicId}.${field}`;
       return {
         topicId,
-        name: topic?.name || topicId,
-        path: topic ? findTopicPath(topicId).map((p) => p.name) : [],
-        ...content,
+        name: tOr(`topic.${topicId}.name`, topic?.name || topicId),
+        path: topic
+          ? findTopicPath(topicId).map((p) => tOr(`topic.${p.id}.name`, p.name))
+          : [],
+        definition: tOr(k("definition"), content.definition),
+        analogy: tOr(k("analogy"), content.analogy),
+        example: tOr(k("example"), content.example),
+        misconception: tOr(k("misconception"), content.misconception),
+        keyPoints: (content.keyPoints || []).map((kp, i) => tOr(k(`kp${i}`), kp)),
       };
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => collator.compare(a.name, b.name));
 }
 
 export default function Glossary() {
@@ -33,8 +45,9 @@ export default function Glossary() {
   const { getEntry } = useLearner();
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState(null);
+  const { t, tOr, tPlural, locale } = useI18n();
 
-  const entries = useMemo(buildEntries, []);
+  const entries = useMemo(() => buildEntries(tOr, locale), [tOr, locale]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -50,34 +63,33 @@ export default function Glossary() {
     <div>
       <header className="page-header">
         <div>
-          <h1 className="page-title">Glossary</h1>
-          <p className="page-sub">Every concept the app teaches, defined — including the misconception it most often trips people with.</p>
+          <h1 className="page-title">{t("nav.glossary")}</h1>
+          <p className="page-sub">{t("glossary.sub")}</p>
         </div>
-        <Badge tone="blue" dot>{entries.length} concepts</Badge>
+        <Badge tone="blue" dot>{t("glossary.count", { count: entries.length })}</Badge>
       </header>
 
       <div style={{ marginBottom: 20, maxWidth: 520 }}>
-        <label className="sr-only" htmlFor="glossary-search">Search the glossary</label>
+        <label className="sr-only" htmlFor="glossary-search">{t("glossary.search.label")}</label>
         <input
           id="glossary-search"
           className="input"
           type="search"
-          placeholder="Search definitions, examples, misconceptions…"
+          placeholder={t("glossary.search.placeholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <p className="tiny muted" style={{ margin: "8px 0 0" }} aria-live="polite">
           {filtered.length === entries.length
-            ? `Showing all ${entries.length} concepts`
-            : `${filtered.length} match${filtered.length === 1 ? "" : "es"} for “${query.trim()}”`}
+            ? t("glossary.showingAll", { count: entries.length })
+            : tPlural("glossary.matches", filtered.length, { query: query.trim() })}
         </p>
       </div>
 
       {filtered.length === 0 ? (
         <Card>
           <p className="small muted" style={{ margin: 0 }}>
-            Nothing matches “{query.trim()}”. Try a broader word — the search covers definitions, key points,
-            analogies and misconceptions.
+            {t("glossary.noMatch", { query: query.trim() })}
           </p>
         </Card>
       ) : (
@@ -93,7 +105,7 @@ export default function Glossary() {
                       <h3 style={{ margin: 0, fontSize: 17 }}>{entry.name}</h3>
                       {known?.status && known.status !== "NEW" && (
                         <Badge tone={known.status === "MASTERED" ? "gold" : known.status === "STRONG" ? "teal" : "blue"}>
-                          {STATUS_META[known.status]?.label} · {Math.round(known.mastery || 0)}%
+                          {t(`status.${known.status.toLowerCase()}`)} · {Math.round(known.mastery || 0)}%
                         </Badge>
                       )}
                     </div>
@@ -110,14 +122,14 @@ export default function Glossary() {
                     onClick={() => setOpenId(open ? null : entry.topicId)}
                     aria-expanded={open}
                   >
-                    {open ? "Less" : "More"}
+                    {t(open ? "common.less" : "common.more")}
                   </Button>
                 </div>
 
                 {open && (
                   <div className="anim-fade" style={{ marginTop: 16, display: "grid", gap: 14 }}>
                     {entry.keyPoints?.length > 0 && (
-                      <Section title="Key points">
+                      <Section title={t("glossary.keyPoints")}>
                         <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 5 }}>
                           {entry.keyPoints.map((k) => (
                             <li key={k} className="small" style={{ color: "var(--c-text-dim)" }}>{k}</li>
@@ -126,26 +138,26 @@ export default function Glossary() {
                       </Section>
                     )}
                     {entry.analogy && (
-                      <Section title="Analogy" tone="blue">
+                      <Section title={t("glossary.analogy")} tone="blue">
                         <p className="small" style={{ margin: 0, color: "var(--c-text-dim)" }}>{entry.analogy}</p>
                       </Section>
                     )}
                     {entry.example && (
-                      <Section title="Worked example" tone="teal">
+                      <Section title={t("glossary.example")} tone="teal">
                         <p className="small" style={{ margin: 0, color: "var(--c-text-dim)" }}>{entry.example}</p>
                       </Section>
                     )}
                     {entry.misconception && (
-                      <Section title="Common misconception" tone="rose">
+                      <Section title={t("glossary.misconception")} tone="rose">
                         <p className="small" style={{ margin: 0, color: "var(--c-text-dim)" }}>{entry.misconception}</p>
                       </Section>
                     )}
                     <div className="flex gap-8 wrap">
                       <Button variant="outline" size="sm" onClick={() => navigate("explain", { topic: entry.topicId })}>
-                        Explain this back →
+                        {t("glossary.explainBack")}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => navigate("learn", { topic: entry.topicId })}>
-                        Study it
+                        {t("glossary.studyIt")}
                       </Button>
                     </div>
                   </div>

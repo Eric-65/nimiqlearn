@@ -22,6 +22,6 @@ export const NIM_LEARNING_RECIPIENT = RAW_RECIPIENT && RAW_RECIPIENT.trim() ? RA
 
 export const PAYMENTS_ENABLED = Boolean(NIM_LEARNING_RECIPIENT);
 
-export const PAYMENTS_DISABLED_REASON = PAYMENTS_ENABLED
-  ? null
-  : "No learning-pack recipient address is configured (VITE_NIM_LEARNING_RECIPIENT is unset). Unlocking with real NIM is disabled until an educator recipient address is configured.";
+/* A key, not a sentence — this is shown to the learner, so it has to
+   follow the app's language like every other message. */
+export const PAYMENTS_DISABLED_REASON_KEY = PAYMENTS_ENABLED ? null : "market.paymentsDisabled";

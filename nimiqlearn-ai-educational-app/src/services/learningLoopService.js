@@ -56,7 +56,7 @@ const RULE_TYPE_TO_PUBLIC_TYPE = {
  * @param {Array}  [params.recentPerformance] - used only when `knowledge` is omitted.
  * @param {Array}  [params.history] - recent activity history for this topic.
  * @param {number} [params.availableStudyTime] - minutes the learner has right now.
- * @returns {{activityType:string, difficulty:string, reason:string, topic:string, estimatedDuration:number}}
+ * @returns {{activityType:string, difficulty:string, reasonKey:string, topic:string, estimatedDuration:number}}
  */
 export function getNextLearningActivity({
   learnerState,
@@ -89,7 +89,8 @@ export function getNextLearningActivity({
   return {
     activityType,
     difficulty: state.recommendedDifficulty,
-    reason: decision.reason,
+    reasonKey: decision.reasonKey,
+    reasonVars: decision.reasonVars || null,
     topic: topic.id,
     estimatedDuration: ESTIMATED_DURATION_MIN[decision.activityType] ?? 3,
     ruleActivityType: decision.activityType, // the concrete type generateActivityContent() expects

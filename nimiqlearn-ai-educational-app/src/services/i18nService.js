@@ -183,6 +183,23 @@ export function translatePlural(key, count, vars, locale = currentLocale) {
   return translate(`${key}_other`, withCount, locale);
 }
 
+/* Curriculum content (topic names, definitions, analogies…) lives in
+   mockTopics.js as English source data, not in the English catalogue.
+   Duplicating all of it into en.js just to have something to fall back to
+   would create two copies that can drift — and the app grades learners
+   against that data, so a drifted copy is a wrong answer.
+
+   So: translated content is looked up by key, and when a catalogue has no
+   entry for it the ENGLISH SOURCE OBJECT is used verbatim. That means a
+   partially translated language shows real English content rather than a
+   key or an empty string, and adding content translations later needs no
+   code change at all. */
+export function translateOr(key, fallback, vars, locale = currentLocale) {
+  const str = lookup(locale, key) ?? (locale === DEFAULT_LOCALE ? null : lookup(DEFAULT_LOCALE, key));
+  if (str === null || str === undefined) return fallback;
+  return interpolate(str, vars);
+}
+
 /* Locale-aware number formatting — 1,234 in English, 1.234 in German. */
 export function formatNumber(value, locale = currentLocale) {
   try {

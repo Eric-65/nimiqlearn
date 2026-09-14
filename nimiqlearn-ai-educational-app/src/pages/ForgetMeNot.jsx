@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useAiBackend } from "../hooks/useAiBackend.js";
+import { useI18n } from "../hooks/useI18n.js";
 import { findTopic } from "../data/mockTopics.js";
 import { buildReviewQueue } from "../services/forgetMeNotService.js";
 import { generateActivityContent } from "../services/learnLoopService.js";
@@ -16,6 +17,7 @@ export default function ForgetMeNot() {
   const { route } = useNav();
   const { knowledge, recordReview, recordActivityCoverage, getEntry } = useLearner();
   const ai = useAiBackend();
+  const { t, tPlural } = useI18n();
 
   const [activeTopicId, setActiveTopicId] = useState(route.params?.topic || null);
   const [activity, setActivity] = useState(null);
@@ -46,7 +48,7 @@ export default function ForgetMeNot() {
       });
       // loadedAt keys <LearningActivity> so each review mounts fresh — see
       // the same note in Learn.jsx for the bug this prevents.
-      setActivity({ ...content, activityType: "REVIEW", reason: "ForgetMeNot scheduled this for reinforcement.", loadedAt: Date.now() });
+      setActivity({ ...content, activityType: "REVIEW", reasonKey: "review.reason", loadedAt: Date.now() });
       setBusy(false);
       recordActivityCoverage({ topicId, question: content.question, angle: content.angle });
     },
@@ -73,8 +75,8 @@ export default function ForgetMeNot() {
     <div>
       <header className="page-header">
         <div>
-          <h1 className="page-title">ForgetMeNot AI</h1>
-          <p className="page-sub">Transparent spaced review. The app schedules reinforcement from your mastery, recency, and recent mistakes — the AI only writes the review content, never the timing.</p>
+          <h1 className="page-title">{t("review.title")}</h1>
+          <p className="page-sub">{t("review.sub")}</p>
         </div>
         <AIStatus />
       </header>
@@ -83,7 +85,7 @@ export default function ForgetMeNot() {
         {/* Review queue */}
         <div style={{ display: "grid", gap: 14 }}>
           {queue.length === 0 && (
-            <Card><p className="small muted" style={{ margin: 0 }}>Nothing to review yet — evaluate a concept first.</p></Card>
+            <Card><p className="small muted" style={{ margin: 0 }}>{t("review.empty")}</p></Card>
           )}
 
           {queue.map((r) => (
@@ -93,17 +95,17 @@ export default function ForgetMeNot() {
                   <div className="flex items-center gap-8 wrap">
                     <span className="strong" style={{ fontSize: 15 }}>{r.topicName}</span>
                     <Badge tone={r.priorityScore >= 80 ? "rose" : r.priorityScore >= 65 ? "amber" : r.priorityScore >= 40 ? "blue" : "teal"}>
-                      {r.levelLabel}
+                      {t(r.levelKey)}
                     </Badge>
-                    {r.dueNow && <Badge tone="gold" dot>Due</Badge>}
+                    {r.dueNow && <Badge tone="gold" dot>{t("review.due")}</Badge>}
                   </div>
                   <p className="tiny muted" style={{ margin: "6px 0 10px" }}>
-                    {r.daysSinceReview}d since last review • next in {r.intervalDays}d • mastery {r.mastery}%
+                    {t("review.meta", { days: r.daysSinceReview, next: r.intervalDays, mastery: r.mastery })}
                   </p>
-                  <ProgressBar value={r.priorityScore} tone="gold" ariaLabel={`Review priority ${r.priorityScore} percent`} />
+                  <ProgressBar value={r.priorityScore} tone="gold" ariaLabel={t("review.priorityAria", { score: r.priorityScore })} />
                 </div>
                 <Button variant={r.dueNow ? "primary" : "outline"} size="sm" onClick={() => startReview(r.topicId)}>
-                  Review now
+                  {t("review.now")}
                 </Button>
               </div>
             </Card>
@@ -112,7 +114,7 @@ export default function ForgetMeNot() {
           <div className="notice" style={{ margin: 0 }}>
             <span aria-hidden="true">🧮</span>
             <span>
-              <strong>How priority is computed:</strong> 40% mastery gap + 30% overdue time + 20% recent failures − 10% review stability. Deterministic, visible, and owned by the app.
+              <strong>{t("review.howTitle")}</strong> {t("review.howBody")}
             </span>
           </div>
         </div>
@@ -122,8 +124,8 @@ export default function ForgetMeNot() {
           {active && !activity && !lastResult && (
             <Card>
               <h3 style={{ fontSize: 17, margin: "0 0 6px" }}>{active.topicName}</h3>
-              <p className="small muted" style={{ margin: 0 }}>Priority {active.priorityScore}/100 — ready when you are.</p>
-              <Button variant="primary" className="mt-16" onClick={() => startReview(active.topicId)}>Start review</Button>
+              <p className="small muted" style={{ margin: 0 }}>{t("review.priorityReady", { score: active.priorityScore })}</p>
+              <Button variant="primary" className="mt-16" onClick={() => startReview(active.topicId)}>{t("review.start")}</Button>
             </Card>
           )}
 
@@ -141,7 +143,7 @@ export default function ForgetMeNot() {
           {busy && (
             <div className="flex items-center gap-12 muted small" aria-live="polite">
               <span className="thinking-dots" aria-hidden="true"><span /><span /><span /></span>
-              Preparing review…
+              {t("review.preparing")}
             </div>
           )}
 
@@ -149,7 +151,7 @@ export default function ForgetMeNot() {
             <div className="notice warn anim-pop" role="status">
               <span aria-hidden="true">⚠️</span>
               <span>
-                <strong>AI unavailable right now.</strong> Reviews use built-in recall prompts — your schedule is unaffected.
+                <strong>{t("ai.unavailable")}</strong> {t("review.aiFallback")}
               </span>
             </div>
           )}
@@ -158,16 +160,17 @@ export default function ForgetMeNot() {
             <div className={`notice ${lastResult.correct ? "success" : "warn"} anim-pop`} role="status">
               <span aria-hidden="true">{lastResult.correct ? "🧠" : "🔁"}</span>
               <span>
-                <strong>{lastResult.correct ? "Recalled — interval extended." : "Needs another pass — priority raised."}</strong>{" "}
-                {lastResult.delta > 0
-                  ? `Mastery +${lastResult.delta} → ${lastResult.after}%.`
-                  : lastResult.delta < 0
-                  ? `Mastery ${lastResult.delta} → ${lastResult.after}%.`
-                  : `Mastery stays at ${lastResult.after}%.`}{" "}
-                The review schedule updated automatically.
+                <strong>{t(lastResult.correct ? "review.result.ok" : "review.result.again")}</strong>{" "}
+                {lastResult.delta === 0
+                  ? t("review.mastery.same", { after: lastResult.after })
+                  : t("review.mastery.moved", {
+                      delta: lastResult.delta > 0 ? `+${lastResult.delta}` : lastResult.delta,
+                      after: lastResult.after,
+                    })}{" "}
+                {t("review.scheduleUpdated")}
               </span>
               <Button variant="outline" size="sm" onClick={() => startReview(lastResult.topicId)} style={{ marginLeft: "auto" }}>
-                Review again
+                {t("review.again")}
               </Button>
             </div>
           )}
@@ -175,7 +178,7 @@ export default function ForgetMeNot() {
           {due.length > 0 && (
             <Card style={{ background: "rgba(247,193,79,0.06)", borderColor: "rgba(247,193,79,0.3)" }}>
               <p className="small" style={{ margin: 0 }}>
-                <strong>{due.length} topic{due.length > 1 ? "s" : ""} due now.</strong> A 3-minute review now beats a re-teach later.
+                <strong>{tPlural("review.dueNow", due.length)}</strong> {t("review.dueNow.hint")}
               </p>
             </Card>
           )}
