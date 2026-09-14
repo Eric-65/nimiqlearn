@@ -184,7 +184,15 @@ button { font-family: inherit; }
   max-width: var(--maxw);
   margin: 0 auto;
   padding: clamp(24px, 4vw, 48px) clamp(18px, 4vw, 44px) 96px;
-  animation: rise-in var(--t-med) var(--ease-out) both;
+  /* No `both`/`forwards` fill-mode here on purpose: those hold the "to"
+     keyframe's `transform: translateY(0)` on this element FOREVER after
+     the animation ends, which (per spec) turns .page into a containing
+     block for any `position: fixed` descendant — including modals nested
+     inside a page — so they end up positioned against .page's scrolled
+     box instead of the real viewport instead of centered on screen. Once
+     the entrance animation finishes, styles simply revert to the rule
+     above (no transform), restoring the normal containing block. */
+  animation: rise-in var(--t-med) var(--ease-out);
 }
 
 .page-header {
