@@ -44,6 +44,11 @@
   --c-topbar-bg: rgba(10, 15, 30, 0.7);
   --c-overlay: rgba(4, 8, 20, 0.66);
   --c-inset: rgba(10, 15, 30, 0.5);
+  /* The theme switch's sliding thumb needs a token of its own per theme:
+     every existing surface token sits too close to the switch track in one
+     theme or the other, and a thumb you can't see defeats the control. The
+     track itself reuses --c-inset. */
+  --c-switch-thumb: #26365f;
   /* Cards carry a subtle vertical gradient rather than a flat fill, so
      this is a token of its own rather than reusing --c-surface. */
   --c-card-bg: linear-gradient(180deg, rgba(23, 32, 63, 0.65), rgba(17, 24, 49, 0.9));
@@ -160,6 +165,7 @@
   --c-topbar-bg: rgba(245, 247, 252, 0.78);
   --c-overlay: rgba(23, 32, 60, 0.38);
   --c-inset: rgba(31, 45, 84, 0.05);
+  --c-switch-thumb: #ffffff;
   --c-card-bg: linear-gradient(180deg, #ffffff, #fbfcff);
   --c-card-base: #ffffff;
   --c-notice-info: #1c4ba3;
@@ -226,6 +232,7 @@
     --c-topbar-bg: rgba(245, 247, 252, 0.78);
     --c-overlay: rgba(23, 32, 60, 0.38);
     --c-inset: rgba(31, 45, 84, 0.05);
+    --c-switch-thumb: #ffffff;
     --c-card-bg: linear-gradient(180deg, #ffffff, #fbfcff);
     --c-card-base: #ffffff;
     --c-notice-info: #1c4ba3;

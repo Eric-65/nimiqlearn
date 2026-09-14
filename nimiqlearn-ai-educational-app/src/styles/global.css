@@ -663,6 +663,98 @@ button { font-family: inherit; }
 
 .icon-btn:active { transform: scale(0.94); }
 
+/* ---------------- Theme switch (topbar) ---------------- */
+/* Deliberately NOT a nav tab: switching dark/light is a one-tap preference,
+   not a destination, so it lives permanently in the topbar where it is
+   visible from every page. Settings still hosts the full three-way choice
+   (Dark / Light / System) because this control can only express two states.
+
+   A sliding track rather than a bare icon button: the thumb's position
+   shows which theme is CURRENTLY active, where a lone sun or moon glyph is
+   ambiguous — users can't tell whether it means "you are in light" or
+   "tap for light". */
+.theme-switch {
+  position: relative;
+  flex: none;
+  width: 70px;
+  height: 34px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--c-border);
+  background: var(--c-inset);
+  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.theme-switch:hover { border-color: var(--c-border-strong); }
+
+.theme-switch:focus-visible {
+  outline: 2px solid var(--c-blue);
+  outline-offset: 2px;
+}
+
+/* The track is 34px tall to sit comfortably in the topbar, but the Nimiq
+   Mini Apps pre-ship checklist requires a 44px minimum touch target. This
+   invisible overlay supplies the missing 10px of hit area (5px each side)
+   without making the control look chunky. */
+.theme-switch::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: var(--r-pill);
+}
+
+.theme-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--c-switch-thumb);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t-med) var(--ease-out);
+}
+
+/* 70 - 3 - 26 - 3 = 38px of travel. */
+.theme-switch[aria-checked="true"] .theme-switch-thumb { transform: translateX(38px); }
+
+.theme-switch-icons {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 7px;
+  font-size: 13px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Both glyphs stay visible; the inactive one dims. Hiding one entirely
+   would lose the "there is another option" affordance. */
+.theme-switch-icons > span {
+  transition: opacity var(--t-fast) var(--ease-out);
+  opacity: 0.38;
+}
+
+.theme-switch[aria-checked="false"] .theme-switch-moon,
+.theme-switch[aria-checked="true"] .theme-switch-sun { opacity: 1; }
+
+@media (max-width: 720px) {
+  /* The topbar already wraps to a second line on narrow screens; shaving
+     the switch keeps it on the first row alongside the page name. */
+  .theme-switch { width: 62px; height: 30px; }
+  /* Track is 4px shorter here, so the hit-area overlay has to grow by the
+     same 4px to still clear 44px (30 + 2*7 = 44). */
+  .theme-switch::after { inset: -7px; }
+  .theme-switch-thumb { width: 24px; height: 24px; top: 2px; left: 2px; }
+  .theme-switch[aria-checked="true"] .theme-switch-thumb { transform: translateX(34px); }
+  .theme-switch-icons { padding: 0 6px; font-size: 12px; }
+}
+
 /* Unread marker. Deliberately a dot, not a number: the topbar is tight on a
    360px screen, and the exact count is one tap away on the page itself. */
 .icon-btn-dot {

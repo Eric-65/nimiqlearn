@@ -143,16 +143,32 @@ function Shell() {
           </div>
           <div className="topbar-spacer" />
 
-          {/* Quick dark/light flip. Always resolves to a concrete opposite,
-              so pressing it from "system" commits to a real choice rather
-              than cycling through three states the label can't describe. */}
+          {/* Theme lives here, in the topbar, on purpose — it is a preference,
+              not a place, so it must never become a nav tab. Visible from
+              every page, one tap, no navigation.
+
+              It flips between the two concrete themes: pressing it while on
+              "system" commits to a real choice, because a two-state switch
+              cannot honestly represent three states. Settings keeps the full
+              Dark / Light / System choice for anyone who wants to follow
+              their OS.
+
+              role="switch" + aria-checked (rather than a plain button) is
+              what tells a screen reader the CURRENT theme, not just the
+              action — matching what the thumb's position shows visually. */}
           <button
-            className="icon-btn"
+            className="theme-switch"
+            role="switch"
+            aria-checked={resolved === "light"}
             onClick={() => setMode(resolved === "light" ? "dark" : "light")}
-            aria-label={`Switch to ${resolved === "light" ? "dark" : "light"} theme`}
+            aria-label="Light theme"
             title={`Switch to ${resolved === "light" ? "dark" : "light"} theme`}
           >
-            <span aria-hidden="true">{resolved === "light" ? "🌙" : "☀️"}</span>
+            <span className="theme-switch-thumb" aria-hidden="true" />
+            <span className="theme-switch-icons" aria-hidden="true">
+              <span className="theme-switch-moon">🌙</span>
+              <span className="theme-switch-sun">☀️</span>
+            </span>
           </button>
 
           <button
