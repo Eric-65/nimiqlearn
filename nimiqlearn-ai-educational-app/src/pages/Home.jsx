@@ -162,7 +162,7 @@ export default function Home() {
           {/* What should I learn next? */}
           <Card
             hover
-            style={{ borderColor: "rgba(247,193,79,0.35)", background: "linear-gradient(135deg, rgba(247,193,79,0.12), rgba(17,24,49,0.9) 60%)" }}
+            style={{ borderColor: "rgba(247,193,79,0.35)", background: "linear-gradient(135deg, var(--c-gold-soft), var(--c-card-base) 60%)" }}
           >
             <span className="eyebrow" style={{ marginBottom: 8 }}>What should I learn next?</span>
             {recommended ? (
@@ -259,7 +259,7 @@ export default function Home() {
 
       {/* ================= STORY ================= */}
       <section style={{ marginTop: 72 }}>
-        <Card style={{ padding: "clamp(26px, 4vw, 44px)", background: "linear-gradient(135deg, rgba(37,103,235,0.12), rgba(17,24,49,0.92) 55%)" }}>
+        <Card style={{ padding: "clamp(26px, 4vw, 44px)", background: "linear-gradient(135deg, var(--c-blue-soft), var(--c-card-base) 55%)" }}>
           <div className="grid grid-2 items-center gap-24">
             <div>
               <span className="eyebrow">Why NimiqLearn exists</span>

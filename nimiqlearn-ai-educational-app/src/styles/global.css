@@ -11,16 +11,21 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  /* Paints the overscroll/rubber-band area, which body's background does
+     not cover — without it that strip flashes the UA default (white) when
+     you bounce-scroll in dark mode. */
+  background: var(--c-bg);
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
   background:
-    radial-gradient(1100px 520px at 85% -10%, rgba(77, 141, 255, 0.14), transparent 60%),
-    radial-gradient(900px 500px at -10% 20%, rgba(124, 58, 237, 0.12), transparent 55%),
-    radial-gradient(700px 420px at 55% 110%, rgba(52, 224, 180, 0.08), transparent 60%),
+    radial-gradient(1100px 520px at 85% -10%, var(--wash-1), transparent 60%),
+    radial-gradient(900px 500px at -10% 20%, var(--wash-2), transparent 55%),
+    radial-gradient(700px 420px at 55% 110%, var(--wash-3), transparent 60%),
     var(--c-bg);
+  background-attachment: fixed;
   color: var(--c-text);
   line-height: 1.55;
   min-height: 100vh;
@@ -74,7 +79,7 @@ button { font-family: inherit; }
   flex-direction: column;
   gap: 8px;
   padding: 20px 16px;
-  background: rgba(10, 15, 30, 0.72);
+  background: var(--c-sidebar-bg);
   backdrop-filter: blur(18px);
   border-right: 1px solid var(--c-border);
   z-index: 40;
@@ -172,7 +177,7 @@ button { font-family: inherit; }
   align-items: center;
   gap: 16px;
   padding: 0 clamp(18px, 4vw, 44px);
-  background: rgba(10, 15, 30, 0.7);
+  background: var(--c-topbar-bg);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--c-border);
 }
@@ -231,7 +236,7 @@ button { font-family: inherit; }
      track to grow past the viewport instead of letting the card's own
      text wrap to fit — the standard CSS Grid/Flexbox min-content blowout. */
   min-width: 0;
-  background: linear-gradient(180deg, rgba(23, 32, 63, 0.65), rgba(17, 24, 49, 0.9));
+  background: var(--c-card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
   padding: 22px;
@@ -301,6 +306,8 @@ button { font-family: inherit; }
 
 .btn-nimiq {
   background: linear-gradient(135deg, var(--c-nimiq-1), var(--c-nimiq-2));
+  /* The Nimiq gradient stays saturated in both themes, so its label is
+     white in both — not --c-on-accent, which flips. */
   color: #fff;
   box-shadow: 0 8px 24px rgba(37, 103, 235, 0.35);
 }
@@ -405,7 +412,7 @@ button { font-family: inherit; }
 
 .input, .textarea, .select {
   width: 100%;
-  background: rgba(10, 15, 30, 0.6);
+  background: var(--c-inset);
   border: 1px solid var(--c-border);
   border-radius: var(--r-md);
   color: var(--c-text);
@@ -526,10 +533,10 @@ button { font-family: inherit; }
   color: var(--c-text-dim);
 }
 
-.notice.info { border-color: rgba(77, 141, 255, 0.35); background: var(--c-blue-soft); color: #cfe0ff; }
-.notice.warn { border-color: rgba(247, 193, 79, 0.35); background: var(--c-gold-soft); color: #f4e2b8; }
-.notice.danger { border-color: rgba(255, 107, 139, 0.4); background: var(--c-rose-soft); color: #ffd3dd; }
-.notice.success { border-color: rgba(52, 224, 180, 0.4); background: var(--c-teal-soft); color: #c8f5e8; }
+.notice.info { border-color: rgba(77, 141, 255, 0.35); background: var(--c-blue-soft); color: var(--c-notice-info); }
+.notice.warn { border-color: rgba(247, 193, 79, 0.35); background: var(--c-gold-soft); color: var(--c-notice-warn); }
+.notice.danger { border-color: rgba(255, 107, 139, 0.4); background: var(--c-rose-soft); color: var(--c-notice-danger); }
+.notice.success { border-color: rgba(52, 224, 180, 0.4); background: var(--c-teal-soft); color: var(--c-notice-success); }
 
 /* ---------------- Responsive ---------------- */
 @media (max-width: 960px) {
@@ -551,7 +558,7 @@ button { font-family: inherit; }
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     border-right: none;
     border-top: 1px solid var(--c-border);
-    background: rgba(10, 15, 30, 0.94);
+    background: var(--c-sidebar-bg-mobile);
     backdrop-filter: blur(20px);
     overflow-x: auto;
     overflow-y: hidden;
@@ -625,4 +632,75 @@ button { font-family: inherit; }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------------- Topbar icon buttons + nav counts ---------------- */
+/* Added with the Settings/Profile/Glossary/Notifications/Leaderboard pass.
+   Sized to the 44px touch-target minimum the Nimiq Mini Apps pre-ship
+   checklist requires — these sit in the topbar on a phone. */
+.icon-btn {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.icon-btn:hover {
+  background: var(--c-surface-3);
+  border-color: var(--c-border-strong);
+}
+
+.icon-btn:active { transform: scale(0.94); }
+
+/* Unread marker. Deliberately a dot, not a number: the topbar is tight on a
+   360px screen, and the exact count is one tap away on the page itself. */
+.icon-btn-dot {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-rose);
+  border: 2px solid var(--c-surface-2);
+}
+
+/* Count pill inside a sidebar nav item. */
+.nav-count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--c-rose);
+  color: var(--c-on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  /* In the bottom bar the nav item is a stacked icon+label, so a
+     margin-left:auto pill would be shoved off-centre — pin it to the
+     item's top-right corner instead. */
+  .nav-count {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    margin-left: 0;
+  }
+
+  .nav-item { position: relative; }
 }

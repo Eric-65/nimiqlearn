@@ -16,7 +16,7 @@ export default function NextChallengeCard({ evaluation, topic, onChallenge }) {
     <Card
       style={{
         borderColor: "rgba(247,193,79,0.45)",
-        background: "linear-gradient(135deg, rgba(247,193,79,0.12), rgba(17,24,49,0.9) 60%)",
+        background: "linear-gradient(135deg, var(--c-gold-soft), var(--c-card-base) 60%)",
       }}
     >
       <span className="eyebrow" style={{ marginBottom: 8 }}>Next challenge</span>

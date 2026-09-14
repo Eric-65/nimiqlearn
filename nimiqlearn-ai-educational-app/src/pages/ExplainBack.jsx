@@ -268,7 +268,7 @@ export default function ExplainBack() {
               </summary>
               <p
                 style={{
-                  background: "rgba(10,15,30,0.5)",
+                  background: "var(--c-inset)",
                   border: "1px solid var(--c-border)",
                   borderRadius: "var(--r-md)",
                   padding: "12px 14px",

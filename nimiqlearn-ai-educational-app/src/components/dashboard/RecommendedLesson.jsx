@@ -9,7 +9,7 @@ export default function RecommendedLesson({ recommendation, onStart }) {
   const { topic, decision } = recommendation;
 
   return (
-    <Card hover className="anim-rise" style={{ borderColor: "rgba(77,141,255,0.35)", background: "linear-gradient(135deg, rgba(77,141,255,0.14), rgba(17,24,49,0.9) 60%)" }}>
+    <Card hover className="anim-rise" style={{ borderColor: "rgba(77,141,255,0.35)", background: "linear-gradient(135deg, var(--c-blue-soft), var(--c-card-base) 60%)" }}>
       <div className="flex items-center gap-8 wrap" style={{ marginBottom: 10 }}>
         <Badge tone="gold">Recommended next</Badge>
         <span className="tiny muted">{topic.parentName || ""}</span>

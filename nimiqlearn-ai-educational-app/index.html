@@ -10,6 +10,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
     <title>NimiqLearn — Learn smarter. Explain better. Remember longer.</title>
+    <script>
+      /* Applies the saved theme BEFORE first paint. Without this, a light-theme
+         user gets a flash of the dark default on every load, because React (and
+         so themeService.initTheme) only runs after the first frame. Deliberately
+         inline, tiny, and dependency-free for that reason. Mirrors
+         themeService.js: dark is the attribute-free default, so only light and
+         system are stamped. */
+      (function () {
+        try {
+          var m = localStorage.getItem("nimiqlearn:theme");
+          if (m === "light" || m === "system") {
+            document.documentElement.setAttribute("data-theme", m);
+          }
+        } catch (e) {
+          /* storage blocked — fall through to the dark default */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

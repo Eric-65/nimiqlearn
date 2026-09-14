@@ -1,5 +1,34 @@
+/* ============================================================
+   NimiqLearn — design tokens, in two themes
+   ------------------------------------------------------------
+   Dark is the brand default: :root carries the full dark palette,
+   so the app looks like NimiqLearn even before any JS runs and
+   regardless of OS preference.
+
+   Light is opt-in, applied by themeService.js stamping
+   data-theme="light" on <html>. The three selectors below cover
+   all three states a user can be in:
+
+     :root                        -> dark (default, and the
+                                     explicit "Dark" choice)
+     :root[data-theme="light"]    -> the explicit "Light" choice
+     @media (prefers-color-scheme: light) on
+       :root[data-theme="system"] -> "System", following the OS
+
+   Every colour a component uses must come from a token defined
+   HERE in the base :root block. A colour whose only definition
+   lives inside a [data-theme] or media block silently falls back
+   to nothing in the states that block doesn't match — that's the
+   classic half-themed-page bug.
+   ============================================================ */
+
 :root {
-  /* ---- Color system (premium dark education theme) ---- */
+  /* Tells the browser to render native UI (scrollbars, form controls,
+     autofill) in the matching scheme — otherwise a dark page gets a
+     bright white scrollbar. */
+  color-scheme: dark;
+
+  /* ---- Surfaces (dark) ---- */
   --c-bg: #0a0f1e;
   --c-bg-soft: #0d1327;
   --c-surface: #111831;
@@ -8,10 +37,42 @@
   --c-border: rgba(151, 166, 211, 0.16);
   --c-border-strong: rgba(151, 166, 211, 0.28);
 
+  /* Chrome that used to be hardcoded in global.css. Tokenised so the
+     light theme can actually re-tint the shell, not just the cards. */
+  --c-sidebar-bg: rgba(10, 15, 30, 0.72);
+  --c-sidebar-bg-mobile: rgba(10, 15, 30, 0.94);
+  --c-topbar-bg: rgba(10, 15, 30, 0.7);
+  --c-overlay: rgba(4, 8, 20, 0.66);
+  --c-inset: rgba(10, 15, 30, 0.5);
+  /* Cards carry a subtle vertical gradient rather than a flat fill, so
+     this is a token of its own rather than reusing --c-surface. */
+  --c-card-bg: linear-gradient(180deg, rgba(23, 32, 63, 0.65), rgba(17, 24, 49, 0.9));
+  /* The solid end-stop of that gradient. Components that blend an accent
+     tint into a card (highlight cards, hero panels) need a SOLID colour
+     to blend toward — a gradient token cannot be nested inside another
+     gradient. */
+  --c-card-base: rgba(17, 24, 49, 0.9);
+
+  /* Text inside a tinted .notice. Kept as its own token per theme because
+     these must contrast against a TINTED background, not the page ground —
+     the pale values below are unreadable on a light tint, which is exactly
+     how the light theme first shipped broken (gold-on-gold). */
+  --c-notice-info: #cfe0ff;
+  --c-notice-warn: #f4e2b8;
+  --c-notice-danger: #ffd3dd;
+  --c-notice-success: #c8f5e8;
+
+  /* Ambient background washes behind the whole app. */
+  --wash-1: rgba(77, 141, 255, 0.14);
+  --wash-2: rgba(124, 58, 237, 0.12);
+  --wash-3: rgba(52, 224, 180, 0.08);
+
+  /* ---- Text (dark) ---- */
   --c-text: #eef2ff;
   --c-text-dim: #a3aecf;
   --c-text-faint: #6b7799;
 
+  /* ---- Accents ---- */
   --c-gold: #f7c14f;
   --c-gold-soft: rgba(247, 193, 79, 0.14);
   --c-teal: #34e0b4;
@@ -27,6 +88,10 @@
 
   --c-nimiq-1: #2567eb;
   --c-nimiq-2: #7c3aed;
+
+  /* Text that sits ON a saturated accent fill (buttons, badges).
+     Dark accents are bright, so near-black reads best on them. */
+  --c-on-accent: #071023;
 
   /* ---- Status colors (knowledge states) ---- */
   --st-new: #8b9bb4;
@@ -63,4 +128,155 @@
   --t-fast: 140ms;
   --t-med: 240ms;
   --t-slow: 480ms;
+}
+
+/* ============================================================
+   LIGHT THEME
+   ------------------------------------------------------------
+   Not a naive inversion. The dark theme's accents are tuned to
+   glow on near-black; dropped straight onto white, the teal and
+   gold lose almost all contrast against body text. So the
+   accents are re-mixed darker and more saturated here, while
+   keeping the same hue family, and the soft fills are lightened
+   so tinted pills stay legible.
+
+   Ground is a faintly blue-cool off-white rather than pure #fff:
+   it keeps the brand's cool cast and is easier to read against
+   for long study sessions.
+   ============================================================ */
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --c-bg: #f5f7fc;
+  --c-bg-soft: #eef1f9;
+  --c-surface: #ffffff;
+  --c-surface-2: #f4f6fc;
+  --c-surface-3: #e9edf8;
+  --c-border: rgba(31, 45, 84, 0.14);
+  --c-border-strong: rgba(31, 45, 84, 0.26);
+
+  --c-sidebar-bg: rgba(255, 255, 255, 0.82);
+  --c-sidebar-bg-mobile: rgba(255, 255, 255, 0.96);
+  --c-topbar-bg: rgba(245, 247, 252, 0.78);
+  --c-overlay: rgba(23, 32, 60, 0.38);
+  --c-inset: rgba(31, 45, 84, 0.05);
+  --c-card-bg: linear-gradient(180deg, #ffffff, #fbfcff);
+  --c-card-base: #ffffff;
+  --c-notice-info: #1c4ba3;
+  --c-notice-warn: #79520a;
+  --c-notice-danger: #9c2340;
+  --c-notice-success: #0a6a53;
+
+  --wash-1: rgba(77, 141, 255, 0.1);
+  --wash-2: rgba(124, 58, 237, 0.08);
+  --wash-3: rgba(16, 168, 132, 0.07);
+
+  --c-text: #131a30;
+  --c-text-dim: #4a5878;
+  --c-text-faint: #78859f;
+
+  /* Darkened accents — the dark theme's values fail contrast on white. */
+  --c-gold: #a06f08;
+  --c-gold-soft: rgba(196, 140, 24, 0.16);
+  --c-teal: #0d8f70;
+  --c-teal-soft: rgba(13, 143, 112, 0.14);
+  --c-blue: #2563eb;
+  --c-blue-soft: rgba(37, 99, 235, 0.12);
+  --c-amber: #b4650b;
+  --c-amber-soft: rgba(180, 101, 11, 0.14);
+  --c-rose: #d23a5e;
+  --c-rose-soft: rgba(210, 58, 94, 0.12);
+  --c-violet: #6d4bd8;
+  --c-violet-soft: rgba(109, 75, 216, 0.13);
+
+  /* On light, accent fills are dark, so their text flips to near-white. */
+  --c-on-accent: #ffffff;
+
+  --st-new: #6b7799;
+  --st-learning: #b4650b;
+  --st-developing: #2563eb;
+  --st-strong: #0d8f70;
+  --st-mastered: #a06f08;
+
+  /* Shadows on a light ground must be far softer or everything looks
+     like it is floating an inch off the page. */
+  --shadow-sm: 0 1px 3px rgba(23, 32, 60, 0.07);
+  --shadow-md: 0 6px 20px rgba(23, 32, 60, 0.09);
+  --shadow-lg: 0 20px 46px rgba(23, 32, 60, 0.13);
+  --glow-gold: 0 0 0 1px rgba(196, 140, 24, 0.3), 0 6px 20px rgba(196, 140, 24, 0.12);
+  --glow-teal: 0 0 0 1px rgba(13, 143, 112, 0.3), 0 6px 20px rgba(13, 143, 112, 0.12);
+}
+
+/* "System" mode: follow the OS, but only when the user explicitly chose
+   System. Without the data-theme guard this would also hijack the default
+   and the explicit Dark choice on a light-mode machine. */
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --c-bg: #f5f7fc;
+    --c-bg-soft: #eef1f9;
+    --c-surface: #ffffff;
+    --c-surface-2: #f4f6fc;
+    --c-surface-3: #e9edf8;
+    --c-border: rgba(31, 45, 84, 0.14);
+    --c-border-strong: rgba(31, 45, 84, 0.26);
+
+    --c-sidebar-bg: rgba(255, 255, 255, 0.82);
+    --c-sidebar-bg-mobile: rgba(255, 255, 255, 0.96);
+    --c-topbar-bg: rgba(245, 247, 252, 0.78);
+    --c-overlay: rgba(23, 32, 60, 0.38);
+    --c-inset: rgba(31, 45, 84, 0.05);
+    --c-card-bg: linear-gradient(180deg, #ffffff, #fbfcff);
+    --c-card-base: #ffffff;
+    --c-notice-info: #1c4ba3;
+    --c-notice-warn: #79520a;
+    --c-notice-danger: #9c2340;
+    --c-notice-success: #0a6a53;
+
+    --wash-1: rgba(77, 141, 255, 0.1);
+    --wash-2: rgba(124, 58, 237, 0.08);
+    --wash-3: rgba(16, 168, 132, 0.07);
+
+    --c-text: #131a30;
+    --c-text-dim: #4a5878;
+    --c-text-faint: #78859f;
+
+    --c-gold: #a06f08;
+    --c-gold-soft: rgba(196, 140, 24, 0.16);
+    --c-teal: #0d8f70;
+    --c-teal-soft: rgba(13, 143, 112, 0.14);
+    --c-blue: #2563eb;
+    --c-blue-soft: rgba(37, 99, 235, 0.12);
+    --c-amber: #b4650b;
+    --c-amber-soft: rgba(180, 101, 11, 0.14);
+    --c-rose: #d23a5e;
+    --c-rose-soft: rgba(210, 58, 94, 0.12);
+    --c-violet: #6d4bd8;
+    --c-violet-soft: rgba(109, 75, 216, 0.13);
+
+    --c-on-accent: #ffffff;
+
+    --st-new: #6b7799;
+    --st-learning: #b4650b;
+    --st-developing: #2563eb;
+    --st-strong: #0d8f70;
+    --st-mastered: #a06f08;
+
+    --shadow-sm: 0 1px 3px rgba(23, 32, 60, 0.07);
+    --shadow-md: 0 6px 20px rgba(23, 32, 60, 0.09);
+    --shadow-lg: 0 20px 46px rgba(23, 32, 60, 0.13);
+    --glow-gold: 0 0 0 1px rgba(196, 140, 24, 0.3), 0 6px 20px rgba(196, 140, 24, 0.12);
+    --glow-teal: 0 0 0 1px rgba(13, 143, 112, 0.3), 0 6px 20px rgba(13, 143, 112, 0.12);
+  }
+}
+
+/* Cross-fade the shell when the theme flips, so the switch reads as a
+   deliberate transition rather than a flash. Excluded from transform so
+   page-entry animations are unaffected, and disabled entirely under
+   reduced-motion by the rule in global.css. */
+.theme-transition,
+.theme-transition * {
+  transition: background-color var(--t-med) var(--ease-out),
+    border-color var(--t-med) var(--ease-out),
+    color var(--t-fast) var(--ease-out) !important;
 }
