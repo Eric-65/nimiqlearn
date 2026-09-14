@@ -115,13 +115,16 @@ export function computeXp(knowledgeEntries = []) {
 
 /** A short, honest label for a level — flavour only, never a claim about
  * anything the app hasn't measured. */
-export function levelTitle(level) {
-  if (level >= 20) return "Master Explainer";
-  if (level >= 15) return "Mentor";
-  if (level >= 10) return "Deep Thinker";
-  if (level >= 6) return "Connector";
-  if (level >= 3) return "Explainer";
-  return "Beginner";
+/* Returns a translation KEY, not a title. The rank a learner sees has to
+   change with the app's language like everything else, and a service that
+   returns finished English is the one place that quietly would not. */
+export function levelTitleKey(level) {
+  if (level >= 20) return "level.masterExplainer";
+  if (level >= 15) return "level.mentor";
+  if (level >= 10) return "level.deepThinker";
+  if (level >= 6) return "level.connector";
+  if (level >= 3) return "level.explainer";
+  return "level.beginner";
 }
 
 /** XP a learner would gain right now from one more correct answer, used to

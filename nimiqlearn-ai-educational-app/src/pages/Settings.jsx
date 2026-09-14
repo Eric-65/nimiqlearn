@@ -2,7 +2,9 @@ import React from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useTheme } from "../hooks/useTheme.js";
+import { useI18n } from "../hooks/useI18n.js";
 import { useNimiq } from "../hooks/useNimiq.js";
+import { LOCALES } from "../i18n/locales.js";
 import { isAssessmentBackendConfigured } from "../services/explainBackAssessmentService.js";
 import { PAYMENTS_ENABLED } from "../config/paymentConfig.js";
 import { USDT_PAYMENTS_ENABLED } from "../config/evmPaymentConfig.js";
@@ -12,9 +14,9 @@ import Badge from "../components/ui/Badge.jsx";
 import Button from "../components/ui/Button.jsx";
 
 const THEME_OPTIONS = [
-  { mode: "dark", label: "Dark", icon: "🌙", hint: "The NimiqLearn default" },
-  { mode: "light", label: "Light", icon: "☀️", hint: "Bright, high-contrast" },
-  { mode: "system", label: "System", icon: "🖥️", hint: "Follow your device" },
+  { mode: "dark", icon: "🌙" },
+  { mode: "light", icon: "☀️" },
+  { mode: "system", icon: "🖥️" },
 ];
 
 /**
@@ -27,12 +29,13 @@ export default function Settings() {
   const { navigate } = useNav();
   const { resetLearner } = useLearner();
   const { mode, resolved, setMode } = useTheme();
+  const { locale, setLocale, t } = useI18n();
   const nimiq = useNimiq();
 
   const aiConfigured = isAssessmentBackendConfigured();
 
   const handleReset = () => {
-    if (confirm("Reset all learner data? Your mastery, XP, review queue and unlocked packs will be cleared. This cannot be undone.")) {
+    if (confirm(t("settings.data.confirmReset"))) {
       resetLearner();
       navigate("home");
     }
@@ -42,18 +45,47 @@ export default function Settings() {
     <div>
       <header className="page-header">
         <div>
-          <h1 className="page-title">Settings</h1>
-          <p className="page-sub">Appearance, connections, and your data.</p>
+          <h1 className="page-title">{t("nav.settings")}</h1>
+          <p className="page-sub">{t("settings.sub")}</p>
         </div>
         <Badge tone={resolved === "light" ? "gold" : "blue"} dot>
-          {resolved === "light" ? "Light" : "Dark"} theme
+          {t(resolved === "light" ? "settings.badge.light" : "settings.badge.dark")}
         </Badge>
       </header>
 
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
-          <Card title="Appearance" sub="Applies instantly and is remembered on this device.">
-            <div role="radiogroup" aria-label="Theme" style={{ display: "grid", gap: 10 }}>
+          {/* Language sits first: a learner who cannot read the page needs to
+              find this before anything else on it. */}
+          <Card title={t("settings.language.title")} sub={t("settings.language.sub")}>
+            <div role="radiogroup" aria-label={t("settings.language.title")} className="lang-grid">
+              {LOCALES.map((l) => {
+                const active = locale === l.code;
+                return (
+                  <button
+                    key={l.code}
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setLocale(l.code)}
+                    className={`lang-tile ${active ? "active" : ""}`}
+                    /* The tile's accessible name is the language's own name,
+                       never a translated one: someone looking for "한국어"
+                       is, by definition, not reading the current language. */
+                    lang={l.code}
+                  >
+                    <span className="lang-flag" aria-hidden="true">{l.flag}</span>
+                    <span className="lang-label">{l.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="tiny muted" style={{ margin: "14px 0 0" }}>
+              {t("settings.language.note")}
+            </p>
+          </Card>
+
+          <Card title={t("settings.appearance.title")} sub={t("settings.appearance.sub")}>
+            <div role="radiogroup" aria-label={t("settings.appearance.theme")} style={{ display: "grid", gap: 10 }}>
               {THEME_OPTIONS.map((opt) => {
                 const active = mode === opt.mode;
                 return (
@@ -80,86 +112,86 @@ export default function Settings() {
                     <span className="flex items-center gap-12">
                       <span style={{ fontSize: 20 }} aria-hidden="true">{opt.icon}</span>
                       <span>
-                        <span className="strong" style={{ display: "block" }}>{opt.label}</span>
+                        <span className="strong" style={{ display: "block" }}>{t(`settings.theme.${opt.mode}`)}</span>
                         <span className="tiny muted">
-                          {opt.hint}
-                          {opt.mode === "system" && active && ` · currently ${resolved}`}
+                          {t(`settings.theme.${opt.mode}.hint`)}
+                          {opt.mode === "system" && active &&
+                            ` · ${t("settings.theme.currently", { theme: t(`settings.theme.${resolved}`) })}`}
                         </span>
                       </span>
                     </span>
-                    {active && <Badge tone="teal">Active</Badge>}
+                    {active && <Badge tone="teal">{t("common.active")}</Badge>}
                   </button>
                 );
               })}
             </div>
           </Card>
 
-          <Card title="Notifications" sub="Derived from your progress — nothing is pushed from a server.">
+          <Card title={t("nav.notifications")} sub={t("settings.notifications.sub")}>
             <p className="small muted" style={{ margin: "0 0 14px" }}>
-              Reviews falling due, topics slipping, and unverified payments all raise a notification automatically.
-              Dismissals are remembered on this device.
+              {t("settings.notifications.body")}
             </p>
             <div className="flex gap-12 wrap">
-              <Button variant="outline" size="sm" onClick={() => navigate("notifications")}>Open notifications</Button>
-              <Button variant="ghost" size="sm" onClick={restoreAllNotifications}>Restore dismissed</Button>
+              <Button variant="outline" size="sm" onClick={() => navigate("notifications")}>
+                {t("settings.notifications.open")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={restoreAllNotifications}>
+                {t("settings.notifications.restore")}
+              </Button>
             </div>
           </Card>
         </div>
 
         <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
-          <Card title="Connections" sub="What this build is actually configured for.">
+          <Card title={t("settings.connections.title")} sub={t("settings.connections.sub")}>
             <div style={{ display: "grid", gap: 12 }}>
               <StatusRow
-                label="AI grading backend"
+                label={t("settings.conn.ai")}
                 ok={aiConfigured}
-                okText="Configured"
-                offText="Not configured"
-                hint={
-                  aiConfigured
-                    ? "ExplainBack grading and Learn activities call the backend, falling back to the built-in engine on failure."
-                    : "VITE_EXPLAINBACK_TUTOR_API_URL is unset, so every AI feature uses the built-in deterministic engine."
-                }
+                okText={t("common.configured")}
+                offText={t("common.notConfigured")}
+                hint={t(aiConfigured ? "settings.conn.ai.on" : "settings.conn.ai.off")}
               />
               <StatusRow
-                label="Nimiq Pay wallet"
+                label={t("settings.conn.wallet")}
                 ok={nimiq.isConnected}
-                okText="Connected"
-                offText={nimiq.isUnavailable ? "Not available here" : "Not connected"}
-                hint={
-                  nimiq.isConnected
-                    ? "Real NIM payments are available."
-                    : "Open NimiqLearn inside Nimiq Pay to connect. Payments run as clearly-labelled simulations until then."
-                }
+                okText={t("common.connected")}
+                offText={t(nimiq.isUnavailable ? "common.notAvailableHere" : "common.notConnected")}
+                hint={t(nimiq.isConnected ? "settings.conn.wallet.on" : "settings.conn.wallet.off")}
               />
               <StatusRow
-                label="NIM payments"
+                label={t("settings.conn.nim")}
                 ok={PAYMENTS_ENABLED}
-                okText="Recipient configured"
-                offText="Disabled"
-                hint={PAYMENTS_ENABLED ? "A real recipient address is set." : "No recipient address configured, so unlocking with real NIM is off."}
+                okText={t("common.recipientConfigured")}
+                offText={t("common.disabled")}
+                hint={t(PAYMENTS_ENABLED ? "settings.conn.nim.on" : "settings.conn.nim.off")}
               />
               <StatusRow
-                label="USDT payments"
+                label={t("settings.conn.usdt")}
                 ok={USDT_PAYMENTS_ENABLED}
-                okText="Recipient configured"
-                offText="Coming soon"
-                hint={USDT_PAYMENTS_ENABLED ? "USDT is available on packs that list a USDT price." : "No EVM recipient address configured yet."}
+                okText={t("common.recipientConfigured")}
+                offText={t("common.comingSoon")}
+                hint={t(USDT_PAYMENTS_ENABLED ? "settings.conn.usdt.on" : "settings.conn.usdt.off")}
               />
             </div>
             <div className="flex gap-12 wrap" style={{ marginTop: 16 }}>
-              <Button variant="outline" size="sm" onClick={() => navigate("wallet")}>Wallet details</Button>
+              <Button variant="outline" size="sm" onClick={() => navigate("wallet")}>
+                {t("settings.conn.walletDetails")}
+              </Button>
             </div>
           </Card>
 
-          <Card title="Your data" sub="Everything NimiqLearn knows about you lives in this browser.">
+          <Card title={t("settings.data.title")} sub={t("settings.data.sub")}>
             <p className="small muted" style={{ margin: "0 0 14px" }}>
-              Mastery, XP, the review queue and unlocked packs are stored in this browser's local storage. There is no
-              account and no server copy — clearing your browser data clears your progress, and resetting here cannot
-              be undone.
+              {t("settings.data.body")}
             </p>
             <div className="flex items-center justify-between wrap gap-12">
-              <Button variant="ghost" size="sm" onClick={() => navigate("profile")}>View profile</Button>
-              <Button variant="danger" size="sm" onClick={handleReset}>Reset learner data</Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate("profile")}>
+                {t("settings.data.viewProfile")}
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleReset}>
+                {t("settings.data.reset")}
+              </Button>
             </div>
           </Card>
         </div>

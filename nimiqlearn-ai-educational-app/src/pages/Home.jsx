@@ -145,9 +145,9 @@ export default function Home() {
                   background: "linear-gradient(180deg, transparent 45%, rgba(10,15,30,0.8))",
                 }}
               />
-              <div style={{ position: "absolute", left: 20, bottom: 18, right: 20 }}>
+              <div className="over-media" style={{ position: "absolute", left: 20, bottom: 18, right: 20 }}>
                 <Badge tone="gold">ExplainBack in action</Badge>
-                <p className="small" style={{ margin: "8px 0 0", color: "#eef2ff" }}>
+                <p className="small" style={{ margin: "8px 0 0", color: "var(--c-text)" }}>
                   “Force equals mass times acceleration — so the same push moves a light cart faster…”
                 </p>
               </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { useLearner } from "../hooks/useLearner.js";
-import { computeXp, levelTitle } from "../services/xpService.js";
+import { useI18n } from "../hooks/useI18n.js";
+import { computeXp, levelTitleKey } from "../services/xpService.js";
 import { buildLeaderboard } from "../data/mockLeaderboard.js";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -23,23 +24,22 @@ export default function Leaderboard() {
   const stats = computeXp(knowledge);
   const rows = buildLeaderboard(stats.xp);
   const you = rows.find((r) => r.isYou);
+  const { t, tPlural, n } = useI18n();
 
   return (
     <div>
       <header className="page-header">
         <div>
-          <h1 className="page-title">Leaderboard</h1>
-          <p className="page-sub">Ranked by XP — which grows with the mastery you build, not the hours you log.</p>
+          <h1 className="page-title">{t("nav.leaderboard")}</h1>
+          <p className="page-sub">{t("lb.sub")}</p>
         </div>
-        <Badge tone="gold" dot>Rank #{you?.rank ?? "—"}</Badge>
+        <Badge tone="gold" dot>{t("lb.rank", { rank: you?.rank ?? "—" })}</Badge>
       </header>
 
       <div className="notice warn anim-pop" style={{ marginBottom: 22 }} role="status">
         <span aria-hidden="true">🧪</span>
         <span>
-          <strong>Your row is real. The others are sample data.</strong> NimiqLearn keeps your progress in this
-          browser only — there are no accounts and no server storing other learners, so there is nobody real to rank
-          you against yet. Your XP, level and position are computed from your genuine mastery and answer history.
+          <strong>{t("lb.disclaimer.title")}</strong> {t("lb.disclaimer.body")}
         </span>
       </div>
 
@@ -50,18 +50,18 @@ export default function Leaderboard() {
             <span style={{ fontSize: 38 }} aria-hidden="true">🧠</span>
             <div>
               <div className="flex items-center gap-8 wrap">
-                <h2 style={{ margin: 0, fontSize: 22 }}>Level {stats.level}</h2>
-                <Badge tone="teal">{levelTitle(stats.level)}</Badge>
+                <h2 style={{ margin: 0, fontSize: 22 }}>{t("lb.level", { level: stats.level })}</h2>
+                <Badge tone="teal">{t(levelTitleKey(stats.level))}</Badge>
               </div>
               <p className="small muted" style={{ margin: "4px 0 0" }}>
-                {stats.xp.toLocaleString()} XP · {stats.topicsStudied} topic{stats.topicsStudied === 1 ? "" : "s"} studied
-                {stats.accuracy !== null && ` · ${Math.round(stats.accuracy * 100)}% accuracy`}
+                {t("lb.xpAmount", { xp: n(stats.xp) })} · {tPlural("lb.topicsStudied", stats.topicsStudied)}
+                {stats.accuracy !== null && ` · ${t("lb.accuracy", { pct: Math.round(stats.accuracy * 100) })}`}
               </p>
             </div>
           </div>
           <div style={{ textAlign: "right", minWidth: 150 }}>
             <p className="tiny muted" style={{ margin: "0 0 6px" }}>
-              {stats.xpIntoLevel.toLocaleString()} / {stats.xpForNextLevel.toLocaleString()} XP to level {stats.level + 1}
+              {t("lb.toNextLevel", { into: n(stats.xpIntoLevel), need: n(stats.xpForNextLevel), level: stats.level + 1 })}
             </p>
             <div className="progress" style={{ height: 8 }} role="presentation">
               <div className="progress-bar gold" style={{ width: `${Math.max(2, stats.progressPercent)}%` }} />
@@ -70,7 +70,7 @@ export default function Leaderboard() {
         </div>
       </Card>
 
-      <Card title="Standings" sub="Sorted by total XP.">
+      <Card title={t("lb.standings")} sub={t("lb.standings.sub")}>
         <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
           {rows.map((row) => (
             <li
@@ -88,26 +88,26 @@ export default function Leaderboard() {
                 <span
                   className="strong"
                   style={{ width: 34, textAlign: "center", fontVariantNumeric: "tabular-nums", color: "var(--c-text-dim)" }}
-                  aria-label={`Rank ${row.rank}`}
+                  aria-label={t("lb.rank", { rank: row.rank })}
                 >
                   {MEDALS[row.rank] || row.rank}
                 </span>
                 <span style={{ fontSize: 22 }} aria-hidden="true">{row.avatar}</span>
                 <span style={{ minWidth: 0 }}>
                   <span className="strong" style={{ display: "block" }}>
-                    {row.isYou ? "You" : row.name}
+                    {row.isYou ? t("lb.you") : row.name}
                   </span>
                   <span className="tiny muted">
-                    Level {Math.max(1, Math.floor((1 + Math.sqrt(1 + (8 * row.xp) / 250)) / 2))}
-                    {!row.real && " · sample"}
+                    {t("lb.level", { level: Math.max(1, Math.floor((1 + Math.sqrt(1 + (8 * row.xp) / 250)) / 2)) })}
+                    {!row.real && ` · ${t("lb.sample")}`}
                   </span>
                 </span>
               </span>
               <span className="flex items-center gap-8">
-                {!row.real && <Badge tone="slate">Demo</Badge>}
-                {row.isYou && <Badge tone="teal">Real</Badge>}
+                {!row.real && <Badge tone="slate">{t("lb.demo")}</Badge>}
+                {row.isYou && <Badge tone="teal">{t("lb.real")}</Badge>}
                 <span className="strong" style={{ fontVariantNumeric: "tabular-nums", minWidth: 74, textAlign: "right" }}>
-                  {row.xp.toLocaleString()}
+                  {n(row.xp)}
                 </span>
               </span>
             </li>
@@ -115,23 +115,27 @@ export default function Leaderboard() {
         </ol>
       </Card>
 
-      <Card title="How XP is earned" sub="Every number below is computed from your own activity — nothing is awarded for showing up." style={{ marginTop: 18 }}>
+      <Card title={t("lb.how.title")} sub={t("lb.how.sub")} style={{ marginTop: 18 }}>
         <div style={{ display: "grid", gap: 10 }}>
-          <Row label="Mastery across all topics" value={`${stats.masteryXp.toLocaleString()} XP`} hint="2 XP per mastery point — the biggest share, so XP tracks understanding rather than activity." />
-          <Row label="Correct answers" value={`${stats.correctXp.toLocaleString()} XP`} hint={`12 XP each · ${stats.correctAttempts} correct so far`} />
+          <Row label={t("lb.how.mastery")} value={t("lb.xpAmount", { xp: n(stats.masteryXp) })} hint={t("lb.how.mastery.hint")} />
           <Row
-            label="Accuracy bonus"
-            value={`${stats.accuracyBonusXp.toLocaleString()} XP`}
+            label={t("lb.how.correct")}
+            value={t("lb.xpAmount", { xp: n(stats.correctXp) })}
+            hint={t("lb.how.correct.hint", { count: stats.correctAttempts })}
+          />
+          <Row
+            label={t("lb.how.bonus")}
+            value={t("lb.xpAmount", { xp: n(stats.accuracyBonusXp) })}
             hint={
               stats.accuracy === null
-                ? "Answer something to start building an accuracy record."
-                : `Up to +25% of your correct-answer XP, scaled by your ${Math.round(stats.accuracy * 100)}% hit rate.`
+                ? t("lb.how.bonus.none")
+                : t("lb.how.bonus.hint", { pct: Math.round(stats.accuracy * 100) })
             }
           />
           <Row
-            label="Wrong answers"
-            value={`${stats.incorrectAttempts} · no XP lost`}
-            hint="They already lower mastery, so they are never subtracted twice — they only hold back the accuracy bonus."
+            label={t("lb.how.wrong")}
+            value={t("lb.how.wrong.value", { count: stats.incorrectAttempts })}
+            hint={t("lb.how.wrong.hint")}
           />
         </div>
       </Card>

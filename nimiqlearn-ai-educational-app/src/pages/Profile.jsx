@@ -2,7 +2,8 @@ import React from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useNimiq } from "../hooks/useNimiq.js";
-import { computeXp, levelTitle } from "../services/xpService.js";
+import { computeXp, levelTitleKey } from "../services/xpService.js";
+import { useI18n } from "../hooks/useI18n.js";
 import { STATUS_META, STATUS_ORDER } from "../services/knowledgeService.js";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -13,9 +14,12 @@ function truncateAddress(address) {
   return address.length <= 20 ? address : `${address.slice(0, 10)}…${address.slice(-6)}`;
 }
 
-function formatDate(ts) {
+/* `undefined` as the locale would follow the BROWSER, not the app — so a
+   learner who switched NimiqLearn to Korean would still read English month
+   names here. The app's own locale is passed in explicitly. */
+function formatDate(ts, locale) {
   if (!ts) return "—";
-  return new Date(ts).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return new Date(ts).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 }
 
 /**
@@ -41,15 +45,16 @@ export default function Profile() {
   const strongest = [...studied].sort((a, b) => (b.mastery || 0) - (a.mastery || 0))[0] || null;
   const weakest = [...studied].sort((a, b) => (a.mastery || 0) - (b.mastery || 0))[0] || null;
   const lastStudied = studied.reduce((max, e) => Math.max(max, e.lastStudiedAt || 0), 0);
+  const { t, n, locale } = useI18n();
 
   return (
     <div>
       <header className="page-header">
         <div>
-          <h1 className="page-title">Profile</h1>
-          <p className="page-sub">Your learning record — all of it measured, none of it estimated.</p>
+          <h1 className="page-title">{t("nav.profile")}</h1>
+          <p className="page-sub">{t("profile.sub")}</p>
         </div>
-        <Badge tone="teal" dot>Level {stats.level}</Badge>
+        <Badge tone="teal" dot>{t("lb.level", { level: stats.level })}</Badge>
       </header>
 
       {/* Identity + level */}
@@ -66,22 +71,22 @@ export default function Profile() {
               🧠
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: 24 }}>{levelTitle(stats.level)}</h2>
+              <h2 style={{ margin: 0, fontSize: 24 }}>{t(levelTitleKey(stats.level))}</h2>
               <p className="small muted" style={{ margin: "4px 0 0" }}>
                 {nimiq.address ? (
-                  <>Signed in with Nimiq Pay · <span style={{ fontFamily: "monospace", fontSize: 12.5 }}>{truncateAddress(nimiq.address)}</span></>
+                  <>{t("profile.signedIn")} · <span style={{ fontFamily: "monospace", fontSize: 12.5 }}>{truncateAddress(nimiq.address)}</span></>
                 ) : (
-                  "Local learner — connect a wallet to attach an identity"
+                  t("profile.localLearner")
                 )}
               </p>
             </div>
           </div>
           <div style={{ textAlign: "right", minWidth: 180 }}>
             <div className="strong" style={{ fontSize: 30, color: "var(--c-gold)", lineHeight: 1 }}>
-              {stats.xp.toLocaleString()} <span style={{ fontSize: 15 }}>XP</span>
+              {n(stats.xp)} <span style={{ fontSize: 15 }}>XP</span>
             </div>
             <p className="tiny muted" style={{ margin: "6px 0 6px" }}>
-              {stats.xpIntoLevel.toLocaleString()} / {stats.xpForNextLevel.toLocaleString()} to level {stats.level + 1}
+              {t("profile.toLevel", { into: n(stats.xpIntoLevel), need: n(stats.xpForNextLevel), level: stats.level + 1 })}
             </p>
             <div className="progress" style={{ height: 8 }} role="presentation">
               <div className="progress-bar gold" style={{ width: `${Math.max(2, stats.progressPercent)}%` }} />
@@ -91,26 +96,26 @@ export default function Profile() {
       </Card>
 
       <div className="grid grid-4" style={{ marginBottom: 18 }}>
-        <Stat label="Average mastery" value={`${stats.averageMastery}%`} tone="teal" />
-        <Stat label="Topics studied" value={stats.topicsStudied} tone="blue" />
+        <Stat label={t("knowledge.avgMastery")} value={`${stats.averageMastery}%`} tone="teal" />
+        <Stat label={t("profile.topicsStudied")} value={stats.topicsStudied} tone="blue" />
         <Stat
-          label="Answer accuracy"
-          value={stats.accuracy === null ? "No data yet" : `${Math.round(stats.accuracy * 100)}%`}
+          label={t("profile.accuracy")}
+          value={stats.accuracy === null ? t("profile.noData") : `${Math.round(stats.accuracy * 100)}%`}
           tone="gold"
           small={stats.accuracy === null}
         />
-        <Stat label="Reviews due" value={dueNow.length} tone={dueNow.length ? "amber" : "teal"} />
+        <Stat label={t("profile.reviewsDue")} value={dueNow.length} tone={dueNow.length ? "amber" : "teal"} />
       </div>
 
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
-          <Card title="Knowledge breakdown" sub="Where every concept in the curriculum currently sits.">
+          <Card title={t("profile.breakdown")} sub={t("profile.breakdown.sub")}>
             <div style={{ display: "grid", gap: 10 }}>
               {byStatus.map(({ status, meta, count }) => (
                 <div key={status} className="flex items-center justify-between gap-12">
                   <span className="flex items-center gap-10">
                     <span className="status-dot" style={{ background: meta?.color || "var(--st-new)" }} aria-hidden="true" />
-                    <span className="small strong">{meta?.label || status}</span>
+                    <span className="small strong">{t(`status.${String(status).toLowerCase()}`)}</span>
                   </span>
                   <span className="small strong" style={{ fontVariantNumeric: "tabular-nums" }}>{count}</span>
                 </div>
@@ -118,49 +123,50 @@ export default function Profile() {
             </div>
           </Card>
 
-          <Card title="Answer record" sub="Lifetime counters across every activity type.">
+          <Card title={t("profile.record")} sub={t("profile.record.sub")}>
             <div style={{ display: "grid", gap: 10 }}>
-              <KeyVal label="Correct" value={stats.correctAttempts} tone="var(--c-teal)" />
-              <KeyVal label="Incorrect" value={stats.incorrectAttempts} tone="var(--c-rose)" />
-              <KeyVal label="Last studied" value={lastStudied ? formatDate(lastStudied) : "Not yet"} />
+              <KeyVal label={t("profile.correct")} value={stats.correctAttempts} tone="var(--c-teal)" />
+              <KeyVal label={t("profile.incorrect")} value={stats.incorrectAttempts} tone="var(--c-rose)" />
+              <KeyVal label={t("profile.lastStudied")} value={lastStudied ? formatDate(lastStudied, locale) : t("profile.notYet")} />
             </div>
           </Card>
         </div>
 
         <div style={{ display: "grid", gap: 18, minWidth: 0 }}>
-          <Card title="Strongest & weakest" sub="Based on measured mastery, not self-report.">
+          <Card title={t("profile.extremes")} sub={t("profile.extremes.sub")}>
             {studied.length === 0 ? (
               <p className="small muted" style={{ margin: 0 }}>
-                Nothing studied yet — once you explain or practise a concept, it shows up here.
+                {t("profile.extremes.empty")}
               </p>
             ) : (
               <div style={{ display: "grid", gap: 14 }}>
                 {strongest && (
                   <Highlight
-                    icon="💪" label="Strongest" name={strongest.topicName}
+                    icon="💪" label={t("profile.strongest")} name={strongest.topicName}
                     mastery={Math.round(strongest.mastery || 0)} tone="teal"
                   />
                 )}
                 {weakest && weakest.topicId !== strongest?.topicId && (
                   <Highlight
-                    icon="🎯" label="Needs work" name={weakest.topicName}
+                    icon="🎯" label={t("profile.needsWork")} name={weakest.topicName}
                     mastery={Math.round(weakest.mastery || 0)} tone="rose"
                     action={() => navigate("explain", { topic: weakest.topicId })}
+                    practiseLabel={t("profile.practise")}
                   />
                 )}
               </div>
             )}
           </Card>
 
-          <Card title="Unlocked packs" sub="From the Learning Economy.">
+          <Card title={t("profile.packs")} sub={t("profile.packs.sub")}>
             {(learner.unlockedPacks || []).length === 0 ? (
-              <p className="small muted" style={{ margin: 0 }}>No packs unlocked yet.</p>
+              <p className="small muted" style={{ margin: 0 }}>{t("profile.packs.empty")}</p>
             ) : (
               <div style={{ display: "grid", gap: 8 }}>
                 {learner.unlockedPacks.map((p) => (
                   <div key={p.productId} className="flex items-center justify-between gap-12 pill" style={{ cursor: "default" }}>
                     <span className="small strong">{p.productId}</span>
-                    <Badge tone={p.simulated ? "amber" : "teal"}>{p.simulated ? "Simulated" : "Paid"}</Badge>
+                    <Badge tone={p.simulated ? "amber" : "teal"}>{t(p.simulated ? "profile.simulated" : "profile.paid")}</Badge>
                   </div>
                 ))}
               </div>
@@ -170,10 +176,10 @@ export default function Profile() {
           <Card>
             <div className="flex items-center justify-between wrap gap-12">
               <div>
-                <h3 style={{ margin: 0, fontSize: 16 }}>Manage your data</h3>
-                <p className="small muted" style={{ margin: "4px 0 0" }}>Theme, reset, and diagnostics live in Settings.</p>
+                <h3 style={{ margin: 0, fontSize: 16 }}>{t("profile.manage")}</h3>
+                <p className="small muted" style={{ margin: "4px 0 0" }}>{t("profile.manage.sub")}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate("settings")}>Open Settings</Button>
+              <Button variant="outline" size="sm" onClick={() => navigate("settings")}>{t("profile.openSettings")}</Button>
             </div>
           </Card>
         </div>
@@ -200,7 +206,7 @@ function KeyVal({ label, value, tone }) {
   );
 }
 
-function Highlight({ icon, label, name, mastery, tone, action }) {
+function Highlight({ icon, label, name, mastery, tone, action, practiseLabel }) {
   return (
     <div>
       <div className="flex items-center justify-between gap-12" style={{ marginBottom: 6 }}>
@@ -212,7 +218,7 @@ function Highlight({ icon, label, name, mastery, tone, action }) {
       </div>
       <div className="flex items-center justify-between gap-12">
         <span className="strong">{name}</span>
-        {action && <Button variant="ghost" size="sm" onClick={action}>Practise</Button>}
+        {action && <Button variant="ghost" size="sm" onClick={action}>{practiseLabel}</Button>}
       </div>
       <div className="progress" style={{ height: 6, marginTop: 8 }} role="presentation">
         <div className="progress-bar" style={{ width: `${Math.max(2, mastery)}%`, background: `var(--c-${tone})` }} />

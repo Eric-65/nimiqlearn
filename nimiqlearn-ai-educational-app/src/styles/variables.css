@@ -133,6 +133,16 @@
   --t-fast: 140ms;
   --t-med: 240ms;
   --t-slow: 480ms;
+  /* Sidebar-scoped text. The light theme keeps the sidebar (and, on a
+     phone, the bottom nav) deep navy so NimiqLearn's identity survives the
+     switch to light — which means nav text there sits on a DARK ground
+     even in light mode and so cannot use --c-text*. These hold the same
+     values as --c-text* in dark, and stay light in light. */
+  --c-sidebar-text: #eef2ff;
+  --c-sidebar-text-dim: #a3aecf;
+  --c-sidebar-text-faint: #6b7799;
+  --c-sidebar-border: rgba(151, 166, 211, 0.16);
+  --c-sidebar-hover: rgba(151, 166, 211, 0.08);
 }
 
 /* ============================================================
@@ -152,30 +162,30 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --c-bg: #f5f7fc;
-  --c-bg-soft: #eef1f9;
+  --c-bg: #e9eefb;
+  --c-bg-soft: #e0e8f8;
   --c-surface: #ffffff;
-  --c-surface-2: #f4f6fc;
-  --c-surface-3: #e9edf8;
-  --c-border: rgba(31, 45, 84, 0.14);
-  --c-border-strong: rgba(31, 45, 84, 0.26);
+  --c-surface-2: #f2f6fe;
+  --c-surface-3: #e4ebfb;
+  --c-border: rgba(26, 43, 95, 0.16);
+  --c-border-strong: rgba(26, 43, 95, 0.30);
 
-  --c-sidebar-bg: rgba(255, 255, 255, 0.82);
-  --c-sidebar-bg-mobile: rgba(255, 255, 255, 0.96);
-  --c-topbar-bg: rgba(245, 247, 252, 0.78);
+  --c-sidebar-bg: rgba(13, 21, 51, 0.97);
+  --c-sidebar-bg-mobile: rgba(13, 21, 51, 0.985);
+  --c-topbar-bg: rgba(233, 238, 251, 0.82);
   --c-overlay: rgba(23, 32, 60, 0.38);
   --c-inset: rgba(31, 45, 84, 0.05);
   --c-switch-thumb: #ffffff;
-  --c-card-bg: linear-gradient(180deg, #ffffff, #fbfcff);
+  --c-card-bg: linear-gradient(180deg, #ffffff, #f7faff);
   --c-card-base: #ffffff;
   --c-notice-info: #1c4ba3;
   --c-notice-warn: #79520a;
   --c-notice-danger: #9c2340;
   --c-notice-success: #0a6a53;
 
-  --wash-1: rgba(77, 141, 255, 0.1);
-  --wash-2: rgba(124, 58, 237, 0.08);
-  --wash-3: rgba(16, 168, 132, 0.07);
+  --wash-1: rgba(77, 141, 255, 0.18);
+  --wash-2: rgba(124, 58, 237, 0.10);
+  --wash-3: rgba(16, 168, 132, 0.08);
 
   --c-text: #131a30;
   --c-text-dim: #4a5878;
@@ -206,11 +216,17 @@
 
   /* Shadows on a light ground must be far softer or everything looks
      like it is floating an inch off the page. */
-  --shadow-sm: 0 1px 3px rgba(23, 32, 60, 0.07);
-  --shadow-md: 0 6px 20px rgba(23, 32, 60, 0.09);
-  --shadow-lg: 0 20px 46px rgba(23, 32, 60, 0.13);
+  --shadow-sm: 0 1px 3px rgba(18, 32, 74, 0.08);
+  --shadow-md: 0 6px 22px rgba(18, 32, 74, 0.10);
+  --shadow-lg: 0 20px 48px rgba(18, 32, 74, 0.15);
   --glow-gold: 0 0 0 1px rgba(196, 140, 24, 0.3), 0 6px 20px rgba(196, 140, 24, 0.12);
   --glow-teal: 0 0 0 1px rgba(13, 143, 112, 0.3), 0 6px 20px rgba(13, 143, 112, 0.12);
+  /* Navy chrome on a light page — see the dark block for why these exist. */
+  --c-sidebar-text: #eef2ff;
+  --c-sidebar-text-dim: #b4c1e4;
+  --c-sidebar-text-faint: #8492bd;
+  --c-sidebar-border: rgba(151, 166, 211, 0.18);
+  --c-sidebar-hover: rgba(151, 166, 211, 0.12);
 }
 
 /* "System" mode: follow the OS, but only when the user explicitly chose
@@ -219,30 +235,30 @@
 @media (prefers-color-scheme: light) {
   :root[data-theme="system"] {
     color-scheme: light;
-    --c-bg: #f5f7fc;
-    --c-bg-soft: #eef1f9;
+    --c-bg: #e9eefb;
+    --c-bg-soft: #e0e8f8;
     --c-surface: #ffffff;
-    --c-surface-2: #f4f6fc;
-    --c-surface-3: #e9edf8;
-    --c-border: rgba(31, 45, 84, 0.14);
-    --c-border-strong: rgba(31, 45, 84, 0.26);
+    --c-surface-2: #f2f6fe;
+    --c-surface-3: #e4ebfb;
+    --c-border: rgba(26, 43, 95, 0.16);
+    --c-border-strong: rgba(26, 43, 95, 0.30);
 
-    --c-sidebar-bg: rgba(255, 255, 255, 0.82);
-    --c-sidebar-bg-mobile: rgba(255, 255, 255, 0.96);
-    --c-topbar-bg: rgba(245, 247, 252, 0.78);
+    --c-sidebar-bg: rgba(13, 21, 51, 0.97);
+    --c-sidebar-bg-mobile: rgba(13, 21, 51, 0.985);
+    --c-topbar-bg: rgba(233, 238, 251, 0.82);
     --c-overlay: rgba(23, 32, 60, 0.38);
     --c-inset: rgba(31, 45, 84, 0.05);
     --c-switch-thumb: #ffffff;
-    --c-card-bg: linear-gradient(180deg, #ffffff, #fbfcff);
+    --c-card-bg: linear-gradient(180deg, #ffffff, #f7faff);
     --c-card-base: #ffffff;
     --c-notice-info: #1c4ba3;
     --c-notice-warn: #79520a;
     --c-notice-danger: #9c2340;
     --c-notice-success: #0a6a53;
 
-    --wash-1: rgba(77, 141, 255, 0.1);
-    --wash-2: rgba(124, 58, 237, 0.08);
-    --wash-3: rgba(16, 168, 132, 0.07);
+    --wash-1: rgba(77, 141, 255, 0.18);
+    --wash-2: rgba(124, 58, 237, 0.10);
+    --wash-3: rgba(16, 168, 132, 0.08);
 
     --c-text: #131a30;
     --c-text-dim: #4a5878;
@@ -269,11 +285,17 @@
     --st-strong: #0d8f70;
     --st-mastered: #a06f08;
 
-    --shadow-sm: 0 1px 3px rgba(23, 32, 60, 0.07);
-    --shadow-md: 0 6px 20px rgba(23, 32, 60, 0.09);
-    --shadow-lg: 0 20px 46px rgba(23, 32, 60, 0.13);
+    --shadow-sm: 0 1px 3px rgba(18, 32, 74, 0.08);
+    --shadow-md: 0 6px 22px rgba(18, 32, 74, 0.10);
+    --shadow-lg: 0 20px 48px rgba(18, 32, 74, 0.15);
     --glow-gold: 0 0 0 1px rgba(196, 140, 24, 0.3), 0 6px 20px rgba(196, 140, 24, 0.12);
     --glow-teal: 0 0 0 1px rgba(13, 143, 112, 0.3), 0 6px 20px rgba(13, 143, 112, 0.12);
+    /* Navy chrome on a light page — see the dark block for why these exist. */
+    --c-sidebar-text: #eef2ff;
+    --c-sidebar-text-dim: #b4c1e4;
+    --c-sidebar-text-faint: #8492bd;
+    --c-sidebar-border: rgba(151, 166, 211, 0.18);
+    --c-sidebar-hover: rgba(151, 166, 211, 0.12);
   }
 }
 

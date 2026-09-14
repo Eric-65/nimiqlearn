@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
+import { useI18n } from "../hooks/useI18n.js";
 import { findTopic } from "../data/mockTopics.js";
 import KnowledgeMap from "../components/knowledge/KnowledgeMap.jsx";
 import ConceptDetail from "../components/knowledge/ConceptDetail.jsx";
@@ -12,6 +13,7 @@ export default function Knowledge() {
   const { navigate } = useNav();
   const { learner, knowledge, averageMastery, dueNow, reviewQueue, getEntry } = useLearner();
   const [selectedTopicId, setSelectedTopicId] = useState(null);
+  const { t, tPlural } = useI18n();
 
   const weak = knowledge.filter((k) => k.status === "LEARNING" || (k.status === "NEW" && !k.lastEvaluatedAt));
   const mastered = knowledge.filter((k) => k.status === "MASTERED").length;
@@ -35,33 +37,33 @@ export default function Knowledge() {
     <div>
       <header className="page-header">
         <div>
-          <h1 className="page-title">Knowledge Map</h1>
-          <p className="page-sub">Your live understanding of the curriculum. Click any node to start learning — weak nodes pulse.</p>
+          <h1 className="page-title">{t("knowledge.title")}</h1>
+          <p className="page-sub">{t("knowledge.sub")}</p>
         </div>
-        <Badge tone="slate">{knowledge.length} concepts tracked</Badge>
+        <Badge tone="slate">{tPlural("knowledge.tracked", knowledge.length)}</Badge>
       </header>
 
       <div className="grid grid-3" style={{ marginBottom: 20 }}>
         <Card>
           <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-            <span className="small muted">Average mastery</span>
+            <span className="small muted">{t("knowledge.avgMastery")}</span>
             <span className="strong">{averageMastery}%</span>
           </div>
-          <ProgressBar value={averageMastery} tone="gold" ariaLabel="Average mastery" />
+          <ProgressBar value={averageMastery} tone="gold" ariaLabel={t("knowledge.avgMastery")} />
         </Card>
         <Card>
           <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-            <span className="small muted">Mastered concepts</span>
+            <span className="small muted">{t("knowledge.mastered")}</span>
             <span className="strong">{mastered}</span>
           </div>
-          <ProgressBar value={(mastered / Math.max(1, knowledge.length)) * 100} tone="teal" ariaLabel="Mastered concepts" />
+          <ProgressBar value={(mastered / Math.max(1, knowledge.length)) * 100} tone="teal" ariaLabel={t("knowledge.mastered")} />
         </Card>
         <Card>
           <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-            <span className="small muted">Needs attention</span>
+            <span className="small muted">{t("knowledge.needsAttention")}</span>
             <span className="strong" style={{ color: "var(--c-amber)" }}>{weak.length}</span>
           </div>
-          <ProgressBar value={(weak.length / Math.max(1, knowledge.length)) * 100} tone="gold" ariaLabel="Concepts needing attention" />
+          <ProgressBar value={(weak.length / Math.max(1, knowledge.length)) * 100} tone="gold" ariaLabel={t("knowledge.needsAttention")} />
         </Card>
       </div>
 
@@ -69,9 +71,9 @@ export default function Knowledge() {
         <div className="notice warn" style={{ marginBottom: 20 }}>
           <span aria-hidden="true">⏳</span>
           <span>
-            <strong>{dueNow.length} concept{dueNow.length > 1 ? "s" : ""} due for review.</strong>{" "}
+            <strong>{tPlural("knowledge.dueForReview", dueNow.length)}</strong>{" "}
             <button className="btn btn-ghost btn-sm" onClick={() => navigate("review")} style={{ padding: 0, fontSize: 13 }}>
-              Open ForgetMeNot →
+              {t("knowledge.openReview")}
             </button>
           </span>
         </div>

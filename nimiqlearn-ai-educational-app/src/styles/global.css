@@ -81,7 +81,11 @@ button { font-family: inherit; }
   padding: 20px 16px;
   background: var(--c-sidebar-bg);
   backdrop-filter: blur(18px);
-  border-right: 1px solid var(--c-border);
+  border-right: 1px solid var(--c-sidebar-border);
+  /* The sidebar is dark in BOTH themes, so its contents inherit a light
+     text colour rather than the page's --c-text (near-black on light,
+     which would be invisible here). */
+  color: var(--c-sidebar-text);
   z-index: 40;
 }
 
@@ -111,7 +115,7 @@ button { font-family: inherit; }
 
 .brand-tag {
   font-size: 11px;
-  color: var(--c-text-faint);
+  color: var(--c-sidebar-text-faint);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -121,7 +125,7 @@ button { font-family: inherit; }
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--c-text-faint);
+  color: var(--c-sidebar-text-faint);
   padding: 12px 12px 6px;
 }
 
@@ -134,7 +138,7 @@ button { font-family: inherit; }
   border: 1px solid transparent;
   border-radius: var(--r-md);
   background: transparent;
-  color: var(--c-text-dim);
+  color: var(--c-sidebar-text-dim);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -145,19 +149,48 @@ button { font-family: inherit; }
 .nav-item svg { flex: none; opacity: 0.85; }
 
 .nav-item:hover {
-  background: rgba(151, 166, 211, 0.08);
-  color: var(--c-text);
+  background: var(--c-sidebar-hover);
+  color: var(--c-sidebar-text);
 }
 
 .nav-item.active {
   background: linear-gradient(90deg, rgba(77, 141, 255, 0.18), rgba(52, 224, 180, 0.1));
   border-color: rgba(77, 141, 255, 0.35);
-  color: var(--c-text);
+  color: var(--c-sidebar-text);
 }
 
 .sidebar-footer {
   margin-top: auto;
   padding-top: 12px;
+}
+
+/* .notice defaults to --c-text-dim, which in light is near-black — unreadable
+   on the navy sidebar. Scoped for the same reason as the nav items above. */
+.sidebar-footer .notice {
+  color: var(--c-sidebar-text-dim);
+  border-color: var(--c-sidebar-border);
+  background: var(--c-sidebar-hover);
+}
+
+.sidebar-footer .notice strong { color: var(--c-sidebar-text); }
+
+/* Content layered over a photograph sits on a dark scrim in BOTH themes (a
+   scrim is what makes text readable over an image, so it cannot follow the
+   theme). Redefining the tokens on the container makes every descendant
+   render with the dark palette, so the light theme's darkened accents —
+   #a06f08 gold, which vanishes on a dark scrim — never reach it. One class
+   instead of an override on each child. */
+.over-media {
+  --c-text: #eef2ff;
+  --c-text-dim: #b6c2e2;
+  --c-gold: #f7c14f;
+  --c-gold-soft: rgba(247, 193, 79, 0.22);
+  --c-teal: #34e0b4;
+  --c-teal-soft: rgba(52, 224, 180, 0.22);
+  --c-blue: #4d8dff;
+  --c-blue-soft: rgba(77, 141, 255, 0.22);
+  --c-border: rgba(151, 166, 211, 0.3);
+  color: var(--c-text);
 }
 
 .nav-divider { display: none; }
@@ -557,7 +590,7 @@ button { font-family: inherit; }
     gap: 2px;
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     border-right: none;
-    border-top: 1px solid var(--c-border);
+    border-top: 1px solid var(--c-sidebar-border);
     background: var(--c-sidebar-bg-mobile);
     backdrop-filter: blur(20px);
     overflow-x: auto;
@@ -576,7 +609,7 @@ button { font-family: inherit; }
     width: 1px;
     height: 34px;
     margin: 0 4px;
-    background: var(--c-border-strong);
+    background: var(--c-sidebar-border);
     border-radius: 2px;
   }
 
@@ -795,4 +828,57 @@ button { font-family: inherit; }
   }
 
   .nav-item { position: relative; }
+}
+
+/* ---------------- Language picker ---------------- */
+/* Tap-tiles rather than a <select>: a learner who cannot read the current
+   language needs to recognise their own by its flag and endonym, which a
+   collapsed dropdown hides behind an interaction. */
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+}
+
+.lang-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  /* 56px clears the 44px touch-target minimum with room for two lines. */
+  min-height: 78px;
+  padding: 12px 10px;
+  cursor: pointer;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  font: inherit;
+  text-align: center;
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+
+.lang-tile:hover {
+  border-color: var(--c-border-strong);
+  background: var(--c-surface-3);
+}
+
+.lang-tile:active { transform: scale(0.97); }
+
+.lang-tile.active {
+  background: var(--c-teal-soft);
+  border-color: var(--c-teal);
+}
+
+.lang-flag { font-size: 22px; line-height: 1; }
+
+.lang-label {
+  font-size: 13px;
+  font-weight: 600;
+  /* CJK endonyms are short; Portuguese and Français are not. Let them wrap
+     rather than overflow the tile. */
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }

@@ -14,7 +14,6 @@
    change, instead of reappearing on every render.
    ============================================================ */
 
-import { STATUS_META } from "./knowledgeService.js";
 
 const READ_KEY = "nimiqlearn:notifications-read";
 
@@ -63,23 +62,29 @@ export function restoreAllNotifications() {
  * @param {object} params.learner     - the learner record (packs, payments)
  * @param {object} params.xp          - computeXp() output, for milestones
  */
+/* Notifications are emitted as translation KEYS plus variables, never as
+   built English sentences. A service that returns finished prose can only
+   ever speak one language, and the moment one is added it becomes the one
+   place in the app that silently stays English. The view calls t() with
+   what it is given here. */
 export function buildNotifications({ knowledge = [], dueNow = [], learner = {}, xp = null } = {}) {
   const dismissed = readDismissed();
   const items = [];
 
   // --- Reviews genuinely due now (ForgetMeNot's own scheduling) ---
   if (dueNow.length > 0) {
+    const named = dueNow.slice(0, 2).map((d) => d.topicName).filter(Boolean);
     items.push({
       id: `review:${dueNow.length}:${dueNow[0]?.topicId || ""}`,
       kind: NOTIFICATION_KIND.REVIEW,
       icon: "⏳",
       tone: "amber",
-      title: `${dueNow.length} concept${dueNow.length === 1 ? "" : "s"} ready for review`,
-      body:
-        dueNow.length === 1
-          ? `${dueNow[0]?.topicName || "A concept"} is due — reviewing it now is when it sticks best.`
-          : `Including ${dueNow.slice(0, 2).map((d) => d.topicName).filter(Boolean).join(" and ")}. Spaced review is what stops them fading.`,
-      action: { label: "Review now", path: "review" },
+      titleKey: "notif.review.title",
+      titleVars: { count: dueNow.length },
+      titlePlural: true,
+      bodyKey: dueNow.length === 1 ? "notif.review.body.one" : "notif.review.body.many",
+      bodyVars: { topic: dueNow[0]?.topicName || "", topics: named.join(", ") },
+      action: { labelKey: "notif.review.action", path: "review" },
       at: Date.now(),
     });
   }
@@ -96,9 +101,13 @@ export function buildNotifications({ knowledge = [], dueNow = [], learner = {}, 
       kind: NOTIFICATION_KIND.WEAK_TOPIC,
       icon: "🎯",
       tone: "rose",
-      title: `${entry.topicName} needs another pass`,
-      body: `Mastery is ${Math.round(entry.mastery || 0)}% (${STATUS_META[entry.status]?.label || entry.status}). Explaining it back is the fastest way to find the gap.`,
-      action: { label: "Explain it", path: "explain", params: { topic: entry.topicId } },
+      titleKey: "notif.weak.title",
+      titleVars: { topic: entry.topicName },
+      bodyKey: "notif.weak.body",
+      /* statusKey, not STATUS_META's English label — the status word has to
+         translate along with the sentence it sits inside. */
+      bodyVars: { mastery: Math.round(entry.mastery || 0), statusKey: `status.${entry.status}` },
+      action: { labelKey: "notif.weak.action", path: "explain", params: { topic: entry.topicId } },
       at: entry.lastStudiedAt || Date.now(),
     });
   }
@@ -110,9 +119,10 @@ export function buildNotifications({ knowledge = [], dueNow = [], learner = {}, 
       kind: NOTIFICATION_KIND.PAYMENT,
       icon: "⚠️",
       tone: "rose",
-      title: "A payment still needs verifying",
-      body: `The result of your payment for "${pending.productId}" could not be confirmed. Check your wallet history before trying again, so you don't pay twice.`,
-      action: { label: "Open wallet", path: "wallet" },
+      titleKey: "notif.payment.title",
+      bodyKey: "notif.payment.body",
+      bodyVars: { product: pending.productId },
+      action: { labelKey: "notif.payment.action", path: "wallet" },
       at: pending.startedAt || Date.now(),
     });
   }
@@ -124,11 +134,10 @@ export function buildNotifications({ knowledge = [], dueNow = [], learner = {}, 
       kind: NOTIFICATION_KIND.UNLOCK,
       icon: pack.simulated ? "🧪" : "🎉",
       tone: pack.simulated ? "amber" : "teal",
-      title: pack.simulated ? "Pack unlocked (simulated)" : "Pack unlocked",
-      body: pack.simulated
-        ? `"${pack.productId}" was unlocked in DEMO MODE — no real payment was made.`
-        : `"${pack.productId}" is yours. It's ready whenever you are.`,
-      action: { label: "Go to Marketplace", path: "market" },
+      titleKey: pack.simulated ? "notif.unlock.title.sim" : "notif.unlock.title",
+      bodyKey: pack.simulated ? "notif.unlock.body.sim" : "notif.unlock.body",
+      bodyVars: { product: pack.productId },
+      action: { labelKey: "notif.unlock.action", path: "market" },
       at: pack.unlockedAt || Date.now(),
     });
   }
@@ -140,9 +149,13 @@ export function buildNotifications({ knowledge = [], dueNow = [], learner = {}, 
       kind: NOTIFICATION_KIND.MILESTONE,
       icon: "⭐",
       tone: "gold",
-      title: `You reached level ${xp.level}`,
-      body: `${xp.xp.toLocaleString()} XP earned so far. ${xp.xpForNextLevel - xp.xpIntoLevel} XP to the next level.`,
-      action: { label: "See leaderboard", path: "leaderboard" },
+      titleKey: "notif.level.title",
+      titleVars: { level: xp.level },
+      bodyKey: "notif.level.body",
+      /* Raw numbers: the view formats them with the locale's own separators
+         (1,000 vs 1.000) — toLocaleString() here would bake in en-US. */
+      bodyVars: { xp: xp.xp, remaining: xp.xpForNextLevel - xp.xpIntoLevel },
+      action: { labelKey: "notif.level.action", path: "leaderboard" },
       at: Date.now(),
     });
   }
