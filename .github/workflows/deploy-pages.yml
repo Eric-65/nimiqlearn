@@ -50,8 +50,14 @@ jobs:
 
       - run: npm run build
 
-      # enablement: true turns Pages on via the API if it isn't already,
-      # so this doesn't depend on someone flipping the repo setting first.
+      # ONE-TIME MANUAL STEP, if this job fails here with "Create Pages site
+      # failed. Error: Resource not accessible by integration": Pages has to
+      # be turned on by a human first. GITHUB_TOKEN cannot create the Pages
+      # site — that needs repo-administration scope, which no workflow token
+      # has, so enablement: true below cannot cover for it (tried, and that
+      # is the exact error it produced). Fix: repo Settings -> Pages ->
+      # "Build and deployment" -> Source: "GitHub Actions". After that this
+      # step finds the existing site and every later run succeeds on its own.
       - uses: actions/configure-pages@v5
         with:
           enablement: true
