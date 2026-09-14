@@ -46,6 +46,16 @@ function restoreAssetsInlineLimit(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), viteSingleFile(), restoreAssetsInlineLimit()],
+  // Bind the dev server to every interface, not just localhost, so the app
+  // is reachable at the dev machine's LAN IP (http://192.168.x.x:5173 or
+  // similar). Nimiq Pay runs the mini app in a WebView on a physical phone:
+  // from inside that WebView, "localhost" is the PHONE, not this machine, so
+  // a localhost-only dev server can never be loaded there. See the official
+  // Mini Apps skill, "Load a Local Mini App". Dev-only — `npm run build`
+  // output is a static file and is unaffected.
+  server: {
+    host: true,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
