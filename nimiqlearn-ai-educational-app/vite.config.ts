@@ -46,6 +46,13 @@ function restoreAssetsInlineLimit(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), viteSingleFile(), restoreAssetsInlineLimit()],
+  // Relative asset URLs, so one build works whether it's served from a
+  // domain root (Vercel) or a subpath (GitHub Pages serves this repo at
+  // /nimiqlearn/). Currently a no-op safety net — viteSingleFile() inlines
+  // every asset, so the built HTML has no asset URLs to rewrite — but it
+  // stops a subpath deploy silently 404ing if anything ever stops being
+  // inlined.
+  base: "./",
   // Bind the dev server to every interface, not just localhost, so the app
   // is reachable at the dev machine's LAN IP (http://192.168.x.x:5173 or
   // similar). Nimiq Pay runs the mini app in a WebView on a physical phone:

@@ -23,7 +23,7 @@ const FEATURES = [
   {
     icon: "🗣️",
     title: "ExplainBack",
-    text: "Explaining a concept is the strongest test of understanding. The AI evaluates your explanation and finds the gaps — in your browser.",
+    text: "Explaining a concept is the strongest test of understanding. The AI evaluates your explanation and finds the gaps you didn't know you had.",
   },
   {
     icon: "⏳",
@@ -109,7 +109,13 @@ export default function Home() {
             </div>
 
             <div className="flex gap-16 wrap" style={{ marginTop: 30 }}>
-              {["🧠 AI runs locally in your browser", "🔒 Your explanation stays on your device", "⚡ Pay with NIM"].map((t) => (
+              {/* These claims must track how the AI actually runs. They said
+                  "runs locally in your browser" / "stays on your device" back
+                  when grading used an on-device SmolLM2 model — that model is
+                  gone, and explanations are now sent to OpenAI through this
+                  app's own backend, so the old wording was a privacy promise
+                  the app no longer keeps. */}
+              {["🧠 AI grading, with a built-in offline engine", "🔒 Your keys never leave your wallet", "⚡ Pay with NIM"].map((t) => (
                 <span key={t} className="tiny muted">{t}</span>
               ))}
             </div>

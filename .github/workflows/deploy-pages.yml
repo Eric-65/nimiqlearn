@@ -1,0 +1,71 @@
+# Publishes the NimiqLearn frontend to GitHub Pages, so it has a public
+# HTTPS URL that Nimiq Pay can load on a phone over mobile data. The LAN
+# route (dev machine's IP + `npm run dev`) only works when the phone and
+# the dev machine share a network; this doesn't need them to.
+#
+# What gets deployed is the ordinary production build: one self-contained
+# HTML file (vite-plugin-singlefile). The backend in server/ is NOT part of
+# this — Pages serves static files only. With no backend URL configured at
+# build time, every AI feature falls back to its deterministic engine,
+# which is the app's normal, honest unconfigured behaviour. Wallet and
+# payment flows are unaffected and are the point of testing here.
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - claude/build-something-b6ija5
+  # Lets you redeploy any branch by hand from the Actions tab without
+  # having to push an empty commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; queue instead of cancelling, so a run that is
+# already uploading finishes rather than leaving Pages half-updated.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nimiqlearn-ai-educational-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nimiqlearn-ai-educational-app/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # enablement: true turns Pages on via the API if it isn't already,
+      # so this doesn't depend on someone flipping the repo setting first.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: nimiqlearn-ai-educational-app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

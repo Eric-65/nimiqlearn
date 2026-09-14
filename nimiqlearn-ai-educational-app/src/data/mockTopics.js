@@ -210,7 +210,7 @@ export const TOPIC_CONTENT = {
   },
   "ai-fundamentals": {
     definition:
-      "AI models learn patterns from training data and then perform inference: applying those patterns to new inputs. This app runs a small language model directly in your browser.",
+      "AI models learn patterns from training data and then perform inference: applying those patterns to new inputs. This app sends your explanation to a hosted model and grades the reply.",
     keyPoints: [
       "Training = learning patterns from data; inference = using them.",
       "Models don't 'know' — they predict likely next tokens.",
