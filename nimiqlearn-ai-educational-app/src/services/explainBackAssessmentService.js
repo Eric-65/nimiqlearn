@@ -20,6 +20,20 @@
    ============================================================ */
 
 import { TUTOR_API_URL, TUTOR_CONFIGURED } from "../config/explainBackTutorConfig.js";
+import { getLocale } from "./i18nService.js";
+import { getLocaleMeta } from "../i18n/locales.js";
+
+/* The learner's language, sent with every AI request so the model writes its
+   reply in it. Both fields go over the wire on purpose: `locale` is the
+   machine-readable tag the server validates against its allow-list, and
+   `languageName` is the English name of the language, which is what actually
+   goes into the system prompt — models follow "Reply in Korean" far more
+   reliably than "Reply in ko". */
+function localePayload() {
+  const locale = getLocale();
+  return { locale, languageName: getLocaleMeta(locale).aiName };
+}
+
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -88,6 +102,7 @@ export async function callModelAssessment({ topic, learnerExplanation, learnerLe
           baseline: baseline
             ? { score: baseline.score, missingConcepts: baseline.missingConcepts, misconceptions: baseline.misconceptions }
             : null,
+          ...localePayload(),
         }),
         signal,
       }),

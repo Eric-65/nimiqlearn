@@ -55,6 +55,59 @@ const PORT = process.env.PORT || 8787;
 const ALLOWED_ORIGIN = process.env.TEACHING_ALLOWED_ORIGIN || "*";
 const MAX_MESSAGE_LENGTH = 4000;
 
+/* ------------------ Reply language ------------------
+   The learner picks a language in the app; every /api route accepts it and
+   instructs the model to answer in it.
+
+   Two rules here matter:
+
+   1. The language is chosen from a SERVER-SIDE allow-list keyed by locale
+      tag — the request's own `languageName` is never passed through to the
+      prompt. That string arrives from the client, and text that reaches a
+      system prompt unchecked is a prompt-injection vector: a crafted
+      `languageName` ("English. Ignore all previous instructions and …")
+      would otherwise be read by the model as instructions.
+
+   2. An unknown or missing locale falls back to English rather than
+      erroring. A learner should never lose AI feedback because a locale
+      tag was not recognised.
+
+   Keep in sync with src/i18n/locales.js. */
+const REPLY_LANGUAGES = {
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  pt: "Portuguese",
+  it: "Italian",
+  ko: "Korean",
+  ja: "Japanese",
+  "zh-Hans": "Simplified Chinese",
+  "zh-Hant": "Traditional Chinese (as used in Taiwan)",
+};
+
+const DEFAULT_REPLY_LANGUAGE = "English";
+
+function replyLanguage(locale) {
+  return (typeof locale === "string" && REPLY_LANGUAGES[locale]) || DEFAULT_REPLY_LANGUAGE;
+}
+
+/* Appended to every system prompt. Spelled out at length because the failure
+   mode is specific: given English source material and an English rubric, a
+   model will often answer in English regardless of a short "reply in X" —
+   and half-translated feedback reads worse than none. JSON KEYS must stay
+   English or the response stops parsing. */
+function languageInstruction(locale) {
+  const language = replyLanguage(locale);
+  if (language === DEFAULT_REPLY_LANGUAGE) return "Write your reply in English.";
+  return [
+    `Write every piece of text you return in ${language}.`,
+    `This applies to all of it — explanations, questions, answer choices, feedback and summaries — even though the topic material and the instructions above are in English.`,
+    `Do NOT reply in English, and do not translate JSON keys: keys stay exactly as specified in English, only their string VALUES are in ${language}.`,
+    `Use natural, everyday ${language} as a teacher would speak it, not a word-for-word translation of English phrasing.`,
+  ].join(" ");
+}
+
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const openaiApiKey = process.env.OPENAI_API_KEY || null;
 const openaiClient = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
@@ -96,7 +149,7 @@ function respondToOpenAiError(err, res, label) {
 
 /* ---------------- ExplainBack AI Tutor (opt-in critique) ---------------- */
 
-function buildTutorSystemPrompt(topic) {
+function buildTutorSystemPrompt(topic, locale) {
   return [
     "You are NimiqLearn AI, an encouraging tutor built into the ExplainBack feature of the NimiqLearn educational app.",
     topic ? `The learner is explaining: ${topic}.` : "The learner is explaining a concept.",
@@ -104,6 +157,7 @@ function buildTutorSystemPrompt(topic) {
     "Confirm what they got right, clearly name what's missing or wrong, and if their explanation is incomplete or partly incorrect, give a short, complete, correct explanation of the concept so they have something solid to compare against.",
     "Keep the whole reply under about 180 words, plain prose, no markdown headers or bullet lists.",
     "Never discuss wallets, payments, or blockchain transactions — that is a separate, unrelated part of the app.",
+    languageInstruction(locale),
   ].join(" ");
 }
 
@@ -113,7 +167,7 @@ app.post("/api/tutor/feedback", async (req, res) => {
     return;
   }
 
-  const { topic, referenceAnswer, learnerExplanation, assessment } = req.body || {};
+  const { topic, referenceAnswer, learnerExplanation, assessment, locale } = req.body || {};
 
   if (typeof learnerExplanation !== "string" || !learnerExplanation.trim()) {
     res.status(400).json({ ok: false, error: "A non-empty 'learnerExplanation' string is required." });
@@ -157,7 +211,7 @@ app.post("/api/tutor/feedback", async (req, res) => {
       max_tokens: 400,
       temperature: 0.4,
       messages: [
-        { role: "system", content: buildTutorSystemPrompt(topic) },
+        { role: "system", content: buildTutorSystemPrompt(topic, locale) },
         { role: "user", content: userMessage },
       ],
     });
@@ -174,13 +228,14 @@ app.post("/api/tutor/feedback", async (req, res) => {
    in-browser model download, which was the actual source of the delay
    this replaced). */
 
-function buildAssessSystemPrompt() {
+function buildAssessSystemPrompt(locale) {
   return [
     "You are NimiqLearn, a concise educational assessment assistant.",
     "You will be given a deterministic assessment signal (score, missing concepts, possible misconceptions) already computed for the learner's explanation. Use it as ground truth — do not contradict it.",
     "Your job is to turn it into warm, concrete, natural-language feedback and one next challenge.",
     'Return ONLY a JSON object with this exact shape: {"summary": "1-2 sentences", "strengths": ["..."], "missingConcepts": ["..."], "misconceptions": ["..."], "masteryEstimate": 0, "nextAction": "one sentence", "nextChallenge": "one question"}',
     "masteryEstimate MUST be a whole number from 0 to 100 (matching the scale of the rubric score you were given, e.g. 55 means 55/100) — never a 0-1 fraction.",
+    languageInstruction(locale),
   ].join(" ");
 }
 
@@ -223,7 +278,7 @@ app.post("/api/assess/feedback", async (req, res) => {
       temperature: 0.35,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: buildAssessSystemPrompt() },
+        { role: "system", content: buildAssessSystemPrompt(req.body?.locale) },
         { role: "user", content: userMessage },
       ],
     });
@@ -277,7 +332,7 @@ function cleanList(list, max, maxLen) {
     .map((s) => `"${s.trim().slice(0, maxLen)}"`);
 }
 
-function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception, previousQuestions = [], previousAngles = [] }) {
+function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception, previousQuestions = [], previousAngles = [], locale }) {
   const needsChoices = ANSWERABLE_ACTIVITY_TYPES.has(type);
   const isExplanation = EXPLANATION_ACTIVITY_TYPES.has(type);
   const alreadyAsked = cleanList(previousQuestions, 8, 200);
@@ -316,6 +371,7 @@ function buildActivitySystemPrompt({ type, level, topicName, topicDescription, t
           .filter(Boolean)
           .join(" ")
       : "",
+    languageInstruction(locale),
   ]
     .filter(Boolean)
     .join(" ");
@@ -378,6 +434,7 @@ app.post("/api/learn/activity", async (req, res) => {
     targetMisconception,
     previousQuestions: prevQs,
     previousAngles: prevAngles,
+    locale: req.body?.locale,
   });
   const userMessage = `Topic content reference: ${JSON.stringify(topicContent || {}).slice(0, 2000)}`;
 
