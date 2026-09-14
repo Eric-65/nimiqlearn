@@ -1,8 +1,10 @@
 import React from "react";
+import { useI18n } from "../../hooks/useI18n.js";
 import Card from "../ui/Card.jsx";
 import ProgressBar from "../ui/ProgressBar.jsx";
 
 export default function StreakCard({ learner }) {
+  const { t } = useI18n();
   const levelPct = Math.min(100, Math.round((learner.xp / learner.xpToNext) * 100));
   return (
     <Card>
@@ -31,7 +33,7 @@ export default function StreakCard({ learner }) {
         </div>
       </div>
 
-      <ProgressBar value={levelPct} ariaLabel={`Level progress ${levelPct} percent`} />
+      <ProgressBar value={levelPct} ariaLabel={t("streak.levelAria", { pct: levelPct })} />
 
       <div className="flex justify-between" style={{ marginTop: 16 }}>
         <div>

@@ -1,6 +1,7 @@
 import React from "react";
 import Card from "../ui/Card.jsx";
 import Badge from "../ui/Badge.jsx";
+import { useI18n } from "../../hooks/useI18n.js";
 import Button from "../ui/Button.jsx";
 import { useEvmWallet } from "../../hooks/useEvmWallet.js";
 import { EVM_STATUS } from "../../services/evmWalletService.js";
@@ -18,16 +19,17 @@ function truncateAddress(address) {
  * having granted EVM account access, and vice versa.
  */
 export default function EvmWalletStatus() {
+  const { t } = useI18n();
   const evm = useEvmWallet();
 
   return (
-    <Card title="Your EVM wallet (USDT)" sub="A separate connection from your Nimiq wallet above — used only for USDT payments.">
+    <Card title={t("ewallet.title")} sub={t("ewallet.sub")}>
       <div className="flex items-center gap-8 wrap" style={{ marginBottom: 16 }}>
         {evm.status === EVM_STATUS.INITIALIZING && <Badge tone="amber" dot>Connecting...</Badge>}
-        {evm.status === EVM_STATUS.CONNECTED && <Badge tone="teal" dot>Wallet connected</Badge>}
-        {evm.status === EVM_STATUS.EVM_AVAILABLE && <Badge tone="slate" dot>Ethereum provider detected</Badge>}
-        {evm.status === EVM_STATUS.ERROR && <Badge tone="rose" dot>Connection failed</Badge>}
-        {evm.status === EVM_STATUS.BROWSER_MODE && <Badge tone="amber" dot>Not available</Badge>}
+        {evm.status === EVM_STATUS.CONNECTED && <Badge tone="teal" dot>{t("wallet.walletConnected")}</Badge>}
+        {evm.status === EVM_STATUS.EVM_AVAILABLE && <Badge tone="slate" dot>{t("ewallet.detected")}</Badge>}
+        {evm.status === EVM_STATUS.ERROR && <Badge tone="rose" dot>{t("wallet.connFailed")}</Badge>}
+        {evm.status === EVM_STATUS.BROWSER_MODE && <Badge tone="amber" dot>{t("wallet.notAvailable")}</Badge>}
       </div>
 
       {evm.status === EVM_STATUS.BROWSER_MODE && (
@@ -40,45 +42,45 @@ export default function EvmWalletStatus() {
       {evm.status === EVM_STATUS.EVM_AVAILABLE && evm.error === "Connection cancelled" && (
         <div className="notice warn" style={{ marginBottom: 16 }}>
           <span aria-hidden="true">🚫</span>
-          <span>Connection cancelled. Nothing was shared, and no account was connected.</span>
+          <span>{t("wallet.cancelled")}</span>
         </div>
       )}
 
       {evm.status === EVM_STATUS.ERROR && (
         <div className="notice danger" style={{ marginBottom: 16 }}>
           <span aria-hidden="true">⚠️</span>
-          <span>{evm.error || "Connection failed."}</span>
+          <span>{evm.error || t("wallet.connFailedDot")}</span>
         </div>
       )}
 
       <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
-        <Row label="Ethereum provider detected" value={evm.isUnavailable ? "NO" : "YES"} />
-        <Row label="Wallet connected" value={evm.isConnected ? "YES" : "NO"} />
+        <Row label={t("ewallet.detected")} value={t(evm.isUnavailable ? "common.no" : "common.yes")} />
+        <Row label={t("wallet.walletConnected")} value={t(evm.isConnected ? "common.yes" : "common.no")} />
         <Row
-          label="Address"
-          value={evm.address ? truncateAddress(evm.address) : evm.isConnected ? "—" : "Not connected"}
+          label={t("wallet.address")}
+          value={evm.address ? truncateAddress(evm.address) : evm.isConnected ? "—" : t("common.notConnected")}
           mono
         />
-        <Row label="Active chain ID" value={evm.chainId || "—"} mono />
+        <Row label={t("ewallet.chainId")} value={evm.chainId || "—"} mono />
       </div>
 
       <div className="flex gap-8 wrap">
         {evm.status === EVM_STATUS.EVM_AVAILABLE && (
-          <Button variant="nimiq" onClick={evm.connect}>Connect EVM wallet</Button>
+          <Button variant="nimiq" onClick={evm.connect}>{t("ewallet.connect")}</Button>
         )}
         {evm.status === EVM_STATUS.INITIALIZING && (
-          <Button variant="nimiq" disabled loading>Connecting...</Button>
+          <Button variant="nimiq" disabled loading>{t("wallet.connecting")}</Button>
         )}
         {evm.status === EVM_STATUS.ERROR && (
-          <Button variant="outline" onClick={evm.connect}>Retry</Button>
+          <Button variant="outline" onClick={evm.connect}>{t("common.tryAgain")}</Button>
         )}
         {evm.status === EVM_STATUS.CONNECTED && (
-          <Button variant="outline" onClick={evm.disconnect}>Disconnect</Button>
+          <Button variant="outline" onClick={evm.disconnect}>{t("wallet.disconnect")}</Button>
         )}
       </div>
       {evm.status === EVM_STATUS.CONNECTED && (
         <p className="tiny muted" style={{ margin: "8px 0 0" }}>
-          Disconnecting only clears this app's local state — revoke NimiqLearn's access from within Nimiq Pay itself to fully disconnect.
+          {t("ewallet.disconnectNote")}
         </p>
       )}
     </Card>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Card from "../ui/Card.jsx";
 import Badge from "../ui/Badge.jsx";
+import { useI18n } from "../../hooks/useI18n.js";
 import Button from "../ui/Button.jsx";
 import { useNimiq } from "../../hooks/useNimiq.js";
 import { NIMIQ_STATUS } from "../../services/nimiqWalletService.js";
@@ -27,6 +28,7 @@ function truncateAddress(address) {
  *   ERROR          → "Connection failed" [Retry]
  */
 export default function NimiqWalletStatus() {
+  const { t } = useI18n();
   const nimiq = useNimiq();
   const [copied, setCopied] = useState(false);
   const [signInError, setSignInError] = useState(null);
@@ -46,27 +48,28 @@ export default function NimiqWalletStatus() {
     try {
       await nimiq.signIn();
     } catch (err) {
-      setSignInError(err?.message || "Sign-in was rejected.");
+      /* The wallet SDK's own message cannot be translated by us; only our
+         fallback sentence can. */
+      setSignInError(err?.message || t("nwallet.signInRejected"));
     }
   };
 
   return (
-    <Card title="Your Nimiq wallet" sub="Wallet state is handled by application code — the AI never sees it.">
+    <Card title={t("nwallet.title")} sub={t("nwallet.sub")}>
       <div className="flex items-center gap-8 wrap" style={{ marginBottom: 16 }}>
-        {nimiq.status === NIMIQ_STATUS.INITIALIZING && <Badge tone="amber" dot>Connecting...</Badge>}
-        {nimiq.status === NIMIQ_STATUS.CONNECTED && nimiq.isAuthenticated && <Badge tone="teal" dot>Wallet authenticated</Badge>}
-        {nimiq.status === NIMIQ_STATUS.CONNECTED && !nimiq.isAuthenticated && <Badge tone="teal" dot>Wallet connected</Badge>}
-        {nimiq.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE && <Badge tone="slate" dot>Nimiq Pay detected</Badge>}
-        {nimiq.status === NIMIQ_STATUS.ERROR && <Badge tone="rose" dot>Connection failed</Badge>}
-        {nimiq.status === NIMIQ_STATUS.BROWSER_MODE && <Badge tone="amber" dot>Not available</Badge>}
+        {nimiq.status === NIMIQ_STATUS.INITIALIZING && <Badge tone="amber" dot>{t("wallet.connecting")}</Badge>}
+        {nimiq.status === NIMIQ_STATUS.CONNECTED && nimiq.isAuthenticated && <Badge tone="teal" dot>{t("nwallet.authenticated")}</Badge>}
+        {nimiq.status === NIMIQ_STATUS.CONNECTED && !nimiq.isAuthenticated && <Badge tone="teal" dot>{t("wallet.walletConnected")}</Badge>}
+        {nimiq.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE && <Badge tone="slate" dot>{t("nwallet.detected")}</Badge>}
+        {nimiq.status === NIMIQ_STATUS.ERROR && <Badge tone="rose" dot>{t("wallet.connFailed")}</Badge>}
+        {nimiq.status === NIMIQ_STATUS.BROWSER_MODE && <Badge tone="amber" dot>{t("wallet.notAvailable")}</Badge>}
       </div>
 
       {nimiq.status === NIMIQ_STATUS.BROWSER_MODE && (
         <div className="notice warn" style={{ marginBottom: 16 }}>
           <span aria-hidden="true">🧪</span>
           <span>
-            Open NimiqLearn in Nimiq Pay to connect your wallet. This browser environment is useful for UI testing but
-            cannot prove the real wallet flow.
+            {t("nwallet.browserNotice")}
           </span>
         </div>
       )}
@@ -74,58 +77,58 @@ export default function NimiqWalletStatus() {
       {nimiq.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE && nimiq.error === "Connection cancelled" && (
         <div className="notice warn" style={{ marginBottom: 16 }}>
           <span aria-hidden="true">🚫</span>
-          <span>Connection cancelled. Nothing was shared, and no account was connected.</span>
+          <span>{t("wallet.cancelled")}</span>
         </div>
       )}
 
       {nimiq.status === NIMIQ_STATUS.ERROR && (
         <div className="notice danger" style={{ marginBottom: 16 }}>
           <span aria-hidden="true">⚠️</span>
-          <span>{nimiq.error || "Connection failed."}</span>
+          <span>{nimiq.error || t("wallet.connFailedDot")}</span>
         </div>
       )}
 
       <div style={{ display: "grid", gap: 12, marginBottom: 16 }}>
-        <Row label="Nimiq Pay detected" value={nimiq.providerAvailable ? "YES" : "NO"} />
-        <Row label="Wallet connected" value={nimiq.isConnected ? "YES" : "NO"} />
-        <Row label="Wallet authenticated" value={nimiq.isAuthenticated ? "YES" : "NO"} />
+        <Row label={t("nwallet.detected")} value={t(nimiq.providerAvailable ? "common.yes" : "common.no")} />
+        <Row label={t("wallet.walletConnected")} value={t(nimiq.isConnected ? "common.yes" : "common.no")} />
+        <Row label={t("nwallet.authenticated")} value={t(nimiq.isAuthenticated ? "common.yes" : "common.no")} />
         <Row
-          label="Network ready"
-          value={nimiq.consensusReady === null ? "—" : nimiq.consensusReady ? "Network ready" : "Waiting for network…"}
+          label={t("nwallet.networkReady")}
+          value={nimiq.consensusReady === null ? "—" : t(nimiq.consensusReady ? "nwallet.networkReady" : "nwallet.networkWaiting")}
         />
         <Row
-          label="Address"
-          value={nimiq.address ? truncateAddress(nimiq.address) : nimiq.isConnected ? "—" : "Not connected"}
+          label={t("wallet.address")}
+          value={nimiq.address ? truncateAddress(nimiq.address) : nimiq.isConnected ? "—" : t("common.notConnected")}
           mono
           action={nimiq.address && (
-            <button className="btn btn-ghost btn-sm" onClick={handleCopy} aria-label="Copy address" style={{ marginLeft: 8 }}>
-              {copied ? "Copied" : "Copy"}
+            <button className="btn btn-ghost btn-sm" onClick={handleCopy} aria-label={t("wallet.copyAddress")} style={{ marginLeft: 8 }}>
+              {t(copied ? "wallet.copied" : "wallet.copy")}
             </button>
           )}
         />
         <Row
-          label="NIM balance"
-          value="Balance unavailable in this Mini App provider."
-          hint="See Wallet diagnostics for why — no balance query method is exposed."
+          label={t("nwallet.balance")}
+          value={t("nwallet.balanceUnavailable")}
+          hint={t("nwallet.balanceHint")}
         />
-        <Row label="Block number" value={nimiq.blockNumber ?? "—"} />
+        <Row label={t("nwallet.blockNumber")} value={nimiq.blockNumber ?? "—"} />
       </div>
 
       <div className="flex gap-8 wrap">
         {nimiq.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE && (
-          <Button variant="nimiq" onClick={nimiq.connect}>Connect Nimiq Pay</Button>
+          <Button variant="nimiq" onClick={nimiq.connect}>{t("nwallet.connect")}</Button>
         )}
         {nimiq.status === NIMIQ_STATUS.INITIALIZING && (
-          <Button variant="nimiq" disabled loading>Connecting...</Button>
+          <Button variant="nimiq" disabled loading>{t("wallet.connecting")}</Button>
         )}
         {nimiq.status === NIMIQ_STATUS.ERROR && (
-          <Button variant="outline" onClick={nimiq.connect}>Retry</Button>
+          <Button variant="outline" onClick={nimiq.connect}>{t("common.tryAgain")}</Button>
         )}
         {nimiq.status === NIMIQ_STATUS.CONNECTED && (
           <>
-            <Button variant="outline" onClick={nimiq.disconnect}>Disconnect</Button>
+            <Button variant="outline" onClick={nimiq.disconnect}>{t("wallet.disconnect")}</Button>
             {!nimiq.isAuthenticated && (
-              <Button variant="outline" onClick={handleSignIn}>Sign in with Nimiq Pay</Button>
+              <Button variant="outline" onClick={handleSignIn}>{t("nwallet.signIn")}</Button>
             )}
           </>
         )}

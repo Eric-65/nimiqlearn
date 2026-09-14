@@ -1,4 +1,5 @@
 import React from "react";
+import { useI18n } from "../../hooks/useI18n.js";
 import KnowledgeNode from "./KnowledgeNode.jsx";
 import { TOPIC_TREE } from "../../data/mockTopics.js";
 import { STATUS_META } from "../../services/knowledgeService.js";
@@ -10,6 +11,7 @@ import { STATUS_META } from "../../services/knowledgeService.js";
  * just-updated (teal flash) — passed in from the page.
  */
 export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null, dueTopicIds = [] }) {
+  const { t } = useI18n();
   const getEntry = (topicId) => knowledge.find((k) => k.topicId === topicId) || { status: "NEW", mastery: 0 };
   const dueSet = new Set(dueTopicIds);
 
@@ -63,7 +65,7 @@ export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null
     <div className="card anim-rise" style={{ padding: "26px 24px" }}>
       <div className="flex items-center justify-between wrap gap-8" style={{ marginBottom: 22 }}>
         <div>
-          <h3 style={{ margin: "0 0 4px", fontSize: 18 }}>Knowledge map</h3>
+          <h3 style={{ margin: "0 0 4px", fontSize: 18 }}>{t("knowledge.title")}</h3>
           <p className="small muted" style={{ margin: 0 }}>
             Your live understanding across the curriculum. Weak nodes pulse — click one to fix it.
           </p>

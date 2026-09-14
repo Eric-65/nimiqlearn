@@ -2,18 +2,20 @@ import React from "react";
 import Card from "../ui/Card.jsx";
 import Badge from "../ui/Badge.jsx";
 import { LEARNING_PACKS } from "../../data/mockLearningPacks.js";
+import { useI18n } from "../../hooks/useI18n.js";
 
 export default function PaymentHistory({ unlockedPacks }) {
+  const { t, tOr, locale } = useI18n();
   const items = (unlockedPacks || [])
     .map((u) => ({ ...u, pack: LEARNING_PACKS.find((p) => p.id === u.productId) }))
     .filter((u) => u.pack)
     .sort((a, b) => (b.purchasedAt || 0) - (a.purchasedAt || 0));
 
   return (
-    <Card title="Your unlocks" sub="Purchases you've made through the Learning Economy.">
+    <Card title={t("history.title")} sub={t("history.sub")}>
       {items.length === 0 ? (
         <p className="small muted" style={{ margin: 0 }}>
-          No packs unlocked yet. Browse the marketplace to get started.
+          {t("history.empty")}
         </p>
       ) : (
         <div style={{ display: "grid", gap: 10 }}>
@@ -22,11 +24,16 @@ export default function PaymentHistory({ unlockedPacks }) {
               <span className="flex items-center gap-10">
                 <span style={{ fontSize: 20 }} aria-hidden="true">{u.pack.emoji}</span>
                 <span>
-                  <span className="strong" style={{ display: "block", fontSize: 14 }}>{u.pack.title}</span>
-                  <span className="tiny muted">{u.pack.price} {u.pack.asset} • {new Date(u.purchasedAt).toLocaleDateString()}</span>
+                  <span className="strong" style={{ display: "block", fontSize: 14 }}>
+                    {tOr(`pack.${u.pack.id}.title`, u.pack.title)}
+                  </span>
+                  {/* Locale-aware, not browser-aware — see Profile.jsx. */}
+                  <span className="tiny muted">
+                    {u.pack.price} {u.pack.asset} • {new Date(u.purchasedAt).toLocaleDateString(locale)}
+                  </span>
                 </span>
               </span>
-              {u.simulated ? <Badge tone="amber">Simulated</Badge> : <Badge tone="teal">Confirmed</Badge>}
+              {u.simulated ? <Badge tone="amber">{t("profile.simulated")}</Badge> : <Badge tone="teal">{t("history.confirmed")}</Badge>}
             </div>
           ))}
         </div>

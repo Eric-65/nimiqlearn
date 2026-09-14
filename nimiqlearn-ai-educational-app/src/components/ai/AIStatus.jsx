@@ -1,5 +1,6 @@
 import React from "react";
 import { useAiBackend } from "../../hooks/useAiBackend.js";
+import { useI18n } from "../../hooks/useI18n.js";
 
 /**
  * Subtle readiness indicator for NimiqLearn's OpenAI-backed grading/tutor
@@ -8,12 +9,13 @@ import { useAiBackend } from "../../hooks/useAiBackend.js";
  */
 export default function AIStatus() {
   const { checking, available } = useAiBackend();
+  const { t } = useI18n();
 
   const meta = checking
-    ? { cls: "badge-amber", dot: "var(--st-learning)", glyph: "◌", label: "Checking…" }
+    ? { cls: "badge-amber", dot: "var(--st-learning)", glyph: "◌", label: t("aiStatus.checking") }
     : available
-    ? { cls: "badge-teal", dot: "var(--st-strong)", glyph: "●", label: "Ready" }
-    : { cls: "badge-rose", dot: "var(--c-rose)", glyph: "!", label: "Unavailable" };
+    ? { cls: "badge-teal", dot: "var(--st-strong)", glyph: "●", label: t("aiStatus.ready") }
+    : { cls: "badge-rose", dot: "var(--c-rose)", glyph: "!", label: t("aiStatus.unavailable") };
 
   return (
     <div className="flex items-center gap-8" role="status" aria-live="polite">
@@ -21,10 +23,10 @@ export default function AIStatus() {
         className={`badge ${meta.cls}`}
         title={
           checking
-            ? "Checking whether AI grading is reachable…"
+            ? t("aiStatus.checking.title")
             : available
-            ? "AI grading is configured and reachable."
-            : "AI grading isn't reachable right now — the built-in assessment engine is used instead."
+            ? t("aiStatus.ready.title")
+            : t("aiStatus.unavailable.title")
         }
       >
         <span className="status-dot" style={{ background: meta.dot }} aria-hidden="true" />

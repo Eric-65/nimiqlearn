@@ -626,6 +626,17 @@ button { font-family: inherit; }
 
   .nav-item svg { width: 20px; height: 20px; }
 
+  /* Translated labels run much longer than the English ones — German and
+     Portuguese especially ("Ausgeblendete Benachrichtigungen wiederherstellen"
+     against "Restore dismissed notifications") — and .btn is nowrap, so one
+     long label pushed the whole page sideways at 390px. Let button text wrap
+     instead of widening the viewport. Caught by sweeping every page in every
+     language at phone width, which reading the English UI would never surface. */
+  .btn {
+    white-space: normal;
+    max-width: 100%;
+  }
+
   .page { padding-bottom: 120px; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { useI18n } from "../../hooks/useI18n.js";
 
 /**
  * Item 42 — a payment receipt. Renders ONLY values actually returned or
@@ -6,17 +7,18 @@ import React from "react";
  * paymentService.js) — nothing here is invented or backfilled.
  */
 export default function PaymentReceipt({ product, amount, asset, chain, recipient, transactionHash, status, simulated, occurredAt }) {
+  const { t, locale } = useI18n();
   return (
     <div className="notice" style={{ textAlign: "left" }}>
       <span aria-hidden="true">{simulated ? "🧪" : "🧾"}</span>
       <span style={{ display: "grid", gap: 4, width: "100%" }}>
-        <Row label="Product" value={product} />
-        <Row label="Amount" value={`${amount} ${asset}`} />
-        {chain && <Row label="Chain" value={chain} />}
-        <Row label="Recipient" value={recipient} mono />
-        <Row label="Transaction hash" value={transactionHash} mono />
-        <Row label="Status" value={status} />
-        <Row label="Date/time" value={occurredAt ? new Date(occurredAt).toLocaleString() : "—"} />
+        <Row label={t("receipt.product")} value={product} />
+        <Row label={t("receipt.amount")} value={`${amount} ${asset}`} />
+        {chain && <Row label={t("pay.chain")} value={chain} />}
+        <Row label={t("pay.recipient")} value={recipient} mono />
+        <Row label={t("receipt.hash")} value={transactionHash} mono />
+        <Row label={t("receipt.status")} value={status} />
+        <Row label={t("receipt.datetime")} value={occurredAt ? new Date(occurredAt).toLocaleString(locale) : "—"} />
         {simulated && (
           <em style={{ marginTop: 2 }}>This is a simulated receipt. No blockchain transaction occurred.</em>
         )}

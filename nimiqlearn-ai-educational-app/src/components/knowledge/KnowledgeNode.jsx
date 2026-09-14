@@ -1,4 +1,5 @@
 import React from "react";
+import { useI18n } from "../../hooks/useI18n.js";
 import { STATUS_META } from "../../services/knowledgeService.js";
 
 /**
@@ -7,6 +8,7 @@ import { STATUS_META } from "../../services/knowledgeService.js";
  * due-for-review nodes show a clock, just-updated nodes flash teal.
  */
 export default function KnowledgeNode({ topic, knowledge, onSelect, index, due = false, justUpdated = false }) {
+  const { t } = useI18n();
   const color = STATUS_META[knowledge?.status]?.color || "var(--st-new)";
   const isWeak = knowledge?.status === "LEARNING" || (knowledge?.status === "NEW" && !knowledge.lastEvaluatedAt);
   const isMastered = knowledge?.status === "MASTERED";
@@ -61,13 +63,13 @@ export default function KnowledgeNode({ topic, knowledge, onSelect, index, due =
         </span>
       </span>
       {due && (
-        <span className="badge badge-violet" style={{ flex: "none" }} title="Due for review">⏳ Review</span>
+        <span className="badge badge-violet" style={{ flex: "none" }} title={t("node.dueTitle")}>⏳ {t("detail.review")}</span>
       )}
       {isMastered && (
-        <span className="badge badge-gold" style={{ flex: "none" }} title="Mastered">★</span>
+        <span className="badge badge-gold" style={{ flex: "none" }} title={t("status.mastered")}>★</span>
       )}
       {isWeak && (
-        <span className="badge badge-amber" style={{ flex: "none" }}>Fix this</span>
+        <span className="badge badge-amber" style={{ flex: "none" }}>{t("node.fixThis")}</span>
       )}
     </button>
   );
