@@ -3,6 +3,7 @@ import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useNimiq } from "../hooks/useNimiq.js";
 import { useAiBackend } from "../hooks/useAiBackend.js";
+import { useI18n } from "../hooks/useI18n.js";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -14,47 +15,35 @@ const HERO_IMG =
 const STORY_IMG =
   "https://images.pexels.com/photos/38882884/pexels-photo-38882884.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=800&w=1200";
 
+/* Ids only — the title and body are t("home.feature.<id>.title"/".text"),
+   so no English copy sits in this table at translation time. */
 const FEATURES = [
-  {
-    icon: "🔄",
-    title: "LearnLoop",
-    text: "Every answer feeds the loop. NimiqLearn continuously decides what you know, what you misunderstand, and what you should do next.",
-  },
-  {
-    icon: "🗣️",
-    title: "ExplainBack",
-    text: "Explaining a concept is the strongest test of understanding. The AI evaluates your explanation and finds the gaps you didn't know you had.",
-  },
-  {
-    icon: "⏳",
-    title: "ForgetMeNot",
-    text: "Transparent spaced review. The app schedules reinforcement from your mastery, recency, and recent mistakes — no magic, no guessing.",
-  },
-  {
-    icon: "⚡",
-    title: "Learning Economy",
-    text: "Premium packs, unlocked directly with NIM through Nimiq Pay. Educators get paid instantly — no middlemen, no custodial wallets.",
-  },
+  { id: "learnLoop", icon: "🔄" },
+  { id: "explainBack", icon: "🗣️" },
+  { id: "forgetMeNot", icon: "⏳" },
+  { id: "economy", icon: "⚡" },
 ];
 
-const LOOP = ["Learn", "Explain", "Evaluate", "Detect gap", "Remediate", "Challenge", "Measure", "Review"];
+const LOOP_STEPS = ["learn", "explain", "evaluate", "detectGap", "remediate", "challenge", "measure", "review"];
 
 /** Pick the single best "learn next" recommendation from learner state. */
 function pickRecommended(knowledge, reviewQueue) {
   const due = reviewQueue.filter((r) => r.dueNow);
   if (due.length) {
     const topic = findTopic(due[0].topicId);
-    if (topic) return { topic, why: "ForgetMeNot flagged this for review — a quick refresh locks it in.", label: "Due for review" };
+    if (topic) return { topic, whyKey: "home.rec.due.why", labelKey: "home.rec.due.label" };
   }
   const active = knowledge
     .filter((k) => k.mastery > 0 && k.status !== "MASTERED")
     .sort((a, b) => a.mastery - b.mastery)[0];
   if (active) {
     const topic = findTopic(active.topicId);
-    if (topic) return { topic, why: `You're at ${active.mastery}% — the next step will strengthen this.`, label: "Keep building" };
+    if (topic) {
+      return { topic, whyKey: "home.rec.building.why", whyVars: { pct: active.mastery }, labelKey: "home.rec.building.label" };
+    }
   }
   const fresh = LEAF_TOPICS.find((t) => !knowledge.some((k) => k.topicId === t.id && k.mastery > 0));
-  if (fresh) return { topic: fresh, why: "A fresh concept to grow your map.", label: "New concept" };
+  if (fresh) return { topic: fresh, whyKey: "home.rec.fresh.why", labelKey: "home.rec.fresh.label" };
   return null;
 }
 
@@ -63,6 +52,7 @@ export default function Home() {
   const { learner, knowledge, reviewQueue } = useLearner();
   const nimiq = useNimiq();
   const ai = useAiBackend();
+  const { t, tOr, tPlural } = useI18n();
 
   const recommended = pickRecommended(knowledge, reviewQueue);
   const dueCount = reviewQueue.filter((r) => r.dueNow).length;
@@ -87,24 +77,24 @@ export default function Home() {
           <div className="anim-rise">
             <span className="eyebrow">NimiqLearn</span>
             <h1 style={{ fontSize: "clamp(34px, 5vw, 58px)", fontWeight: 800, lineHeight: 1.08, margin: "0 0 18px" }}>
-              Learn smarter.
+              {t("home.hero.line1")}
               <br />
-              Explain better.
+              {t("home.hero.line2")}
               <br />
               <span style={{ background: "linear-gradient(90deg, var(--c-gold), #ffd37e)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
-                Remember longer.
+                {t("home.hero.line3")}
               </span>
             </h1>
             <p style={{ fontSize: "clamp(15px, 1.6vw, 18px)", color: "var(--c-text-dim)", maxWidth: 560, lineHeight: 1.65 }}>
-              An adaptive learning system that finds what you understand, what you're missing, and what you should practice next.
+              {t("home.hero.sub")}
             </p>
 
             <div className="flex gap-12 wrap" style={{ marginTop: 28 }}>
               <Button variant="primary" size="lg" onClick={() => navigate("learn")}>
-                Start Learning →
+                {t("home.hero.start")}
               </Button>
               <Button variant="outline" size="lg" onClick={() => navigate("explain")}>
-                Explain a concept
+                {t("home.hero.explain")}
               </Button>
             </div>
 
@@ -115,8 +105,8 @@ export default function Home() {
                   gone, and explanations are now sent to OpenAI through this
                   app's own backend, so the old wording was a privacy promise
                   the app no longer keeps. */}
-              {["🧠 AI grading, with a built-in offline engine", "🔒 Your keys never leave your wallet", "⚡ Pay with NIM"].map((t) => (
-                <span key={t} className="tiny muted">{t}</span>
+              {["home.hero.claim1", "home.hero.claim2", "home.hero.claim3"].map((key) => (
+                <span key={key} className="tiny muted">{t(key)}</span>
               ))}
             </div>
           </div>
@@ -134,7 +124,7 @@ export default function Home() {
             >
               <img
                 src={HERO_IMG}
-                alt="A focused student reading a textbook in a warm library"
+                alt={t("home.hero.imageAlt")}
                 style={{ width: "100%", height: "clamp(300px, 42vw, 460px)", objectFit: "cover" }}
               />
               <div
@@ -146,9 +136,9 @@ export default function Home() {
                 }}
               />
               <div className="over-media" style={{ position: "absolute", left: 20, bottom: 18, right: 20 }}>
-                <Badge tone="gold">ExplainBack in action</Badge>
+                <Badge tone="gold">{t("home.heroCaption.badge")}</Badge>
                 <p className="small" style={{ margin: "8px 0 0", color: "var(--c-text)" }}>
-                  “Force equals mass times acceleration — so the same push moves a light cart faster…”
+                  {t("home.heroCaption.quote")}
                 </p>
               </div>
             </div>
@@ -164,18 +154,20 @@ export default function Home() {
             hover
             style={{ borderColor: "rgba(247,193,79,0.35)", background: "linear-gradient(135deg, var(--c-gold-soft), var(--c-card-base) 60%)" }}
           >
-            <span className="eyebrow" style={{ marginBottom: 8 }}>What should I learn next?</span>
+            <span className="eyebrow" style={{ marginBottom: 8 }}>{t("home.next.eyebrow")}</span>
             {recommended ? (
               <>
-                <Badge tone="gold">{recommended.label}</Badge>
-                <h3 style={{ fontSize: 20, margin: "10px 0 6px" }}>{recommended.topic.name}</h3>
-                <p className="small muted" style={{ margin: "0 0 16px" }}>{recommended.why}</p>
+                <Badge tone="gold">{t(recommended.labelKey)}</Badge>
+                <h3 style={{ fontSize: 20, margin: "10px 0 6px" }}>
+                  {tOr(`topic.${recommended.topic.id}.name`, recommended.topic.name)}
+                </h3>
+                <p className="small muted" style={{ margin: "0 0 16px" }}>{t(recommended.whyKey, recommended.whyVars)}</p>
                 <Button variant="primary" onClick={() => navigate("learn", { topic: recommended.topic.id })}>
-                  Continue →
+                  {t("home.next.continue")}
                 </Button>
               </>
             ) : (
-              <p className="small muted" style={{ margin: 0 }}>Everything looks strong — pick something new to explore.</p>
+              <p className="small muted" style={{ margin: 0 }}>{t("home.next.allStrong")}</p>
             )}
           </Card>
 
@@ -184,9 +176,10 @@ export default function Home() {
             <div style={{ fontSize: 30, marginBottom: 8 }} aria-hidden="true">🗣️</div>
             <h3 style={{ fontSize: 17, margin: "0 0 6px" }}>ExplainBack</h3>
             <p className="small muted" style={{ margin: "0 0 16px" }}>
-              Test what you really understand. {ai.available ? "AI ready — explain and get instant feedback." : "Explain a concept and the AI checks your understanding."}
+              {t("home.explainCard.body")}{" "}
+              {t(ai.available ? "home.explainCard.aiReady" : "home.explainCard.aiOff")}
             </p>
-            <Button variant="teal" onClick={() => navigate("explain")}>Explain a concept →</Button>
+            <Button variant="teal" onClick={() => navigate("explain")}>{t("home.explainCard.cta")}</Button>
           </Card>
         </div>
 
@@ -198,31 +191,30 @@ export default function Home() {
               <h3 style={{ fontSize: 17, margin: 0 }}>ForgetMeNot</h3>
             </div>
             <p className="small muted" style={{ margin: "0 0 16px" }}>
-              {dueCount > 0
-                ? `${dueCount} ${dueCount === 1 ? "concept is" : "concepts are"} ready for review.`
-                : "No reviews due right now — you're on track."}
+              {dueCount > 0 ? tPlural("home.reviewCard.due", dueCount) : t("home.reviewCard.none")}
             </p>
-            <Button variant="outline" onClick={() => navigate("review")}>Review →</Button>
+            <Button variant="outline" onClick={() => navigate("review")}>{t("home.reviewCard.cta")}</Button>
           </Card>
 
           {/* Learning Economy */}
           <Card hover>
             <div className="flex items-center gap-10" style={{ marginBottom: 8 }}>
               <span style={{ fontSize: 26 }} aria-hidden="true">⚡</span>
-              <h3 style={{ fontSize: 17, margin: 0 }}>Learning Economy</h3>
+              <h3 style={{ fontSize: 17, margin: 0 }}>{t("market.title")}</h3>
             </div>
             <p className="small muted" style={{ margin: "0 0 6px" }}>
-              Unlocked learning paths: <strong>{unlockedCount}</strong>
+              {t("home.economy.unlocked")} <strong>{unlockedCount}</strong>
             </p>
             {recentPack && (
               <p className="tiny muted" style={{ margin: "0 0 14px" }}>
-                Recent purchase: <strong>{recentPack.title}</strong> · {recentPack.price} {recentPack.asset}
+                {t("home.economy.recent")}{" "}
+                <strong>{tOr(`pack.${recentPack.id}.title`, recentPack.title)}</strong> · {recentPack.price} {recentPack.asset}
               </p>
             )}
-            {!recentPack && <p className="tiny muted" style={{ margin: "0 0 14px" }}>Unlock packs with NIM through Nimiq Pay.</p>}
+            {!recentPack && <p className="tiny muted" style={{ margin: "0 0 14px" }}>{t("home.economy.hint")}</p>}
             <div className="flex gap-8 wrap">
-              <Button variant="outline" size="sm" onClick={() => navigate("market")}>Explore Marketplace</Button>
-              {!nimiq.isConnected && <Badge tone="amber">DEMO MODE</Badge>}
+              <Button variant="outline" size="sm" onClick={() => navigate("market")}>{t("home.economy.cta")}</Button>
+              {!nimiq.isConnected && <Badge tone="amber">{t("wallet.demoMode")}</Badge>}
             </div>
           </Card>
         </div>
@@ -231,14 +223,14 @@ export default function Home() {
       {/* ================= THE LOOP ================= */}
       <section style={{ marginTop: 64 }}>
         <div style={{ textAlign: "center", marginBottom: 26 }}>
-          <span className="eyebrow">The core loop</span>
-          <h2 style={{ fontSize: "clamp(24px, 3vw, 34px)", margin: 0 }}>An AI tutor that learns what you understand</h2>
+          <span className="eyebrow">{t("home.loop.eyebrow")}</span>
+          <h2 style={{ fontSize: "clamp(24px, 3vw, 34px)", margin: 0 }}>{t("home.loop.title")}</h2>
         </div>
         <div className="flex gap-8 wrap" style={{ justifyContent: "center", maxWidth: 860, margin: "0 auto" }}>
-          {LOOP.map((step, i) => (
+          {LOOP_STEPS.map((step, i) => (
             <span key={step} className="chip" style={{ cursor: "default", background: i % 2 ? "var(--c-blue-soft)" : "var(--c-gold-soft)", borderColor: i % 2 ? "rgba(77,141,255,0.4)" : "rgba(247,193,79,0.4)" }}>
-              <span style={{ color: "var(--c-gold)", fontWeight: 700 }}>{i + 1}.</span> {step}
-              {i < LOOP.length - 1 && <span aria-hidden="true" style={{ color: "var(--c-text-faint)" }}>→</span>}
+              <span style={{ color: "var(--c-gold)", fontWeight: 700 }}>{i + 1}.</span> {t(`home.loop.${step}`)}
+              {i < LOOP_STEPS.length - 1 && <span aria-hidden="true" style={{ color: "var(--c-text-faint)" }}>→</span>}
             </span>
           ))}
         </div>
@@ -248,10 +240,10 @@ export default function Home() {
       <section style={{ marginTop: 64 }}>
         <div className="grid grid-4">
           {FEATURES.map((f, i) => (
-            <Card key={f.title} hover className={`anim-rise delay-${i + 1}`}>
+            <Card key={f.id} hover className={`anim-rise delay-${i + 1}`}>
               <div style={{ fontSize: 30, marginBottom: 10 }} aria-hidden="true">{f.icon}</div>
-              <h3 style={{ fontSize: 16, margin: "0 0 8px" }}>{f.title}</h3>
-              <p className="small muted" style={{ margin: 0, lineHeight: 1.6 }}>{f.text}</p>
+              <h3 style={{ fontSize: 16, margin: "0 0 8px" }}>{t(`home.feature.${f.id}.title`)}</h3>
+              <p className="small muted" style={{ margin: 0, lineHeight: 1.6 }}>{t(`home.feature.${f.id}.text`)}</p>
             </Card>
           ))}
         </div>
@@ -262,38 +254,36 @@ export default function Home() {
         <Card style={{ padding: "clamp(26px, 4vw, 44px)", background: "linear-gradient(135deg, var(--c-blue-soft), var(--c-card-base) 55%)" }}>
           <div className="grid grid-2 items-center gap-24">
             <div>
-              <span className="eyebrow">Why NimiqLearn exists</span>
-              <h2 style={{ fontSize: "clamp(22px, 2.8vw, 30px)", margin: "0 0 16px" }}>
-                Two connected problems. One learning economy.
-              </h2>
+              <span className="eyebrow">{t("home.story.eyebrow")}</span>
+              <h2 style={{ fontSize: "clamp(22px, 2.8vw, 30px)", margin: "0 0 16px" }}>{t("home.story.title")}</h2>
               <div style={{ display: "grid", gap: 16 }}>
                 <div className="notice info" style={{ margin: 0 }}>
                   <span aria-hidden="true">🎓</span>
                   <span>
-                    <strong>The educational problem.</strong> Most platforms flood you with content but never understand what you actually know, which misconception is blocking you, or what needs reinforcement next.
+                    <strong>{t("home.story.edu.title")}</strong> {t("home.story.edu.body")}
                   </span>
                 </div>
                 <div className="notice" style={{ margin: 0 }}>
                   <span aria-hidden="true">🌐</span>
                   <span>
-                    <strong>The Web3 problem.</strong> Independent educators lack a simple, native way to monetize small learning experiences and receive direct payments.
+                    <strong>{t("home.story.web3.title")}</strong> {t("home.story.web3.body")}
                   </span>
                 </div>
                 <div className="notice success" style={{ margin: 0 }}>
                   <span aria-hidden="true">⚡</span>
                   <span>
-                    <strong>NimiqLearn combines</strong> AI personalization with direct educational payments through Nimiq Pay — an adaptive learning marketplace where great teaching gets paid.
+                    <strong>{t("home.story.combine.title")}</strong> {t("home.story.combine.body")}
                   </span>
                 </div>
               </div>
               <div className="flex gap-12 wrap" style={{ marginTop: 22 }}>
-                <Button variant="teal" onClick={() => navigate("market")}>Browse the marketplace</Button>
-                <Button variant="ghost" onClick={() => navigate("wallet")}>Wallet & payments</Button>
+                <Button variant="teal" onClick={() => navigate("market")}>{t("home.story.browse")}</Button>
+                <Button variant="ghost" onClick={() => navigate("wallet")}>{t("home.story.wallet")}</Button>
               </div>
             </div>
             <img
               src={STORY_IMG}
-              alt="A student reading in a modern library aisle"
+              alt={t("home.story.imageAlt")}
               style={{ borderRadius: "var(--r-lg)", border: "1px solid var(--c-border)", boxShadow: "var(--shadow-md)", width: "100%", height: 320, objectFit: "cover" }}
             />
           </div>
@@ -303,21 +293,21 @@ export default function Home() {
       {/* ================= CURRICULUM TEASER ================= */}
       <section style={{ marginTop: 64 }}>
         <div style={{ textAlign: "center", marginBottom: 26 }}>
-          <span className="eyebrow">Start anywhere</span>
-          <h2 style={{ fontSize: "clamp(22px, 2.8vw, 30px)", margin: 0 }}>Pick a concept and explain it back</h2>
+          <span className="eyebrow">{t("home.pick.eyebrow")}</span>
+          <h2 style={{ fontSize: "clamp(22px, 2.8vw, 30px)", margin: 0 }}>{t("home.pick.title")}</h2>
         </div>
         <div className="flex gap-8 wrap" style={{ justifyContent: "center" }}>
-          {LEAF_TOPICS.slice(0, 6).map((t) => (
-            <button key={t.id} className="chip" onClick={() => navigate("explain", { topic: t.id })}>
-              {t.name}
+          {LEAF_TOPICS.slice(0, 6).map((leaf) => (
+            <button key={leaf.id} className="chip" onClick={() => navigate("explain", { topic: leaf.id })}>
+              {tOr(`topic.${leaf.id}.name`, leaf.name)}
             </button>
           ))}
-          <button className="chip" onClick={() => navigate("learn")}>+ all topics</button>
+          <button className="chip" onClick={() => navigate("learn")}>{t("home.pick.allTopics")}</button>
         </div>
       </section>
 
       <section style={{ marginTop: 72, textAlign: "center" }}>
-        <Button variant="primary" size="lg" onClick={() => navigate("learn")}>Start Learning — it's free</Button>
+        <Button variant="primary" size="lg" onClick={() => navigate("learn")}>{t("home.finalCta")}</Button>
       </section>
     </div>
   );

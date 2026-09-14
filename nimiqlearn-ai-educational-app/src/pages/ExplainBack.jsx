@@ -164,19 +164,19 @@ export default function ExplainBack() {
 
       {/* CONCEPT PICKER */}
       <div className="flex gap-8 wrap" style={{ marginBottom: 24 }}>
-        {LEAF_TOPICS.map((t) => {
-          const e = getEntry(t.id);
-          const active = t.id === topicId;
+        {LEAF_TOPICS.map((leaf) => {
+          const e = getEntry(leaf.id);
+          const active = leaf.id === topicId;
           return (
             <button
-              key={t.id}
+              key={leaf.id}
               className={`chip ${active ? "active" : ""}`}
-              onClick={() => switchTopic(t.id)}
+              onClick={() => switchTopic(leaf.id)}
               aria-pressed={active}
               disabled={isGenerating}
             >
               <span className="status-dot" style={{ background: STATUS_META[e?.status]?.color || "var(--st-new)" }} aria-hidden="true" />
-              {tOr(`topic.${t.id}.name`, t.name)}
+              {tOr(`topic.${leaf.id}.name`, leaf.name)}
             </button>
           );
         })}

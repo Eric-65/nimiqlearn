@@ -469,4 +469,89 @@ export default {
   "market.noUsdtRecipient": "No recipient address is configured for USDT payments.",
   "market.usdtDisabled":
     "No USDT recipient address is configured (VITE_USDT_LEARNING_RECIPIENT is unset). Unlocking with USDT is disabled until an educator EVM address is configured.",
+
+  /* ---------------- Home ---------------- */
+  "home.hero.line1": "Learn smarter.",
+  "home.hero.line2": "Explain better.",
+  "home.hero.line3": "Remember longer.",
+  "home.hero.sub":
+    "An adaptive learning system that finds what you understand, what you're missing, and what you should practice next.",
+  "home.hero.start": "Start Learning \u2192",
+  "home.hero.explain": "Explain a concept",
+  "home.hero.claim1": "🧠 AI grading, with a built-in offline engine",
+  "home.hero.claim2": "🔒 Your keys never leave your wallet",
+  "home.hero.claim3": "⚡ Pay with NIM",
+  "home.hero.imageAlt": "A focused student reading a textbook in a warm library",
+  "home.heroCaption.badge": "ExplainBack in action",
+  "home.heroCaption.quote":
+    "\u201CForce equals mass times acceleration — so the same push moves a light cart faster\u2026\u201D",
+
+  "home.next.eyebrow": "What should I learn next?",
+  "home.next.continue": "Continue \u2192",
+  "home.next.allStrong": "Everything looks strong — pick something new to explore.",
+  "home.rec.due.label": "Due for review",
+  "home.rec.due.why": "ForgetMeNot flagged this for review — a quick refresh locks it in.",
+  "home.rec.building.label": "Keep building",
+  "home.rec.building.why": "You're at {pct}% — the next step will strengthen this.",
+  "home.rec.fresh.label": "New concept",
+  "home.rec.fresh.why": "A fresh concept to grow your map.",
+
+  "home.explainCard.body": "Test what you really understand.",
+  "home.explainCard.aiReady": "AI ready — explain and get instant feedback.",
+  "home.explainCard.aiOff": "Explain a concept and the AI checks your understanding.",
+  "home.explainCard.cta": "Explain a concept \u2192",
+
+  "home.reviewCard.due_one": "{count} concept is ready for review.",
+  "home.reviewCard.due_other": "{count} concepts are ready for review.",
+  "home.reviewCard.none": "No reviews due right now — you're on track.",
+  "home.reviewCard.cta": "Review \u2192",
+
+  "home.economy.unlocked": "Unlocked learning paths:",
+  "home.economy.recent": "Recent purchase:",
+  "home.economy.hint": "Unlock packs with NIM through Nimiq Pay.",
+  "home.economy.cta": "Explore Marketplace",
+
+  "home.loop.eyebrow": "The core loop",
+  "home.loop.title": "An AI tutor that learns what you understand",
+  "home.loop.learn": "Learn",
+  "home.loop.explain": "Explain",
+  "home.loop.evaluate": "Evaluate",
+  "home.loop.detectGap": "Detect gap",
+  "home.loop.remediate": "Remediate",
+  "home.loop.challenge": "Challenge",
+  "home.loop.measure": "Measure",
+  "home.loop.review": "Review",
+
+  "home.feature.learnLoop.title": "LearnLoop",
+  "home.feature.learnLoop.text":
+    "Every answer feeds the loop. NimiqLearn continuously decides what you know, what you misunderstand, and what you should do next.",
+  "home.feature.explainBack.title": "ExplainBack",
+  "home.feature.explainBack.text":
+    "Explaining a concept is the strongest test of understanding. The AI evaluates your explanation and finds the gaps you didn't know you had.",
+  "home.feature.forgetMeNot.title": "ForgetMeNot",
+  "home.feature.forgetMeNot.text":
+    "Transparent spaced review. The app schedules reinforcement from your mastery, recency, and recent mistakes — no magic, no guessing.",
+  "home.feature.economy.title": "Learning Economy",
+  "home.feature.economy.text":
+    "Premium packs, unlocked directly with NIM through Nimiq Pay. Educators get paid instantly — no middlemen, no custodial wallets.",
+
+  "home.story.eyebrow": "Why NimiqLearn exists",
+  "home.story.title": "Two connected problems. One learning economy.",
+  "home.story.edu.title": "The educational problem.",
+  "home.story.edu.body":
+    "Most platforms flood you with content but never understand what you actually know, which misconception is blocking you, or what needs reinforcement next.",
+  "home.story.web3.title": "The Web3 problem.",
+  "home.story.web3.body":
+    "Independent educators lack a simple, native way to monetize small learning experiences and receive direct payments.",
+  "home.story.combine.title": "NimiqLearn combines",
+  "home.story.combine.body":
+    "AI personalization with direct educational payments through Nimiq Pay — an adaptive learning marketplace where great teaching gets paid.",
+  "home.story.browse": "Browse the marketplace",
+  "home.story.wallet": "Wallet & payments",
+  "home.story.imageAlt": "A student reading in a modern library aisle",
+
+  "home.pick.eyebrow": "Start anywhere",
+  "home.pick.title": "Pick a concept and explain it back",
+  "home.pick.allTopics": "+ all topics",
+  "home.finalCta": "Start Learning — it's free",
 };
