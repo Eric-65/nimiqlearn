@@ -1,5 +1,7 @@
-/* NimiqLearn — 简体中文。专有名词不翻译：NimiqLearn、ExplainBack、
-   ForgetMeNot、LearnLoop、Nimiq Pay、NIM、USDT、XP。
+/* NimiqLearn — 简体中文。
+   不翻译的专有名词：NimiqLearn、Nimiq Pay、NIM、USDT、XP。
+   已翻译的功能名：ExplainBack → 复述，ForgetMeNot → 勿忘我（即勿忘我花，
+   与英文原名同一个双关），LearnLoop → 学习循环。
 
    中文没有语法上的复数形式，因此 _one 与 _other 内容相同。
    Intl.PluralRules 始终返回 "other"，实际用到的是 _other；
@@ -12,8 +14,8 @@ export default {
   "nav.group.You": "我的",
   "nav.home": "首页",
   "nav.learn": "学习",
-  "nav.explain": "ExplainBack",
-  "nav.review": "ForgetMeNot",
+  "nav.explain": "复述",
+  "nav.review": "勿忘我",
   "nav.knowledge": "知识",
   "nav.glossary": "术语表",
   "nav.market": "市场",
@@ -75,7 +77,7 @@ export default {
   "settings.connections.sub": "这个版本实际配置了什么。",
   "settings.conn.ai": "AI 评分后端",
   "settings.conn.ai.on":
-    "ExplainBack 评分和学习活动会调用后端，失败时回退到内置引擎。",
+    "复述评分和学习活动会调用后端，失败时回退到内置引擎。",
   "settings.conn.ai.off":
     "未设置 VITE_EXPLAINBACK_TUTOR_API_URL，因此所有 AI 功能都使用内置的确定性引擎。",
   "settings.conn.wallet": "Nimiq Pay 钱包",
@@ -141,7 +143,7 @@ export default {
   "knowledge.needsAttention": "需要关注",
   "knowledge.dueForReview_one": "{count} 个概念待复习。",
   "knowledge.dueForReview_other": "{count} 个概念待复习。",
-  "knowledge.openReview": "打开 ForgetMeNot →",
+  "knowledge.openReview": "打开勿忘我 →",
   "wallet.title": "钱包与学习经济",
   "wallet.sub": "你与 Nimiq Pay 的连接、当前环境支持的资产，以及你的解锁记录。",
   "wallet.demoMode": "演示模式",
@@ -243,11 +245,11 @@ export default {
   "glossary.misconception": "常见误解",
   "glossary.explainBack": "用自己的话讲一遍 →",
   "glossary.studyIt": "去学习",
-  "review.title": "ForgetMeNot AI",
+  "review.title": "勿忘我 AI",
   "review.sub":
     "过程透明的间隔复习。应用根据你的掌握度、间隔时间和近期错误安排巩固，AI 只负责撰写复习内容，从不决定时间。",
   "review.empty": "暂时没有可复习的内容 — 先评估一个概念吧。",
-  "review.reason": "ForgetMeNot 把它安排为巩固内容。",
+  "review.reason": "勿忘我把它安排为巩固内容。",
   "review.due": "到期",
   "review.level.urgent": "紧急",
   "review.level.dueSoon": "即将到期",
@@ -295,7 +297,7 @@ export default {
   "activity.anotherPass": "我还需要再看一遍",
   "activity.showExplanation": "显示解析",
   "loop.reason.new": "这个概念对你还是新的 — 我们先从核心思路开始。",
-  "loop.reason.review": "ForgetMeNot 把这个概念标记为需要巩固。",
+  "loop.reason.review": "勿忘我把这个概念标记为需要巩固。",
   "loop.reason.misconception": "你刚才在这里出错了 — 我们直接攻克那个误解。",
   "loop.reason.low": "先把基础打牢，再往深处走。",
   "loop.reason.mid": "思路你已经抓住了 — 现在来应用它。",
@@ -331,7 +333,7 @@ export default {
   "explain.startNext": "开始下一个挑战 →",
   "explain.another": "讲解另一个概念",
   "learn.sub":
-    "LearnLoop 会根据你的知识状态挑选下一个活动。AI 生成内容，循环决定下一步怎么走。",
+    "学习循环会根据你的知识状态挑选下一个活动。AI 生成内容，循环决定下一步怎么走。",
   "learn.concept": "概念",
   "learn.appMastery": "应用内掌握度：{pct}%",
   "learn.explainConcept": "讲解这个概念",
@@ -404,14 +406,14 @@ export default {
   "home.hero.claim2": "🔒 私钥绝不离开你的钱包",
   "home.hero.claim3": "⚡ 用 NIM 支付",
   "home.hero.imageAlt": "一位学生在暖光图书馆里专注地读教科书",
-  "home.heroCaption.badge": "ExplainBack 实际效果",
+  "home.heroCaption.badge": "复述实际效果",
   "home.heroCaption.quote":
     "「力等于质量乘以加速度，所以同样的推力会让轻的小车跑得更快…」",
   "home.next.eyebrow": "接下来该学什么？",
   "home.next.continue": "继续 →",
   "home.next.allStrong": "看起来都很扎实 — 挑个新东西来探索吧。",
   "home.rec.due.label": "待复习",
-  "home.rec.due.why": "ForgetMeNot 把它标记为需要复习 — 快速过一遍就能记牢。",
+  "home.rec.due.why": "勿忘我把它标记为需要复习 — 快速过一遍就能记牢。",
   "home.rec.building.label": "继续积累",
   "home.rec.building.why": "你现在是 {pct}% — 下一步会让这里更扎实。",
   "home.rec.fresh.label": "新概念",
@@ -438,13 +440,13 @@ export default {
   "home.loop.challenge": "挑战",
   "home.loop.measure": "测量",
   "home.loop.review": "复习",
-  "home.feature.learnLoop.title": "LearnLoop",
+  "home.feature.learnLoop.title": "学习循环",
   "home.feature.learnLoop.text":
     "每一次作答都会进入循环。NimiqLearn 持续判断你掌握了什么、误解了什么，以及接下来该做什么。",
-  "home.feature.explainBack.title": "ExplainBack",
+  "home.feature.explainBack.title": "复述",
   "home.feature.explainBack.text":
     "讲解一个概念，是检验理解最严格的方式。AI 会评估你的讲解，找出你自己都没察觉的缺口。",
-  "home.feature.forgetMeNot.title": "ForgetMeNot",
+  "home.feature.forgetMeNot.title": "勿忘我",
   "home.feature.forgetMeNot.text":
     "过程透明的间隔复习。应用依据掌握度、间隔时间和近期错误安排巩固 — 不靠玄学，也不靠猜。",
   "home.feature.economy.title": "学习经济",
@@ -559,4 +561,6 @@ export default {
   "ewallet.chainId": "目前链 ID",
   "ewallet.connect": "连接 EVM 钱包",
   "ewallet.disconnectNote": "断开连接只会清除这个应用的本地状态 — 若要彻底断开，请在 Nimiq Pay 中撤销 NimiqLearn 的存取权。",
+  "knowledge.mapSub": "你对整个课程的实时理解。薄弱节点会闪动 — 点一下就能补强。",
+  "knowledge.mapNote": "状态由应用根据你的评估、活动结果和复习记录计算，而不是由 AI 决定。",
 };

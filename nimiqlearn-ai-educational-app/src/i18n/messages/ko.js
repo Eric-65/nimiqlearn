@@ -1,5 +1,7 @@
-/* NimiqLearn — 한국어. 고유명사는 번역하지 않습니다: NimiqLearn,
-   ExplainBack, ForgetMeNot, LearnLoop, Nimiq Pay, NIM, USDT, XP.
+/* NimiqLearn — 한국어.
+   번역하지 않는 고유명사: NimiqLearn, Nimiq Pay, NIM, USDT, XP.
+   번역한 기능 이름: ExplainBack → 설명해보기, ForgetMeNot → 잊지마,
+   LearnLoop → 학습 루프.
 
    한국어에는 문법적 복수형이 없으므로 _one 과 _other 는 같은 문장을
    담습니다. Intl.PluralRules 가 항상 "other" 를 고르기 때문에 실제로
@@ -13,8 +15,8 @@ export default {
   "nav.group.You": "내 정보",
   "nav.home": "홈",
   "nav.learn": "학습하기",
-  "nav.explain": "ExplainBack",
-  "nav.review": "ForgetMeNot",
+  "nav.explain": "설명해보기",
+  "nav.review": "잊지마",
   "nav.knowledge": "지식",
   "nav.glossary": "용어집",
   "nav.market": "마켓플레이스",
@@ -76,7 +78,7 @@ export default {
   "settings.connections.sub": "이 빌드가 실제로 어떻게 설정되어 있는지.",
   "settings.conn.ai": "AI 채점 백엔드",
   "settings.conn.ai.on":
-    "ExplainBack 채점과 학습 활동이 백엔드를 호출하며, 실패하면 내장 엔진으로 대체됩니다.",
+    "설명해보기 채점과 학습 활동이 백엔드를 호출하며, 실패하면 내장 엔진으로 대체됩니다.",
   "settings.conn.ai.off":
     "VITE_EXPLAINBACK_TUTOR_API_URL이 설정되지 않아 모든 AI 기능이 내장 결정론적 엔진을 사용합니다.",
   "settings.conn.wallet": "Nimiq Pay 지갑",
@@ -142,7 +144,7 @@ export default {
   "knowledge.needsAttention": "주의가 필요함",
   "knowledge.dueForReview_one": "복습할 개념 {count}개.",
   "knowledge.dueForReview_other": "복습할 개념 {count}개.",
-  "knowledge.openReview": "ForgetMeNot 열기 →",
+  "knowledge.openReview": "잊지마 열기 →",
   "wallet.title": "지갑과 학습 이코노미",
   "wallet.sub": "Nimiq Pay 연결 상태, 이 환경이 지원하는 자산, 그리고 잠금 해제 내역입니다.",
   "wallet.demoMode": "데모 모드",
@@ -244,11 +246,11 @@ export default {
   "glossary.misconception": "흔한 오해",
   "glossary.explainBack": "내 말로 설명하기 →",
   "glossary.studyIt": "학습하기",
-  "review.title": "ForgetMeNot AI",
+  "review.title": "잊지마 AI",
   "review.sub":
     "투명한 분산 복습입니다. 앱이 숙련도와 경과 시간, 최근 실수를 바탕으로 복습을 배치하고, AI는 복습 내용만 쓸 뿐 시점은 정하지 않습니다.",
   "review.empty": "아직 복습할 것이 없습니다 — 개념을 먼저 평가해 보세요.",
-  "review.reason": "ForgetMeNot이 보강용으로 배치했습니다.",
+  "review.reason": "잊지마가 보강용으로 배치했습니다.",
   "review.due": "복습 시점",
   "review.level.urgent": "시급",
   "review.level.dueSoon": "곧 복습",
@@ -296,7 +298,7 @@ export default {
   "activity.anotherPass": "한 번 더 봐야 해요",
   "activity.showExplanation": "해설 보기",
   "loop.reason.new": "이 개념은 처음이네요 — 핵심 아이디어부터 시작합시다.",
-  "loop.reason.review": "ForgetMeNot이 이 개념을 보강 대상으로 표시했습니다.",
+  "loop.reason.review": "잊지마가 이 개념을 보강 대상으로 표시했습니다.",
   "loop.reason.misconception": "방금 여기서 놓쳤습니다 — 그 오해를 정확히 짚어 봅시다.",
   "loop.reason.low": "더 깊이 들어가기 전에 기초를 다집니다.",
   "loop.reason.mid": "개념은 잡혔습니다 — 이제 적용해 봅시다.",
@@ -332,7 +334,7 @@ export default {
   "explain.startNext": "다음 과제 시작 →",
   "explain.another": "다른 개념 설명하기",
   "learn.sub":
-    "LearnLoop가 지식 상태를 보고 다음 활동을 고릅니다. AI는 내용을 만들고, 루프가 다음 수를 정합니다.",
+    "학습 루프가 지식 상태를 보고 다음 활동을 고릅니다. AI는 내용을 만들고, 루프가 다음 수를 정합니다.",
   "learn.concept": "개념",
   "learn.appMastery": "앱 숙련도: {pct}%",
   "learn.explainConcept": "이 개념 설명하기",
@@ -405,14 +407,14 @@ export default {
   "home.hero.claim2": "🔒 키는 지갑을 벗어나지 않습니다",
   "home.hero.claim3": "⚡ NIM으로 결제",
   "home.hero.imageAlt": "따뜻한 조명의 도서관에서 교재를 집중해 읽는 학생",
-  "home.heroCaption.badge": "ExplainBack 실제 화면",
+  "home.heroCaption.badge": "설명해보기 실제 화면",
   "home.heroCaption.quote":
     "「힘은 질량 곱하기 가속도니까, 같은 힘으로 밀면 가벼운 수레가 더 빨리 움직이죠…」",
   "home.next.eyebrow": "다음엔 뭘 배울까요?",
   "home.next.continue": "계속하기 →",
   "home.next.allStrong": "모두 탄탄해 보입니다 — 새로 탐험할 것을 골라 보세요.",
   "home.rec.due.label": "복습 시점",
-  "home.rec.due.why": "ForgetMeNot이 복습 대상으로 표시했습니다 — 짧게 되짚으면 확실히 굳어집니다.",
+  "home.rec.due.why": "잊지마가 복습 대상으로 표시했습니다 — 짧게 되짚으면 확실히 굳어집니다.",
   "home.rec.building.label": "계속 쌓기",
   "home.rec.building.why": "지금 {pct}%입니다 — 다음 단계에서 더 탄탄해집니다.",
   "home.rec.fresh.label": "새 개념",
@@ -439,13 +441,13 @@ export default {
   "home.loop.challenge": "도전",
   "home.loop.measure": "측정",
   "home.loop.review": "복습",
-  "home.feature.learnLoop.title": "LearnLoop",
+  "home.feature.learnLoop.title": "학습 루프",
   "home.feature.learnLoop.text":
     "모든 답이 루프로 들어갑니다. NimiqLearn은 내가 무엇을 알고, 무엇을 잘못 이해했으며, 다음에 무엇을 해야 하는지 계속 판단합니다.",
-  "home.feature.explainBack.title": "ExplainBack",
+  "home.feature.explainBack.title": "설명해보기",
   "home.feature.explainBack.text":
     "개념을 설명하는 것은 가장 강력한 이해도 검사입니다. AI가 설명을 평가해, 스스로도 몰랐던 빈틈을 찾아 줍니다.",
-  "home.feature.forgetMeNot.title": "ForgetMeNot",
+  "home.feature.forgetMeNot.title": "잊지마",
   "home.feature.forgetMeNot.text":
     "투명한 분산 복습입니다. 앱이 숙련도와 경과 시간, 최근 실수를 바탕으로 복습을 배치합니다 — 마법도 추측도 없습니다.",
   "home.feature.economy.title": "학습 이코노미",
@@ -560,4 +562,6 @@ export default {
   "ewallet.chainId": "활성 체인 ID",
   "ewallet.connect": "EVM 지갑 연결",
   "ewallet.disconnectNote": "연결 해제는 이 앱의 로컬 상태만 지웁니다 — 완전히 끊으려면 Nimiq Pay에서 NimiqLearn의 접근 권한을 취소하세요.",
+  "knowledge.mapSub": "커리큘럼 전체에 대한 현재 이해도입니다. 약한 노드는 깜빡입니다 — 눌러서 보완하세요.",
+  "knowledge.mapNote": "상태는 AI가 아니라 앱이 평가 결과, 활동 기록, 복습 내역을 바탕으로 계산합니다.",
 };

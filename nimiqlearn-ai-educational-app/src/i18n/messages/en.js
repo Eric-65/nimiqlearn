@@ -13,10 +13,15 @@
    - Keys ending _one / _other are plural forms selected through
      Intl.PluralRules. Languages with a single form (ko, ja, zh)
      only need _other.
-   - "NimiqLearn", "ExplainBack", "ForgetMeNot", "Nimiq Pay",
-     "NIM" and "USDT" are proper nouns and stay untranslated in
-     every catalogue — they are product and asset names, not
-     descriptions.
+   - "NimiqLearn", "Nimiq Pay", "NIM" and "USDT" are product and
+     asset names and stay untranslated in every catalogue.
+   - The FEATURE names — ExplainBack, ForgetMeNot, LearnLoop — are
+     translated, because to a learner reading a Korean or Spanish
+     UI they are just two English words sitting in the middle of
+     the nav. Each catalogue documents its own choices in its
+     header; German and Chinese use the actual forget-me-not
+     flower (Vergissmeinnicht, 勿忘我), keeping the pun the English
+     name is built on.
    ============================================================ */
 
 export default {
@@ -676,4 +681,9 @@ export default {
   "ewallet.connect": "Connect EVM wallet",
   "ewallet.disconnectNote":
     "Disconnecting only clears this app's local state — revoke NimiqLearn's access from within Nimiq Pay itself to fully disconnect.",
+
+  "knowledge.mapSub": "Your live understanding across the curriculum. Weak nodes pulse — click one to fix it.",
+
+  "knowledge.mapNote":
+    "Statuses are computed by the app from your evaluations, activity results, and reviews — not by the AI.",
 };

@@ -66,15 +66,13 @@ export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null
       <div className="flex items-center justify-between wrap gap-8" style={{ marginBottom: 22 }}>
         <div>
           <h3 style={{ margin: "0 0 4px", fontSize: 18 }}>{t("knowledge.title")}</h3>
-          <p className="small muted" style={{ margin: 0 }}>
-            Your live understanding across the curriculum. Weak nodes pulse — click one to fix it.
-          </p>
+          <p className="small muted" style={{ margin: 0 }}>{t("knowledge.mapSub")}</p>
         </div>
         <div className="flex items-center gap-12 wrap">
           {Object.entries(STATUS_META).map(([key, meta]) => (
             <span key={key} className="flex items-center gap-6 tiny muted">
               <span className="status-dot" style={{ background: meta.color }} aria-hidden="true" />
-              {meta.label}
+              {t(`status.${key.toLowerCase()}`)}
             </span>
           ))}
         </div>
@@ -83,7 +81,7 @@ export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null
       {TOPIC_TREE.map((subject) => renderBranch(subject))}
 
       <p className="tiny muted" style={{ margin: "4px 0 0", textAlign: "center" }}>
-        Statuses are computed by the app from your evaluations, activity results, and reviews — not by the AI.
+        {t("knowledge.mapNote")}
       </p>
     </div>
   );

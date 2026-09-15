@@ -1,5 +1,8 @@
-/* NimiqLearn — 日本語。固有名詞は翻訳しません: NimiqLearn,
-   ExplainBack, ForgetMeNot, LearnLoop, Nimiq Pay, NIM, USDT, XP。
+/* NimiqLearn — 日本語。
+   翻訳しない固有名詞: NimiqLearn、Nimiq Pay、NIM、USDT、XP。
+   翻訳した機能名: ExplainBack →「説明してみる」、ForgetMeNot →
+   「忘れないで」、LearnLoop →「学習ループ」。文中では鉤括弧で囲み、
+   名詞として読めるようにしています。
 
    日本語には文法上の複数形がないため _one と _other は同じ文です。
    Intl.PluralRules は常に "other" を返すので実際に使われるのは
@@ -13,8 +16,8 @@ export default {
   "nav.group.You": "あなた",
   "nav.home": "ホーム",
   "nav.learn": "学ぶ",
-  "nav.explain": "ExplainBack",
-  "nav.review": "ForgetMeNot",
+  "nav.explain": "説明してみる",
+  "nav.review": "忘れないで",
   "nav.knowledge": "ナレッジ",
   "nav.glossary": "用語集",
   "nav.market": "マーケットプレイス",
@@ -76,7 +79,7 @@ export default {
   "settings.connections.sub": "このビルドが実際に何に対応しているか。",
   "settings.conn.ai": "AI 採点バックエンド",
   "settings.conn.ai.on":
-    "ExplainBack の採点と学習アクティビティはバックエンドを呼び出し、失敗時は内蔵エンジンに切り替わります。",
+    "「説明してみる」の採点と学習アクティビティはバックエンドを呼び出し、失敗時は内蔵エンジンに切り替わります。",
   "settings.conn.ai.off":
     "VITE_EXPLAINBACK_TUTOR_API_URL が未設定のため、すべての AI 機能が内蔵の決定論的エンジンを使います。",
   "settings.conn.wallet": "Nimiq Pay ウォレット",
@@ -142,7 +145,7 @@ export default {
   "knowledge.needsAttention": "要対応",
   "knowledge.dueForReview_one": "復習期限の概念が {count} 件。",
   "knowledge.dueForReview_other": "復習期限の概念が {count} 件。",
-  "knowledge.openReview": "ForgetMeNot を開く →",
+  "knowledge.openReview": "「忘れないで」を開く →",
   "wallet.title": "ウォレットと学習エコノミー",
   "wallet.sub": "Nimiq Pay との接続状況、この環境で対応している資産、そしてアンロック履歴。",
   "wallet.demoMode": "デモモード",
@@ -244,11 +247,11 @@ export default {
   "glossary.misconception": "よくある誤解",
   "glossary.explainBack": "自分の言葉で説明する →",
   "glossary.studyIt": "学習する",
-  "review.title": "ForgetMeNot AI",
+  "review.title": "「忘れないで」AI",
   "review.sub":
     "仕組みの見える間隔反復です。アプリが習熟度・経過時間・直近のミスから復習を組み、AI は復習の中身だけを書きます。タイミングを決めることはありません。",
   "review.empty": "まだ復習するものがありません — まず概念を評価してみましょう。",
-  "review.reason": "ForgetMeNot が補強として組み込みました。",
+  "review.reason": "「忘れないで」が補強として組み込みました。",
   "review.due": "期限",
   "review.level.urgent": "至急",
   "review.level.dueSoon": "まもなく",
@@ -296,7 +299,7 @@ export default {
   "activity.anotherPass": "もう一度やりたい",
   "activity.showExplanation": "解説を表示",
   "loop.reason.new": "この概念は初めてですね — まず中心となる考え方から始めましょう。",
-  "loop.reason.review": "ForgetMeNot がこの概念を補強対象にしました。",
+  "loop.reason.review": "「忘れないで」がこの概念を補強対象にしました。",
   "loop.reason.misconception": "いまここでつまずきました — その誤解を正面から扱いましょう。",
   "loop.reason.low": "先に進む前に土台を固めます。",
   "loop.reason.mid": "考え方はつかめています — ここから応用しましょう。",
@@ -332,7 +335,7 @@ export default {
   "explain.startNext": "次の課題を始める →",
   "explain.another": "別の概念を説明する",
   "learn.sub":
-    "LearnLoop があなたの理解状況から次のアクティビティを選びます。AI が中身を作り、ループが次の一手を決めます。",
+    "「学習ループ」があなたの理解状況から次のアクティビティを選びます。AI が中身を作り、ループが次の一手を決めます。",
   "learn.concept": "概念",
   "learn.appMastery": "アプリ内習熟度: {pct}%",
   "learn.explainConcept": "この概念を説明する",
@@ -405,14 +408,14 @@ export default {
   "home.hero.claim2": "🔒 鍵がウォレットの外に出ることはありません",
   "home.hero.claim3": "⚡ NIM で支払う",
   "home.hero.imageAlt": "暖かい雰囲気の図書館で教科書を熱心に読む学生",
-  "home.heroCaption.badge": "ExplainBack の実例",
+  "home.heroCaption.badge": "「説明してみる」の実例",
   "home.heroCaption.quote":
     "「力は質量かける加速度だから、同じ力で押せば軽い台車のほうが速く動く…」",
   "home.next.eyebrow": "次は何を学ぶ？",
   "home.next.continue": "続ける →",
   "home.next.allStrong": "どれもしっかりしています — 新しいものを選んで広げてみましょう。",
   "home.rec.due.label": "復習期限",
-  "home.rec.due.why": "ForgetMeNot が復習対象にしました — さっと見直すだけで定着します。",
+  "home.rec.due.why": "「忘れないで」が復習対象にしました — さっと見直すだけで定着します。",
   "home.rec.building.label": "積み上げを続ける",
   "home.rec.building.why": "いま {pct}% です — 次のステップでここが強くなります。",
   "home.rec.fresh.label": "新しい概念",
@@ -439,13 +442,13 @@ export default {
   "home.loop.challenge": "挑戦する",
   "home.loop.measure": "測る",
   "home.loop.review": "復習する",
-  "home.feature.learnLoop.title": "LearnLoop",
+  "home.feature.learnLoop.title": "学習ループ",
   "home.feature.learnLoop.text":
     "すべての回答がループに入ります。NimiqLearn は、何を理解し、何を誤解し、次に何をすべきかを継続的に判断します。",
-  "home.feature.explainBack.title": "ExplainBack",
+  "home.feature.explainBack.title": "説明してみる",
   "home.feature.explainBack.text":
     "概念を説明することは、理解度を測る最も厳しいテストです。AI があなたの説明を評価し、気づいていなかった穴を見つけます。",
-  "home.feature.forgetMeNot.title": "ForgetMeNot",
+  "home.feature.forgetMeNot.title": "忘れないで",
   "home.feature.forgetMeNot.text":
     "仕組みの見える間隔反復です。アプリが習熟度・経過時間・直近のミスから復習を組みます — 魔法も当て推量もありません。",
   "home.feature.economy.title": "学習エコノミー",
@@ -560,4 +563,6 @@ export default {
   "ewallet.chainId": "現在のチェーン ID",
   "ewallet.connect": "EVM ウォレットに接続",
   "ewallet.disconnectNote": "接続解除はこのアプリのローカル状態を消すだけです — 完全に切るには Nimiq Pay 側で NimiqLearn のアクセス権を取り消してください。",
+  "knowledge.mapSub": "カリキュラム全体の理解度をリアルタイムで表示します。弱いノードは点滅します — タップして補強しましょう。",
+  "knowledge.mapNote": "ステータスは AI ではなく、アプリがあなたの評価・アクティビティの結果・復習から算出しています。",
 };

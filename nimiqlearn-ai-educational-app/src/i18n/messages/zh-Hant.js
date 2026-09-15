@@ -1,9 +1,11 @@
-/* NimiqLearn — 繁體中文（台灣）。專有名詞不翻譯：NimiqLearn、
-   ExplainBack、ForgetMeNot、LearnLoop、Nimiq Pay、NIM、USDT、XP。
+/* NimiqLearn — 繁體中文（台灣）。
+   不翻譯的專有名詞：NimiqLearn、Nimiq Pay、NIM、USDT、XP。
+   已翻譯的功能名：ExplainBack → 複述，ForgetMeNot → 勿忘我（即勿忘我花，
+   與英文原名同一個雙關），LearnLoop → 學習循環。
 
    這不是簡體版的逐字轉換：用語依台灣習慣（預設、資料、使用者、
-   伺服器、支援、設定、開啟、儲存、優先順序…），而不是直接沿用
-   大陸用詞。中文沒有文法上的複數，_one 與 _other 內容相同。 */
+   伺服器、支援、設定、開啟、儲存、優先順序…）。中文沒有文法上的
+   複數，_one 與 _other 內容相同。 */
 export default {
   "brand.tagline": "自適應 AI 學習",
   "nav.primary": "主要導覽",
@@ -12,8 +14,8 @@ export default {
   "nav.group.You": "我的",
   "nav.home": "首頁",
   "nav.learn": "學習",
-  "nav.explain": "ExplainBack",
-  "nav.review": "ForgetMeNot",
+  "nav.explain": "複述",
+  "nav.review": "勿忘我",
   "nav.knowledge": "知識",
   "nav.glossary": "詞彙表",
   "nav.market": "市集",
@@ -75,7 +77,7 @@ export default {
   "settings.connections.sub": "這個版本實際設定了什麼。",
   "settings.conn.ai": "AI 評分後端",
   "settings.conn.ai.on":
-    "ExplainBack 評分與學習活動會呼叫後端，失敗時改用內建引擎。",
+    "複述評分與學習活動會呼叫後端，失敗時改用內建引擎。",
   "settings.conn.ai.off":
     "未設定 VITE_EXPLAINBACK_TUTOR_API_URL，因此所有 AI 功能都使用內建的確定性引擎。",
   "settings.conn.wallet": "Nimiq Pay 錢包",
@@ -141,7 +143,7 @@ export default {
   "knowledge.needsAttention": "需要留意",
   "knowledge.dueForReview_one": "有 {count} 個概念待複習。",
   "knowledge.dueForReview_other": "有 {count} 個概念待複習。",
-  "knowledge.openReview": "開啟 ForgetMeNot →",
+  "knowledge.openReview": "開啟勿忘我 →",
   "wallet.title": "錢包與學習經濟",
   "wallet.sub": "你與 Nimiq Pay 的連線、目前環境支援的資產，以及你的解鎖紀錄。",
   "wallet.demoMode": "示範模式",
@@ -243,11 +245,11 @@ export default {
   "glossary.misconception": "常見誤解",
   "glossary.explainBack": "用自己的話講一遍 →",
   "glossary.studyIt": "去學習",
-  "review.title": "ForgetMeNot AI",
+  "review.title": "勿忘我 AI",
   "review.sub":
     "過程透明的間隔複習。應用程式依你的熟練度、間隔時間與近期錯誤安排複習，AI 只負責撰寫複習內容，從不決定時機。",
   "review.empty": "目前沒有可複習的內容 — 先評估一個概念吧。",
-  "review.reason": "ForgetMeNot 把它安排為加強內容。",
+  "review.reason": "勿忘我把它安排為加強內容。",
   "review.due": "到期",
   "review.level.urgent": "緊急",
   "review.level.dueSoon": "即將到期",
@@ -295,7 +297,7 @@ export default {
   "activity.anotherPass": "我還需要再看一遍",
   "activity.showExplanation": "顯示解析",
   "loop.reason.new": "這個概念對你還是全新的 — 我們先從核心想法開始。",
-  "loop.reason.review": "ForgetMeNot 把這個概念標記為需要加強。",
+  "loop.reason.review": "勿忘我把這個概念標記為需要加強。",
   "loop.reason.misconception": "你剛才在這裡出錯了 — 我們直接攻克那個誤解。",
   "loop.reason.low": "先把基礎打穩，再往深處走。",
   "loop.reason.mid": "想法你已經抓到了 — 現在來應用它。",
@@ -331,7 +333,7 @@ export default {
   "explain.startNext": "開始下一個挑戰 →",
   "explain.another": "講解另一個概念",
   "learn.sub":
-    "LearnLoop 會依你的知識狀態挑選下一個活動。AI 產生內容，迴圈決定下一步怎麼走。",
+    "學習循環會依你的知識狀態挑選下一個活動。AI 產生內容，迴圈決定下一步怎麼走。",
   "learn.concept": "概念",
   "learn.appMastery": "應用程式內熟練度：{pct}%",
   "learn.explainConcept": "講解這個概念",
@@ -404,14 +406,14 @@ export default {
   "home.hero.claim2": "🔒 私鑰絕不離開你的錢包",
   "home.hero.claim3": "⚡ 用 NIM 付款",
   "home.hero.imageAlt": "一位學生在暖光圖書館裡專注閱讀教科書",
-  "home.heroCaption.badge": "ExplainBack 實際運作",
+  "home.heroCaption.badge": "複述實際運作",
   "home.heroCaption.quote":
     "「力等於質量乘以加速度，所以同樣的推力會讓輕的推車跑得更快…」",
   "home.next.eyebrow": "接下來該學什麼？",
   "home.next.continue": "繼續 →",
   "home.next.allStrong": "看起來都很紮實 — 挑個新東西來探索吧。",
   "home.rec.due.label": "待複習",
-  "home.rec.due.why": "ForgetMeNot 把它標記為需要複習 — 快速看過一遍就能記牢。",
+  "home.rec.due.why": "勿忘我把它標記為需要複習 — 快速看過一遍就能記牢。",
   "home.rec.building.label": "繼續累積",
   "home.rec.building.why": "你現在是 {pct}% — 下一步會讓這裡更紮實。",
   "home.rec.fresh.label": "新概念",
@@ -438,13 +440,13 @@ export default {
   "home.loop.challenge": "挑戰",
   "home.loop.measure": "測量",
   "home.loop.review": "複習",
-  "home.feature.learnLoop.title": "LearnLoop",
+  "home.feature.learnLoop.title": "學習循環",
   "home.feature.learnLoop.text":
     "每一次作答都會進入迴圈。NimiqLearn 持續判斷你掌握了什麼、誤解了什麼，以及接下來該做什麼。",
-  "home.feature.explainBack.title": "ExplainBack",
+  "home.feature.explainBack.title": "複述",
   "home.feature.explainBack.text":
     "講解一個概念，是檢驗理解最嚴格的方式。AI 會評估你的講解，找出你自己都沒察覺的缺口。",
-  "home.feature.forgetMeNot.title": "ForgetMeNot",
+  "home.feature.forgetMeNot.title": "勿忘我",
   "home.feature.forgetMeNot.text":
     "過程透明的間隔複習。應用程式依熟練度、間隔時間與近期錯誤安排加強 — 不靠玄學，也不靠猜。",
   "home.feature.economy.title": "學習經濟",
@@ -559,4 +561,6 @@ export default {
   "ewallet.chainId": "目前鏈 ID",
   "ewallet.connect": "連接 EVM 錢包",
   "ewallet.disconnectNote": "中斷連線只會清除這個應用程式的本機狀態 — 若要徹底中斷，請在 Nimiq Pay 中撤銷 NimiqLearn 的存取權。",
+  "knowledge.mapSub": "你對整個課程的即時理解。薄弱節點會閃動 — 點一下就能補強。",
+  "knowledge.mapNote": "狀態由應用程式根據你的評估、活動結果與複習紀錄計算，而不是由 AI 決定。",
 };

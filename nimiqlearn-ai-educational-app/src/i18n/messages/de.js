@@ -1,5 +1,9 @@
-/* NimiqLearn — Deutsch. Eigennamen bleiben unübersetzt: NimiqLearn,
-   ExplainBack, ForgetMeNot, LearnLoop, Nimiq Pay, NIM, USDT, XP. */
+/* NimiqLearn — Deutsch.
+   Unübersetzt (Produkt- und Asset-Namen): NimiqLearn, Nimiq Pay, NIM,
+   USDT, XP.
+   Übersetzt (Feature-Namen): ExplainBack → Nacherklären,
+   ForgetMeNot → Vergissmeinnicht (die Blume, wie im Englischen),
+   LearnLoop → Lernschleife. */
 export default {
   "brand.tagline": "Adaptives KI-Lernen",
   "nav.primary": "Hauptnavigation",
@@ -8,8 +12,8 @@ export default {
   "nav.group.You": "Du",
   "nav.home": "Start",
   "nav.learn": "Lernen",
-  "nav.explain": "ExplainBack",
-  "nav.review": "ForgetMeNot",
+  "nav.explain": "Nacherklären",
+  "nav.review": "Vergissmeinnicht",
   "nav.knowledge": "Wissen",
   "nav.glossary": "Glossar",
   "nav.market": "Marktplatz",
@@ -71,7 +75,7 @@ export default {
   "settings.connections.sub": "Wofür dieser Build tatsächlich konfiguriert ist.",
   "settings.conn.ai": "KI-Bewertungs-Backend",
   "settings.conn.ai.on":
-    "Die ExplainBack-Bewertung und die Lernaktivitäten rufen das Backend auf und greifen bei einem Fehler auf die eingebaute Engine zurück.",
+    "Die Nacherklären-Bewertung und die Lernaktivitäten rufen das Backend auf und greifen bei einem Fehler auf die eingebaute Engine zurück.",
   "settings.conn.ai.off":
     "VITE_EXPLAINBACK_TUTOR_API_URL ist nicht gesetzt, daher nutzen alle KI-Funktionen die eingebaute deterministische Engine.",
   "settings.conn.wallet": "Nimiq-Pay-Wallet",
@@ -140,7 +144,7 @@ export default {
   "knowledge.needsAttention": "Braucht Aufmerksamkeit",
   "knowledge.dueForReview_one": "{count} Konzept zur Wiederholung fällig.",
   "knowledge.dueForReview_other": "{count} Konzepte zur Wiederholung fällig.",
-  "knowledge.openReview": "ForgetMeNot öffnen →",
+  "knowledge.openReview": "Vergissmeinnicht öffnen →",
   "wallet.title": "Wallet & Lernwirtschaft",
   "wallet.sub":
     "Deine Verbindung zu Nimiq Pay, die von dieser Umgebung unterstützten Assets und dein Freischaltverlauf.",
@@ -248,11 +252,11 @@ export default {
   "glossary.misconception": "Häufiger Denkfehler",
   "glossary.explainBack": "In eigenen Worten erklären →",
   "glossary.studyIt": "Lernen",
-  "review.title": "ForgetMeNot AI",
+  "review.title": "Vergissmeinnicht AI",
   "review.sub":
     "Transparentes verteiltes Wiederholen. Die App plant die Auffrischung anhand deiner Kompetenz, der verstrichenen Zeit und deiner letzten Fehler — die KI schreibt nur die Inhalte, nie den Zeitplan.",
   "review.empty": "Noch nichts zu wiederholen — bewerte zuerst ein Konzept.",
-  "review.reason": "ForgetMeNot hat dies zur Auffrischung eingeplant.",
+  "review.reason": "Vergissmeinnicht hat dies zur Auffrischung eingeplant.",
   "review.due": "Fällig",
   "review.level.urgent": "Dringend",
   "review.level.dueSoon": "Bald fällig",
@@ -300,7 +304,7 @@ export default {
   "activity.anotherPass": "Ich brauche noch einen Durchgang",
   "activity.showExplanation": "Erklärung anzeigen",
   "loop.reason.new": "Dieses Konzept ist neu für dich — fangen wir mit der Kernidee an.",
-  "loop.reason.review": "ForgetMeNot hat dieses Konzept zur Auffrischung markiert.",
+  "loop.reason.review": "Vergissmeinnicht hat dieses Konzept zur Auffrischung markiert.",
   "loop.reason.misconception": "Hier ist dir gerade ein Fehler unterlaufen — gehen wir genau diesen Denkfehler an.",
   "loop.reason.low": "Wir festigen die Grundlage, bevor es tiefer geht.",
   "loop.reason.mid": "Die Idee sitzt — jetzt wenden wir sie an.",
@@ -336,7 +340,7 @@ export default {
   "explain.startNext": "Nächste Aufgabe starten →",
   "explain.another": "Ein anderes Konzept erklären",
   "learn.sub":
-    "LearnLoop wählt die nächste Aktivität anhand deines Wissensstands. Die KI erzeugt die Inhalte; der Loop entscheidet den Zug.",
+    "Lernschleife wählt die nächste Aktivität anhand deines Wissensstands. Die KI erzeugt die Inhalte; der Loop entscheidet den Zug.",
   "learn.concept": "Konzept",
   "learn.appMastery": "Kompetenz in der App: {pct} %",
   "learn.explainConcept": "Dieses Konzept erklären",
@@ -409,14 +413,14 @@ export default {
   "home.hero.claim2": "🔒 Deine Schlüssel verlassen deine Wallet nie",
   "home.hero.claim3": "⚡ Mit NIM bezahlen",
   "home.hero.imageAlt": "Eine konzentrierte Studentin liest ein Lehrbuch in einer warm beleuchteten Bibliothek",
-  "home.heroCaption.badge": "ExplainBack in Aktion",
+  "home.heroCaption.badge": "Nacherklären in Aktion",
   "home.heroCaption.quote":
     "„Kraft ist Masse mal Beschleunigung — derselbe Schubs bewegt einen leichten Wagen also schneller …“",
   "home.next.eyebrow": "Was sollte ich als Nächstes lernen?",
   "home.next.continue": "Weiter →",
   "home.next.allStrong": "Alles sieht solide aus — such dir etwas Neues zum Entdecken.",
   "home.rec.due.label": "Zur Wiederholung fällig",
-  "home.rec.due.why": "ForgetMeNot hat das zur Wiederholung markiert — eine kurze Auffrischung verankert es.",
+  "home.rec.due.why": "Vergissmeinnicht hat das zur Wiederholung markiert — eine kurze Auffrischung verankert es.",
   "home.rec.building.label": "Weiter aufbauen",
   "home.rec.building.why": "Du bist bei {pct} % — der nächste Schritt festigt das.",
   "home.rec.fresh.label": "Neues Konzept",
@@ -443,13 +447,13 @@ export default {
   "home.loop.challenge": "Herausfordern",
   "home.loop.measure": "Messen",
   "home.loop.review": "Wiederholen",
-  "home.feature.learnLoop.title": "LearnLoop",
+  "home.feature.learnLoop.title": "Lernschleife",
   "home.feature.learnLoop.text":
     "Jede Antwort speist den Loop. NimiqLearn entscheidet fortlaufend, was du weißt, was du falsch verstehst und was du als Nächstes tun solltest.",
-  "home.feature.explainBack.title": "ExplainBack",
+  "home.feature.explainBack.title": "Nacherklären",
   "home.feature.explainBack.text":
     "Ein Konzept zu erklären ist der härteste Verständnistest. Die KI bewertet deine Erklärung und findet Lücken, von denen du nichts wusstest.",
-  "home.feature.forgetMeNot.title": "ForgetMeNot",
+  "home.feature.forgetMeNot.title": "Vergissmeinnicht",
   "home.feature.forgetMeNot.text":
     "Transparentes verteiltes Wiederholen. Die App plant die Auffrischung nach Kompetenz, verstrichener Zeit und jüngsten Fehlern — keine Magie, kein Raten.",
   "home.feature.economy.title": "Lernwirtschaft",
@@ -564,4 +568,6 @@ export default {
   "ewallet.chainId": "Aktive Chain-ID",
   "ewallet.connect": "EVM-Wallet verbinden",
   "ewallet.disconnectNote": "Das Trennen löscht nur den lokalen Zustand dieser App — entziehe NimiqLearn den Zugriff in Nimiq Pay selbst, um die Verbindung vollständig zu lösen.",
+  "knowledge.mapSub": "Dein aktuelles Verständnis des Lehrplans. Schwache Knoten pulsieren — tippe einen an, um ihn aufzuarbeiten.",
+  "knowledge.mapNote": "Die Status berechnet die App aus deinen Bewertungen, Aktivitätsergebnissen und Wiederholungen — nicht die KI.",
 };

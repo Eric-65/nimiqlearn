@@ -1,5 +1,8 @@
-/* NimiqLearn — Español. Nombres propios sin traducir: NimiqLearn,
-   ExplainBack, ForgetMeNot, LearnLoop, Nimiq Pay, NIM, USDT, XP. */
+/* NimiqLearn — Español.
+   Sin traducir (nombres de producto y activos): NimiqLearn, Nimiq Pay,
+   NIM, USDT, XP.
+   Traducidos (nombres de funciones): ExplainBack → Explícalo,
+   ForgetMeNot → No Me Olvides, LearnLoop → Bucle de Aprendizaje. */
 export default {
   "brand.tagline": "Aprendizaje adaptativo con IA",
   "nav.primary": "Navegación principal",
@@ -8,8 +11,8 @@ export default {
   "nav.group.You": "Tú",
   "nav.home": "Inicio",
   "nav.learn": "Aprender",
-  "nav.explain": "ExplainBack",
-  "nav.review": "ForgetMeNot",
+  "nav.explain": "Explícalo",
+  "nav.review": "No Me Olvides",
   "nav.knowledge": "Conocimiento",
   "nav.glossary": "Glosario",
   "nav.market": "Mercado",
@@ -71,7 +74,7 @@ export default {
   "settings.connections.sub": "Para qué está configurada realmente esta versión.",
   "settings.conn.ai": "Servidor de corrección con IA",
   "settings.conn.ai.on":
-    "La corrección de ExplainBack y las actividades de Aprender llaman al servidor, y recurren al motor integrado si falla.",
+    "La corrección de Explícalo y las actividades de Aprender llaman al servidor, y recurren al motor integrado si falla.",
   "settings.conn.ai.off":
     "VITE_EXPLAINBACK_TUTOR_API_URL no está definida, así que todas las funciones de IA usan el motor determinista integrado.",
   "settings.conn.wallet": "Cartera Nimiq Pay",
@@ -139,7 +142,7 @@ export default {
   "knowledge.needsAttention": "Necesitan atención",
   "knowledge.dueForReview_one": "{count} concepto pendiente de repaso.",
   "knowledge.dueForReview_other": "{count} conceptos pendientes de repaso.",
-  "knowledge.openReview": "Abrir ForgetMeNot →",
+  "knowledge.openReview": "Abrir No Me Olvides →",
   "wallet.title": "Cartera y economía del aprendizaje",
   "wallet.sub":
     "Tu conexión con Nimiq Pay, los activos que admite este entorno y tu historial de desbloqueos.",
@@ -247,11 +250,11 @@ export default {
   "glossary.misconception": "Malentendido habitual",
   "glossary.explainBack": "Explícalo con tus palabras →",
   "glossary.studyIt": "Estudiarlo",
-  "review.title": "ForgetMeNot AI",
+  "review.title": "No Me Olvides AI",
   "review.sub":
     "Repaso espaciado transparente. La aplicación programa el refuerzo a partir de tu dominio, tu recencia y tus errores recientes; la IA solo escribe el contenido del repaso, nunca el calendario.",
   "review.empty": "Todavía no hay nada que repasar: evalúa antes un concepto.",
-  "review.reason": "ForgetMeNot ha programado esto como refuerzo.",
+  "review.reason": "No Me Olvides ha programado esto como refuerzo.",
   "review.due": "Toca",
   "review.level.urgent": "Urgente",
   "review.level.dueSoon": "Toca pronto",
@@ -299,7 +302,7 @@ export default {
   "activity.anotherPass": "Necesito otra pasada",
   "activity.showExplanation": "Mostrar la explicación",
   "loop.reason.new": "Este concepto es nuevo para ti: empecemos por la idea central.",
-  "loop.reason.review": "ForgetMeNot ha marcado este concepto para reforzarlo.",
+  "loop.reason.review": "No Me Olvides ha marcado este concepto para reforzarlo.",
   "loop.reason.misconception": "Acabas de fallar aquí: vamos a atacar el malentendido exacto.",
   "loop.reason.low": "Construyendo la base antes de profundizar.",
   "loop.reason.mid": "Ya captas la idea; ahora vamos a aplicarla.",
@@ -335,7 +338,7 @@ export default {
   "explain.startNext": "Empezar el siguiente reto →",
   "explain.another": "Explicar otro concepto",
   "learn.sub":
-    "LearnLoop elige la siguiente actividad a partir de tu estado de conocimiento. La IA genera el contenido; el bucle decide la jugada.",
+    "Bucle de Aprendizaje elige la siguiente actividad a partir de tu estado de conocimiento. La IA genera el contenido; el bucle decide la jugada.",
   "learn.concept": "Concepto",
   "learn.appMastery": "Dominio en la app: {pct}%",
   "learn.explainConcept": "Explicar este concepto",
@@ -408,14 +411,14 @@ export default {
   "home.hero.claim2": "🔒 Tus claves nunca salen de tu cartera",
   "home.hero.claim3": "⚡ Paga con NIM",
   "home.hero.imageAlt": "Una estudiante concentrada leyendo un libro de texto en una biblioteca cálida",
-  "home.heroCaption.badge": "ExplainBack en acción",
+  "home.heroCaption.badge": "Explícalo en acción",
   "home.heroCaption.quote":
     "«La fuerza es igual a la masa por la aceleración, así que el mismo empujón mueve más rápido un carrito ligero…»",
   "home.next.eyebrow": "¿Qué debería aprender ahora?",
   "home.next.continue": "Continuar →",
   "home.next.allStrong": "Todo se ve sólido: elige algo nuevo que explorar.",
   "home.rec.due.label": "Toca repasar",
-  "home.rec.due.why": "ForgetMeNot lo ha marcado para repaso: un repaso rápido lo fija.",
+  "home.rec.due.why": "No Me Olvides lo ha marcado para repaso: un repaso rápido lo fija.",
   "home.rec.building.label": "Sigue construyendo",
   "home.rec.building.why": "Vas por el {pct}%: el siguiente paso reforzará esto.",
   "home.rec.fresh.label": "Concepto nuevo",
@@ -442,13 +445,13 @@ export default {
   "home.loop.challenge": "Retar",
   "home.loop.measure": "Medir",
   "home.loop.review": "Repasar",
-  "home.feature.learnLoop.title": "LearnLoop",
+  "home.feature.learnLoop.title": "Bucle de Aprendizaje",
   "home.feature.learnLoop.text":
     "Cada respuesta alimenta el bucle. NimiqLearn decide continuamente qué sabes, qué entiendes mal y qué deberías hacer a continuación.",
-  "home.feature.explainBack.title": "ExplainBack",
+  "home.feature.explainBack.title": "Explícalo",
   "home.feature.explainBack.text":
     "Explicar un concepto es la prueba más exigente de comprensión. La IA evalúa tu explicación y encuentra los huecos que no sabías que tenías.",
-  "home.feature.forgetMeNot.title": "ForgetMeNot",
+  "home.feature.forgetMeNot.title": "No Me Olvides",
   "home.feature.forgetMeNot.text":
     "Repaso espaciado transparente. La aplicación programa el refuerzo según tu dominio, tu recencia y tus errores recientes: sin magia ni adivinanzas.",
   "home.feature.economy.title": "Economía del aprendizaje",
@@ -563,4 +566,6 @@ export default {
   "ewallet.chainId": "ID de cadena activa",
   "ewallet.connect": "Conectar cartera EVM",
   "ewallet.disconnectNote": "Desconectar solo borra el estado local de esta app: para desconectar del todo, revoca el acceso de NimiqLearn desde el propio Nimiq Pay.",
+  "knowledge.mapSub": "Tu comprensión del temario en tiempo real. Los nodos débiles laten: toca uno para reforzarlo.",
+  "knowledge.mapNote": "Los estados los calcula la aplicación a partir de tus evaluaciones, resultados de actividades y repasos — no la IA.",
 };
