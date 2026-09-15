@@ -133,16 +133,25 @@
   --t-fast: 140ms;
   --t-med: 240ms;
   --t-slow: 480ms;
-  /* Sidebar-scoped text. The light theme keeps the sidebar (and, on a
-     phone, the bottom nav) deep navy so NimiqLearn's identity survives the
-     switch to light — which means nav text there sits on a DARK ground
-     even in light mode and so cannot use --c-text*. These hold the same
-     values as --c-text* in dark, and stay light in light. */
+  /* Sidebar-scoped chrome. The sidebar (and, on a phone, the bottom nav)
+     follows the active theme like everything else, so these mirror
+     --c-text* here and flip to the light theme's dark text in the light
+     blocks. They stay separate tokens because the sidebar's ground is its
+     own translucent surface rather than the page ground, so its text and
+     hover tints need to be tuned against THAT, not against --c-bg. */
   --c-sidebar-text: #eef2ff;
   --c-sidebar-text-dim: #a3aecf;
-  --c-sidebar-text-faint: #6b7799;
+  /* Two steps lighter than --c-text-faint: the uppercase section labels are
+     the only things using it and at 10.5px they need 4.5:1, which #6b7799
+     misses on navy (4.29:1). Caught by the contrast sweep, not by eye. */
+  --c-sidebar-text-faint: #737e9c;
   --c-sidebar-border: rgba(151, 166, 211, 0.16);
   --c-sidebar-hover: rgba(151, 166, 211, 0.08);
+  /* The selected nav item. Tokenised per theme: the dark theme's glowing
+     blue/teal wash is nearly invisible over a near-white sidebar, so the
+     light blocks re-mix it from the darkened light accents. */
+  --c-nav-active-bg: linear-gradient(90deg, rgba(77, 141, 255, 0.18), rgba(52, 224, 180, 0.1));
+  --c-nav-active-border: rgba(77, 141, 255, 0.35);
 }
 
 /* ============================================================
@@ -170,8 +179,8 @@
   --c-border: rgba(26, 43, 95, 0.16);
   --c-border-strong: rgba(26, 43, 95, 0.30);
 
-  --c-sidebar-bg: rgba(13, 21, 51, 0.97);
-  --c-sidebar-bg-mobile: rgba(13, 21, 51, 0.985);
+  --c-sidebar-bg: rgba(255, 255, 255, 0.78);
+  --c-sidebar-bg-mobile: rgba(247, 250, 255, 0.97);
   --c-topbar-bg: rgba(233, 238, 251, 0.82);
   --c-overlay: rgba(23, 32, 60, 0.38);
   --c-inset: rgba(31, 45, 84, 0.05);
@@ -221,12 +230,16 @@
   --shadow-lg: 0 20px 48px rgba(18, 32, 74, 0.15);
   --glow-gold: 0 0 0 1px rgba(196, 140, 24, 0.3), 0 6px 20px rgba(196, 140, 24, 0.12);
   --glow-teal: 0 0 0 1px rgba(13, 143, 112, 0.3), 0 6px 20px rgba(13, 143, 112, 0.12);
-  /* Navy chrome on a light page — see the dark block for why these exist. */
-  --c-sidebar-text: #eef2ff;
-  --c-sidebar-text-dim: #b4c1e4;
-  --c-sidebar-text-faint: #8492bd;
-  --c-sidebar-border: rgba(151, 166, 211, 0.18);
-  --c-sidebar-hover: rgba(151, 166, 211, 0.12);
+  /* Light chrome — see the dark block for why these exist. --faint is a
+     touch darker than --c-text-faint because the only things using it
+     here are 10.5px uppercase section labels, which need 4.5:1. */
+  --c-sidebar-text: #131a30;
+  --c-sidebar-text-dim: #4a5878;
+  --c-sidebar-text-faint: #606e8e;
+  --c-sidebar-border: rgba(26, 43, 95, 0.16);
+  --c-sidebar-hover: rgba(26, 43, 95, 0.07);
+  --c-nav-active-bg: linear-gradient(90deg, rgba(37, 99, 235, 0.16), rgba(13, 143, 112, 0.1));
+  --c-nav-active-border: rgba(37, 99, 235, 0.42);
 }
 
 /* "System" mode: follow the OS, but only when the user explicitly chose
@@ -243,8 +256,8 @@
     --c-border: rgba(26, 43, 95, 0.16);
     --c-border-strong: rgba(26, 43, 95, 0.30);
 
-    --c-sidebar-bg: rgba(13, 21, 51, 0.97);
-    --c-sidebar-bg-mobile: rgba(13, 21, 51, 0.985);
+    --c-sidebar-bg: rgba(255, 255, 255, 0.78);
+    --c-sidebar-bg-mobile: rgba(247, 250, 255, 0.97);
     --c-topbar-bg: rgba(233, 238, 251, 0.82);
     --c-overlay: rgba(23, 32, 60, 0.38);
     --c-inset: rgba(31, 45, 84, 0.05);
@@ -290,12 +303,16 @@
     --shadow-lg: 0 20px 48px rgba(18, 32, 74, 0.15);
     --glow-gold: 0 0 0 1px rgba(196, 140, 24, 0.3), 0 6px 20px rgba(196, 140, 24, 0.12);
     --glow-teal: 0 0 0 1px rgba(13, 143, 112, 0.3), 0 6px 20px rgba(13, 143, 112, 0.12);
-    /* Navy chrome on a light page — see the dark block for why these exist. */
-    --c-sidebar-text: #eef2ff;
-    --c-sidebar-text-dim: #b4c1e4;
-    --c-sidebar-text-faint: #8492bd;
-    --c-sidebar-border: rgba(151, 166, 211, 0.18);
-    --c-sidebar-hover: rgba(151, 166, 211, 0.12);
+    /* Light chrome — see the dark block for why these exist. --faint is a
+       touch darker than --c-text-faint because the only things using it
+       here are 10.5px uppercase section labels, which need 4.5:1. */
+    --c-sidebar-text: #131a30;
+    --c-sidebar-text-dim: #4a5878;
+    --c-sidebar-text-faint: #606e8e;
+    --c-sidebar-border: rgba(26, 43, 95, 0.16);
+    --c-sidebar-hover: rgba(26, 43, 95, 0.07);
+    --c-nav-active-bg: linear-gradient(90deg, rgba(37, 99, 235, 0.16), rgba(13, 143, 112, 0.1));
+    --c-nav-active-border: rgba(37, 99, 235, 0.42);
   }
 }
 

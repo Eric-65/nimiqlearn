@@ -82,18 +82,40 @@ button { font-family: inherit; }
   background: var(--c-sidebar-bg);
   backdrop-filter: blur(18px);
   border-right: 1px solid var(--c-sidebar-border);
-  /* The sidebar is dark in BOTH themes, so its contents inherit a light
-     text colour rather than the page's --c-text (near-black on light,
-     which would be invisible here). */
+  /* The sidebar's ground is its own translucent surface in both themes, so
+     its contents take the sidebar-scoped text token rather than the page's
+     --c-text. See variables.css for why those tokens exist. */
   color: var(--c-sidebar-text);
+  /* The nav is taller than a laptop viewport once every section is listed,
+     and a 100vh column with no overflow just CLIPS the overflow: Settings,
+     Profile and Leaderboard were unreachable and the wheel did nothing,
+     because there was no scroll container under the cursor. `contain` stops
+     a flick at either end from chaining into the page behind it. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-border-strong) transparent;
   z-index: 40;
 }
+
+/* Firefox takes scrollbar-color above; WebKit/Blink needs its own rules.
+   An overlay-thin bar that only tints on hover keeps the chrome quiet. */
+.sidebar::-webkit-scrollbar { width: 8px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.sidebar:hover::-webkit-scrollbar-thumb { background: var(--c-border-strong); background-clip: padding-box; }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 6px 8px 18px;
+  flex: none;
 }
 
 .brand-mark {
@@ -127,6 +149,7 @@ button { font-family: inherit; }
   text-transform: uppercase;
   color: var(--c-sidebar-text-faint);
   padding: 12px 12px 6px;
+  flex: none;
 }
 
 .nav-item {
@@ -144,6 +167,7 @@ button { font-family: inherit; }
   cursor: pointer;
   transition: background var(--t-fast) var(--ease-out), color var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
   text-align: left;
+  flex: none;
 }
 
 .nav-item svg { flex: none; opacity: 0.85; }
@@ -154,18 +178,20 @@ button { font-family: inherit; }
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(77, 141, 255, 0.18), rgba(52, 224, 180, 0.1));
-  border-color: rgba(77, 141, 255, 0.35);
+  background: var(--c-nav-active-bg);
+  border-color: var(--c-nav-active-border);
   color: var(--c-sidebar-text);
 }
 
 .sidebar-footer {
   margin-top: auto;
   padding-top: 12px;
+  flex: none;
 }
 
-/* .notice defaults to --c-text-dim, which in light is near-black — unreadable
-   on the navy sidebar. Scoped for the same reason as the nav items above. */
+/* .notice carries its own tinted ground; scoped to the sidebar tokens for the
+   same reason as the nav items above — it sits on the sidebar's surface, not
+   the page's. */
 .sidebar-footer .notice {
   color: var(--c-sidebar-text-dim);
   border-color: var(--c-sidebar-border);
@@ -595,6 +621,7 @@ button { font-family: inherit; }
     backdrop-filter: blur(20px);
     overflow-x: auto;
     overflow-y: hidden;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     touch-action: pan-x;
