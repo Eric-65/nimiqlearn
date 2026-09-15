@@ -1,5 +1,10 @@
 # NimiqLearn — OpenAI backend (ExplainBack grading, AI Tutor, Learn activities)
 
+> **Deployment note.** In production these routes are Vercel serverless
+> functions in `api/`, not the Express server in `../server/` — that one is
+> for local development only. Both import the same handlers from
+> `api/_lib/`. See [deploying-to-vercel.md](./deploying-to-vercel.md).
+
 NimiqLearn's AI is entirely OpenAI-backed now, via one small Express server
 (`server/`). Three routes, one key, one provider:
 

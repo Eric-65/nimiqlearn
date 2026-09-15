@@ -13,7 +13,7 @@
    already been made.
    ============================================================ */
 
-import { TUTOR_API_URL, TUTOR_CONFIGURED } from "../config/explainBackTutorConfig.js";
+import { TUTOR_API_URL, TUTOR_CONFIGURED, TUTOR_API_LABEL } from "../config/explainBackTutorConfig.js";
 import { getLocale } from "./i18nService.js";
 import { getLocaleMeta } from "../i18n/locales.js";
 
@@ -77,6 +77,6 @@ export async function generateActivityContentRemote({ type, topic, level = "begi
     if (err.name === "AbortError") {
       return { ok: false, error: "The activity backend took too long to respond." };
     }
-    return { ok: false, error: `Could not reach the activity backend at ${TUTOR_API_URL}.` };
+    return { ok: false, error: `Could not reach the activity backend at ${TUTOR_API_LABEL}.` };
   }
 }

@@ -4,8 +4,22 @@
    One backend URL, shared by every OpenAI-backed feature: the
    AI Tutor (/api/tutor/feedback), ExplainBack's primary grading
    (/api/assess/feedback), and Learn tab activity generation
-   (/api/learn/activity) — same server, same OPENAI_API_KEY. See
-   docs/explainback-ai-tutor.md and server/index.js.
+   (/api/learn/activity) — same backend, same OPENAI_API_KEY.
+
+   Two deployment shapes are supported:
+
+     "/"  (or "same-origin")  — the API is served from the SAME
+          origin as the app. This is the Vercel setup: the routes
+          in api/ are deployed as serverless functions next to
+          the frontend, so requests go to a plain /api/... path
+          and there is no host to configure at build time. It
+          works unchanged on preview URLs and custom domains,
+          which a hardcoded absolute URL would not.
+
+     an absolute URL — the API is somewhere else, e.g. the local
+          dev server on http://localhost:8787 (server/index.js).
+
+   See docs/explainback-ai-tutor.md.
 
    Same disable-if-unconfigured pattern as paymentConfig.js: no
    backend URL configured means the AI Tutor panel in ExplainBack
@@ -15,6 +29,15 @@
    ============================================================ */
 
 const RAW_URL = import.meta.env.VITE_EXPLAINBACK_TUTOR_API_URL;
+
+/* The values that mean "the API lives on this same origin". They resolve to
+   an EMPTY base, so `${TUTOR_API_URL}/api/tutor/health` becomes the relative
+   path `/api/tutor/health` — exactly what the serverless functions answer. */
+const SAME_ORIGIN_VALUES = new Set(["/", "same-origin", "same_origin", "sameorigin"]);
+
+function isSameOrigin(rawUrl) {
+  return typeof rawUrl === "string" && SAME_ORIGIN_VALUES.has(rawUrl.trim().toLowerCase());
+}
 
 /**
  * Resolves a configured backend URL against the host the app is actually
@@ -40,6 +63,9 @@ const RAW_URL = import.meta.env.VITE_EXPLAINBACK_TUTOR_API_URL;
  */
 function resolveAgainstPageHost(rawUrl) {
   if (!rawUrl) return null;
+  // Checked before the trailing-slash strip below, which would otherwise
+  // turn the "/" sentinel into an empty string indistinguishable from unset.
+  if (isSameOrigin(rawUrl)) return "";
   const trimmed = rawUrl.trim().replace(/\/$/, "");
   if (!trimmed) return null;
   if (typeof window === "undefined" || !window.location) return trimmed;
@@ -64,4 +90,13 @@ function resolveAgainstPageHost(rawUrl) {
 
 export const TUTOR_API_URL = resolveAgainstPageHost(RAW_URL);
 
-export const TUTOR_CONFIGURED = Boolean(TUTOR_API_URL);
+/* Boolean(TUTOR_API_URL) would be false for the same-origin case, whose
+   resolved base is deliberately the empty string — so configured-ness is
+   tested against null, the one value that actually means "unset". */
+export const TUTOR_CONFIGURED = TUTOR_API_URL !== null;
+
+/* What to CALL the backend in an error message. TUTOR_API_URL is the empty
+   string on same-origin, and "Could not reach the backend at ." helps nobody,
+   so unreachable-backend errors interpolate this instead. */
+export const TUTOR_API_LABEL =
+  TUTOR_API_URL || (typeof window !== "undefined" && window.location ? window.location.origin : "this site");

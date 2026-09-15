@@ -11,6 +11,7 @@
   "dependencies": {
     "@nimiq/mini-app-sdk": "^0.1.0",
     "clsx": "2.1.1",
+    "openai": "^7.10.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "tailwind-merge": "3.4.0",

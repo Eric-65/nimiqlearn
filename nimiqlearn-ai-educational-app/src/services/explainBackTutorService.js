@@ -12,7 +12,7 @@
    automatically the way the rubric baseline is.
    ============================================================ */
 
-import { TUTOR_API_URL, TUTOR_CONFIGURED } from "../config/explainBackTutorConfig.js";
+import { TUTOR_API_URL, TUTOR_API_LABEL, TUTOR_CONFIGURED } from "../config/explainBackTutorConfig.js";
 import { getLocale } from "./i18nService.js";
 import { getLocaleMeta } from "../i18n/locales.js";
 
@@ -52,7 +52,7 @@ export async function checkTutorAvailable() {
     if (!data.configured) return { available: false, reason: "The AI Tutor backend is running but has no OPENAI_API_KEY configured." };
     return { available: true, reason: null };
   } catch {
-    return { available: false, reason: `Could not reach the AI Tutor backend at ${TUTOR_API_URL}.` };
+    return { available: false, reason: `Could not reach the AI Tutor backend at ${TUTOR_API_LABEL}.` };
   }
 }
 
@@ -102,6 +102,6 @@ export async function askExplainBackTutor({ topic, referenceAnswer, learnerExpla
     if (err.name === "AbortError") {
       return { ok: false, error: "The AI Tutor took too long to respond. Please try again." };
     }
-    return { ok: false, error: `Could not reach the AI Tutor backend at ${TUTOR_API_URL}.` };
+    return { ok: false, error: `Could not reach the AI Tutor backend at ${TUTOR_API_LABEL}.` };
   }
 }

@@ -19,7 +19,7 @@
    natural-language framing and a next challenge.
    ============================================================ */
 
-import { TUTOR_API_URL, TUTOR_CONFIGURED } from "../config/explainBackTutorConfig.js";
+import { TUTOR_API_URL, TUTOR_CONFIGURED, TUTOR_API_LABEL } from "../config/explainBackTutorConfig.js";
 import { getLocale } from "./i18nService.js";
 import { getLocaleMeta } from "../i18n/locales.js";
 
@@ -122,6 +122,6 @@ export async function callModelAssessment({ topic, learnerExplanation, learnerLe
     if (err.name === "AbortError") {
       return { ok: false, value: null, error: "The assessment backend took too long to respond." };
     }
-    return { ok: false, value: null, error: `Could not reach the assessment backend at ${TUTOR_API_URL}.` };
+    return { ok: false, value: null, error: `Could not reach the assessment backend at ${TUTOR_API_LABEL}.` };
   }
 }

@@ -3,14 +3,13 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Minimal backend proxy that holds OPENAI_API_KEY server-side and exposes NimiqLearn's three OpenAI-backed routes: the ExplainBack AI Tutor, ExplainBack primary grading, and Learn tab activity generation. Never bundle this key into the frontend — see ../nimiqlearn-ai-educational-app for why.",
+  "description": "Local development server for NimiqLearn's AI routes. In production these are Vercel serverless functions in ../nimiqlearn-ai-educational-app/api/; this only re-exposes the SAME shared handlers on localhost. Run `npm install` in ../nimiqlearn-ai-educational-app first \u2014 the shared modules resolve `openai` from there.",
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "openai": "^7.10.0"
+    "express": "^4.21.2"
   }
 }
