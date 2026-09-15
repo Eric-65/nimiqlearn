@@ -33,13 +33,48 @@ export default function NimiqWalletStatus() {
   const [copied, setCopied] = useState(false);
   const [signInError, setSignInError] = useState(null);
 
+  /**
+   * navigator.clipboard is SECURE-CONTEXT ONLY, so it is simply `undefined`
+   * when this mini app is loaded over plain HTTP from the dev machine's LAN
+   * IP — which is exactly how Nimiq Pay loads it during development (the
+   * official mini-apps skill's own checklist calls out providing fallbacks
+   * for secure-context-only APIs on HTTP LAN). Without a fallback the copy
+   * button did nothing at all on a phone, silently, because the failure was
+   * caught and discarded.
+   *
+   * The execCommand path is deprecated but still works in WebViews and in
+   * insecure contexts, which is precisely where the modern API won't.
+   */
+  const writeToClipboard = async (text) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    const el = document.createElement("textarea");
+    el.value = text;
+    // Keep it off-screen and non-disruptive: an element that can be focused
+    // but neither scrolls the page nor flashes into view.
+    el.setAttribute("readonly", "");
+    el.style.position = "fixed";
+    el.style.top = "-1000px";
+    el.style.opacity = "0";
+    document.body.appendChild(el);
+    try {
+      el.select();
+      return document.execCommand("copy");
+    } finally {
+      document.body.removeChild(el);
+    }
+  };
+
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(nimiq.address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      if (await writeToClipboard(nimiq.address)) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }
     } catch {
-      /* clipboard unavailable — not critical */
+      /* clipboard genuinely unavailable — not critical */
     }
   };
 
