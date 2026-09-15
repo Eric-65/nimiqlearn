@@ -228,11 +228,24 @@ export async function initializeNimiqProvider({ timeout } = {}) {
  * function rather than folded into connectWallet() below.
  */
 export async function detectNimiqPay({ timeout } = {}) {
-  if (
-    state.status === NIMIQ_STATUS.INITIALIZING ||
-    state.status === NIMIQ_STATUS.CONNECTED ||
-    state.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE
-  ) {
+  // "Already detected" has to mean WE ACTUALLY HAVE A PROVIDER, not that the
+  // status label happens to say so.
+  //
+  // This guard used to early-return on status NIMIQ_PAY_AVAILABLE — but
+  // detectInitialStatus() sets exactly that status synchronously at module
+  // load whenever window.nimiq exists, which is always true inside Nimiq
+  // Pay. So the mount-effect call returned here immediately without ever
+  // running initializeNimiqProvider(), leaving `provider` null; the first
+  // Connect tap then died on `provider.connect()` with "Cannot read
+  // properties of null". The second tap worked only because the failed
+  // first one had flipped the status to ERROR, which fell through this
+  // guard and finally initialised the provider. Hence the reported
+  // "always fails the first time, always works the second".
+  //
+  // initializeNimiqProvider() already dedupes concurrent callers through
+  // its in-flight providerPromise, so overlapping calls share one real
+  // init() poll rather than racing.
+  if (provider) {
     return getWalletState();
   }
   setState({ status: NIMIQ_STATUS.INITIALIZING, error: null });
@@ -272,7 +285,12 @@ export async function connectWallet({ timeout } = {}) {
   }
   if (!provider) {
     const detected = await detectNimiqPay({ timeout });
-    if (detected.status !== NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE) return detected;
+    // Gate on the provider itself, not on the status it reported. A status
+    // of NIMIQ_PAY_AVAILABLE does not on its own prove init() ever ran (see
+    // the note in detectNimiqPay above), and dereferencing a null provider
+    // below surfaces to the learner as a raw TypeError rather than as the
+    // honest "couldn't reach Nimiq Pay" this branch exists to produce.
+    if (!provider) return detected;
   }
   setState({ status: NIMIQ_STATUS.INITIALIZING, error: null });
   try {

@@ -96,11 +96,15 @@ function onChainChanged(chainId) {
  * mount, same reasoning as detectNimiqPay() in nimiqWalletService.js.
  */
 export async function detectEvmProvider() {
-  if (
-    state.status === EVM_STATUS.INITIALIZING ||
-    state.status === EVM_STATUS.CONNECTED ||
-    state.status === EVM_STATUS.EVM_AVAILABLE
-  ) {
+  // Same bug, same fix as detectNimiqPay() in nimiqWalletService.js: the
+  // guard has to prove we HAVE a provider, not that the status label says
+  // one is available. The initial state above is set synchronously to
+  // EVM_AVAILABLE whenever window.ethereum exists — always true inside
+  // Nimiq Pay — so this early-returned on the mount call without ever
+  // assigning `provider`, and the first Connect tap died on
+  // `provider.request()` with "Cannot read properties of null". The retry
+  // succeeded only because the failure had flipped the status to ERROR.
+  if (provider) {
     return getEvmState();
   }
   if (!isEthereumProviderAvailable()) {
@@ -138,8 +142,11 @@ export async function connectEvmWallet() {
   if (state.status === EVM_STATUS.CONNECTED) return getEvmState();
   if (!provider) {
     const detected = await detectEvmProvider();
-    if (detected.status !== EVM_STATUS.EVM_AVAILABLE && detected.status !== EVM_STATUS.CONNECTED) return detected;
     if (detected.status === EVM_STATUS.CONNECTED) return detected;
+    // Gate on the provider itself rather than the reported status, so a
+    // failed detection returns this branch's honest state instead of
+    // falling through to dereference null on provider.request() below.
+    if (!provider) return detected;
   }
   setState({ status: EVM_STATUS.INITIALIZING, error: null });
   try {
