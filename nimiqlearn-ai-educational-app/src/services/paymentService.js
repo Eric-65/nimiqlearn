@@ -66,10 +66,14 @@ export function buildPaymentRequest(pack, asset = "NIM") {
  * docs/nimiq-pay-integration.md, "USDT status". */
 export function getSupportedAssets() {
   return [
+    /* `network` is a chain name — a proper noun, identical in every
+       language. The not-yet-configured line is a sentence, so it travels as
+       a key for the view to translate, like everything else here. */
     { asset: "NIM", network: "Nimiq", real: true },
     {
       asset: "USDT",
-      network: USDT_PAYMENTS_ENABLED ? "Polygon · Ethereum · Arbitrum · Optimism (Nimiq Pay EVM)" : "Coming soon (Nimiq Pay EVM)",
+      network: USDT_PAYMENTS_ENABLED ? "Polygon · Ethereum · Arbitrum · Optimism (Nimiq Pay EVM)" : null,
+      networkKey: USDT_PAYMENTS_ENABLED ? null : "wallet.usdtComingSoon",
       real: USDT_PAYMENTS_ENABLED,
     },
   ];

@@ -25,7 +25,7 @@ export default function EvmWalletStatus() {
   return (
     <Card title={t("ewallet.title")} sub={t("ewallet.sub")}>
       <div className="flex items-center gap-8 wrap" style={{ marginBottom: 16 }}>
-        {evm.status === EVM_STATUS.INITIALIZING && <Badge tone="amber" dot>Connecting...</Badge>}
+        {evm.status === EVM_STATUS.INITIALIZING && <Badge tone="amber" dot>{t("wallet.connecting")}</Badge>}
         {evm.status === EVM_STATUS.CONNECTED && <Badge tone="teal" dot>{t("wallet.walletConnected")}</Badge>}
         {evm.status === EVM_STATUS.EVM_AVAILABLE && <Badge tone="slate" dot>{t("ewallet.detected")}</Badge>}
         {evm.status === EVM_STATUS.ERROR && <Badge tone="rose" dot>{t("wallet.connFailed")}</Badge>}
@@ -35,7 +35,7 @@ export default function EvmWalletStatus() {
       {evm.status === EVM_STATUS.BROWSER_MODE && (
         <div className="notice warn" style={{ marginBottom: 16 }}>
           <span aria-hidden="true">🧪</span>
-          <span>Open NimiqLearn in Nimiq Pay to connect an EVM wallet for USDT payments.</span>
+          <span>{t("ewallet.browserMode")}</span>
         </div>
       )}
 

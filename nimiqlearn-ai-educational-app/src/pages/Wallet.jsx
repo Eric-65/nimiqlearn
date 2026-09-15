@@ -42,7 +42,7 @@ export default function Wallet() {
                 <div key={a.asset} className="flex items-center justify-between pill" style={{ cursor: "default" }}>
                   <span className="flex items-center gap-10">
                     <span className="strong">{a.asset}</span>
-                    <span className="tiny muted">{a.network}</span>
+                    <span className="tiny muted">{a.networkKey ? t(a.networkKey) : a.network}</span>
                   </span>
                   {a.real ? <Badge tone="teal">{t("wallet.assets.real")}</Badge> : <Badge tone="slate">{t("common.comingSoon")}</Badge>}
                 </div>

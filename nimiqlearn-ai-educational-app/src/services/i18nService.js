@@ -200,6 +200,18 @@ export function translateOr(key, fallback, vars, locale = currentLocale) {
   return interpolate(str, vars);
 }
 
+/* Locale-aware list joining. A hardcoded ", ".join() reads as a foreign
+   punctuation mark in CJK, which uses "、", and drops the conjunction
+   languages expect before the last item. */
+export function formatList(items, locale = currentLocale) {
+  const list = items.filter(Boolean).map(String);
+  try {
+    return new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(list);
+  } catch {
+    return list.join(", ");
+  }
+}
+
 /* Locale-aware number formatting — 1,234 in English, 1.234 in German. */
 export function formatNumber(value, locale = currentLocale) {
   try {

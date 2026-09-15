@@ -17,7 +17,7 @@ export default function ForgetMeNot() {
   const { route } = useNav();
   const { knowledge, recordReview, recordActivityCoverage, getEntry } = useLearner();
   const ai = useAiBackend();
-  const { t, tPlural } = useI18n();
+  const { t, tPlural, tOr } = useI18n();
 
   const [activeTopicId, setActiveTopicId] = useState(route.params?.topic || null);
   const [activity, setActivity] = useState(null);
@@ -93,7 +93,7 @@ export default function ForgetMeNot() {
               <div className="flex items-center justify-between wrap gap-12">
                 <div style={{ flex: 1, minWidth: 180 }}>
                   <div className="flex items-center gap-8 wrap">
-                    <span className="strong" style={{ fontSize: 15 }}>{r.topicName}</span>
+                    <span className="strong" style={{ fontSize: 15 }}>{tOr(`topic.${r.topicId}.name`, r.topicName)}</span>
                     <Badge tone={r.priorityScore >= 80 ? "rose" : r.priorityScore >= 65 ? "amber" : r.priorityScore >= 40 ? "blue" : "teal"}>
                       {t(r.levelKey)}
                     </Badge>
@@ -123,7 +123,7 @@ export default function ForgetMeNot() {
         <div style={{ display: "grid", gap: 14, position: "sticky", top: 84 }}>
           {active && !activity && !lastResult && (
             <Card>
-              <h3 style={{ fontSize: 17, margin: "0 0 6px" }}>{active.topicName}</h3>
+              <h3 style={{ fontSize: 17, margin: "0 0 6px" }}>{tOr(`topic.${active.topicId}.name`, active.topicName)}</h3>
               <p className="small muted" style={{ margin: 0 }}>{t("review.priorityReady", { score: active.priorityScore })}</p>
               <Button variant="primary" className="mt-16" onClick={() => startReview(active.topicId)}>{t("review.start")}</Button>
             </Card>

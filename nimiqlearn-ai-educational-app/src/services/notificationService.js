@@ -73,7 +73,10 @@ export function buildNotifications({ knowledge = [], dueNow = [], learner = {}, 
 
   // --- Reviews genuinely due now (ForgetMeNot's own scheduling) ---
   if (dueNow.length > 0) {
+    /* IDs as well as names: the name is English source data, so the view
+        has to run it through tOr() before it reaches a sentence. */
     const named = dueNow.slice(0, 2).map((d) => d.topicName).filter(Boolean);
+    const namedIds = dueNow.slice(0, 2).map((d) => d.topicId).filter(Boolean);
     items.push({
       id: `review:${dueNow.length}:${dueNow[0]?.topicId || ""}`,
       kind: NOTIFICATION_KIND.REVIEW,
@@ -83,7 +86,12 @@ export function buildNotifications({ knowledge = [], dueNow = [], learner = {}, 
       titleVars: { count: dueNow.length },
       titlePlural: true,
       bodyKey: dueNow.length === 1 ? "notif.review.body.one" : "notif.review.body.many",
-      bodyVars: { topic: dueNow[0]?.topicName || "", topics: named.join(", ") },
+      bodyVars: {
+        topicId: dueNow[0]?.topicId || "",
+        topic: dueNow[0]?.topicName || "",
+        topicIds: namedIds,
+        topics: named.join(", "),
+      },
       action: { labelKey: "notif.review.action", path: "review" },
       at: Date.now(),
     });
@@ -102,7 +110,7 @@ export function buildNotifications({ knowledge = [], dueNow = [], learner = {}, 
       icon: "🎯",
       tone: "rose",
       titleKey: "notif.weak.title",
-      titleVars: { topic: entry.topicName },
+      titleVars: { topicId: entry.topicId, topic: entry.topicName },
       bodyKey: "notif.weak.body",
       /* statusKey, not STATUS_META's English label — the status word has to
          translate along with the sentence it sits inside. */

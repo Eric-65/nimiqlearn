@@ -20,6 +20,7 @@ import {
   subscribeLocale,
   translate,
   translateOr,
+  formatList,
   translatePlural,
   formatNumber,
 } from "../services/i18nService.js";
@@ -36,6 +37,8 @@ export function useI18n() {
      source data rather than in the English catalogue. */
   const tOr = useCallback((key, fallback, vars) => translateOr(key, fallback, vars, locale), [locale]);
   const n = useCallback((value) => formatNumber(value, locale), [locale]);
+  /* list(["A", "B"]) — "A and B" / "A 및 B" / "A、B" */
+  const list = useCallback((items) => formatList(items, locale), [locale]);
 
   return {
     locale,
@@ -45,5 +48,6 @@ export function useI18n() {
     tOr,
     tPlural,
     n,
+    list,
   };
 }

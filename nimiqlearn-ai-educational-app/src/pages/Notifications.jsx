@@ -17,7 +17,7 @@ import Badge from "../components/ui/Badge.jsx";
 export default function Notifications() {
   const { navigate } = useNav();
   const { knowledge, dueNow, learner } = useLearner();
-  const { t, tPlural, n: fmt } = useI18n();
+  const { t, tPlural, tOr, n: fmt, list } = useI18n();
   const xp = computeXp(knowledge);
   const [, force] = useState(0);
 
@@ -66,10 +66,19 @@ export default function Notifications() {
               /* The service hands over keys + variables; this is the only
                  place they become words, so every notification is in the
                  learner's language including the ones built from data. */
+              /* Topic names arrive as IDs: the service holds English source
+                 data and only the view knows the learner's language. */
+              const topicName = (id, fallback) => tOr(`topic.${id}.name`, fallback);
+              const titleVars = { ...n.titleVars };
+              if (titleVars.topicId) titleVars.topic = topicName(titleVars.topicId, titleVars.topic);
               const title = n.titlePlural
-                ? tPlural(n.titleKey, n.titleVars.count, n.titleVars)
-                : t(n.titleKey, n.titleVars);
+                ? tPlural(n.titleKey, titleVars.count, titleVars)
+                : t(n.titleKey, titleVars);
               const bodyVars = { ...n.bodyVars };
+              if (bodyVars.topicId) bodyVars.topic = topicName(bodyVars.topicId, bodyVars.topic);
+              if (bodyVars.topicIds?.length) {
+                bodyVars.topics = list(bodyVars.topicIds.map((id) => topicName(id, id)));
+              }
               if (bodyVars.statusKey) bodyVars.status = t(bodyVars.statusKey);
               if (typeof bodyVars.xp === "number") bodyVars.xp = fmt(bodyVars.xp);
               if (typeof bodyVars.remaining === "number") bodyVars.remaining = fmt(bodyVars.remaining);

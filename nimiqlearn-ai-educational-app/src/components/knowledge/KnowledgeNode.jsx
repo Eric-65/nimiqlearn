@@ -8,7 +8,13 @@ import { STATUS_META } from "../../services/knowledgeService.js";
  * due-for-review nodes show a clock, just-updated nodes flash teal.
  */
 export default function KnowledgeNode({ topic, knowledge, onSelect, index, due = false, justUpdated = false }) {
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
+  /* STATUS_META.label is English source text, not a translation — the
+     catalogue already carries these under status.*, so read them from
+     there. The aria-label was built the same way and was still English
+     inside a Korean UI. */
+  const name = tOr(`topic.${topic.id}.name`, topic.name);
+  const statusLabel = t(`status.${String(knowledge?.status || "NEW").toLowerCase()}`);
   const color = STATUS_META[knowledge?.status]?.color || "var(--st-new)";
   const isWeak = knowledge?.status === "LEARNING" || (knowledge?.status === "NEW" && !knowledge.lastEvaluatedAt);
   const isMastered = knowledge?.status === "MASTERED";
@@ -41,7 +47,7 @@ export default function KnowledgeNode({ topic, knowledge, onSelect, index, due =
         e.currentTarget.style.transform = "translateX(0)";
         e.currentTarget.style.borderColor = isMastered ? "rgba(247,193,79,0.4)" : "var(--c-border)";
       }}
-      aria-label={`${topic.name}, ${STATUS_META[knowledge?.status]?.label || "New"}${due ? ", due for review" : ""}. Click to study.`}
+      aria-label={t("node.aria", { name, status: statusLabel, due: due ? t("node.aria.due") : "" })}
     >
       <span
         aria-hidden="true"
@@ -56,10 +62,10 @@ export default function KnowledgeNode({ topic, knowledge, onSelect, index, due =
       />
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {topic.name}
+          {name}
         </span>
         <span className="tiny muted" style={{ display: "block" }}>
-          {STATUS_META[knowledge?.status]?.label || "New"} {knowledge?.mastery > 0 ? `• ${knowledge.mastery}%` : ""}
+          {statusLabel} {knowledge?.mastery > 0 ? `• ${knowledge.mastery}%` : ""}
         </span>
       </span>
       {due && (

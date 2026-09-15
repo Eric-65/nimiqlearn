@@ -11,7 +11,7 @@ import { STATUS_META } from "../../services/knowledgeService.js";
  * just-updated (teal flash) — passed in from the page.
  */
 export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null, dueTopicIds = [] }) {
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
   const getEntry = (topicId) => knowledge.find((k) => k.topicId === topicId) || { status: "NEW", mastery: 0 };
   const dueSet = new Set(dueTopicIds);
 
@@ -28,8 +28,8 @@ export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null
             boxShadow: "0 0 10px rgba(247,193,79,0.5)",
           }}
         />
-        <h3 style={{ margin: 0, fontSize: 16 }}>{subject.name}</h3>
-        <span className="tiny muted">{subject.description}</span>
+        <h3 style={{ margin: 0, fontSize: 16 }}>{tOr(`topic.${subject.id}.name`, subject.name)}</h3>
+        <span className="tiny muted">{tOr(`topic.${subject.id}.description`, subject.description)}</span>
       </div>
 
       <div style={{ marginLeft: 18, paddingLeft: 18, borderLeft: "1px dashed var(--c-border-strong)" }}>
@@ -40,7 +40,7 @@ export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null
                 aria-hidden="true"
                 style={{ width: 7, height: 7, borderRadius: 2, background: "var(--c-blue)", flex: "none" }}
               />
-              <span className="small strong" style={{ color: "var(--c-text-dim)" }}>{group.name}</span>
+              <span className="small strong" style={{ color: "var(--c-text-dim)" }}>{tOr(`topic.${group.id}.name`, group.name)}</span>
             </div>
             <div style={{ display: "grid", gap: 9, gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
               {group.children.map((topic, i) => (
