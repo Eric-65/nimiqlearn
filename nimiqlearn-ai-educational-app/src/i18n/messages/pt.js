@@ -357,6 +357,8 @@ export default {
   "market.demoBadge": "MODO DEMO — pagamentos simulados",
   "market.paymentsDisabled":
     "Não há endereço de destinatário configurado para os pacotes (VITE_NIM_LEARNING_RECIPIENT não está definida). Desbloquear com NIM reais fica desativado até se configurar o endereço de um formador.",
+  "market.paymentsMisconfigured":
+    "O endereço de destinatário configurado não é um endereço Nimiq válido, por isso o desbloqueio com NIM continua desativado. Verifica VITE_NIM_LEARNING_RECIPIENT — precisa de um endereço NQ…, não de um 0x….",
   "market.unlocked": "{title} desbloqueado — pagamento confirmado através do Nimiq Pay.",
   "market.unlocked.sim": "{title} desbloqueado em MODO DEMO (pagamento simulado).",
   "market.popular": "Popular",
@@ -374,7 +376,12 @@ export default {
   "market.noUsdtRecipient": "Não há endereço de destinatário configurado para pagamentos em USDT.",
   "market.usdtDisabled":
     "Não há endereço de destinatário USDT configurado (VITE_USDT_LEARNING_RECIPIENT não está definida). Desbloquear com USDT fica desativado até se configurar o endereço EVM de um formador.",
+  "market.usdtMisconfigured":
+    "O endereço de destinatário USDT configurado não é um endereço EVM válido, por isso o desbloqueio com USDT continua desativado. Verifica VITE_USDT_LEARNING_RECIPIENT — precisa de um endereço 0x…, não de um NQ….",
   "pay.title": "Desbloquear pacote de aprendizagem",
+  "pay.unlockTitle": "Desbloquear {title}",
+  "pay.noRecipient":
+    "Ainda não há um endereço de destinatário {asset} configurado para este pacote. O desbloqueio com {asset} está desativado até que o endereço de um educador seja configurado.",
   "pay.disabled": "Pagamentos desativados",
   "pay.demoBadge": "MODO DEMO — simulação",
   "pay.liveBadge": "Nimiq Pay • em direto",

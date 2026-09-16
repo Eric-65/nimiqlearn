@@ -351,6 +351,8 @@ export default {
   "market.demoBadge": "演示模式 — 支付为模拟",
   "market.paymentsDisabled":
     "未配置学习包收款地址（VITE_NIM_LEARNING_RECIPIENT 未设置）。在配置教育者收款地址之前，用真实 NIM 解锁的功能保持停用。",
+  "market.paymentsMisconfigured":
+    "配置的收款地址不是有效的 Nimiq 地址，因此使用 NIM 解锁仍处于停用状态。请检查 VITE_NIM_LEARNING_RECIPIENT——这里需要 NQ… 地址，而不是 0x… 地址。",
   "market.unlocked": "{title} 已解锁 — 支付已通过 Nimiq Pay 确认。",
   "market.unlocked.sim": "{title} 已在演示模式下解锁（模拟支付）。",
   "market.popular": "热门",
@@ -368,7 +370,12 @@ export default {
   "market.noUsdtRecipient": "未配置用于 USDT 支付的收款地址。",
   "market.usdtDisabled":
     "未配置 USDT 收款地址（VITE_USDT_LEARNING_RECIPIENT 未设置）。在配置教育者 EVM 地址之前，USDT 解锁保持停用。",
+  "market.usdtMisconfigured":
+    "配置的 USDT 收款地址不是有效的 EVM 地址，因此使用 USDT 解锁仍处于停用状态。请检查 VITE_USDT_LEARNING_RECIPIENT——这里需要 0x… 地址，而不是 NQ… 地址。",
   "pay.title": "解锁学习包",
+  "pay.unlockTitle": "解锁{title}",
+  "pay.noRecipient":
+    "这个学习包还没有配置 {asset} 收款地址。在配置教育者收款地址之前，使用 {asset} 解锁处于停用状态。",
   "pay.disabled": "支付已停用",
   "pay.demoBadge": "演示模式 — 模拟",
   "pay.liveBadge": "Nimiq Pay • 实时",

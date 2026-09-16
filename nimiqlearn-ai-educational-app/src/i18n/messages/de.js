@@ -358,6 +358,8 @@ export default {
   "market.demoBadge": "DEMOMODUS — Zahlungen simuliert",
   "market.paymentsDisabled":
     "Für Lernpakete ist keine Empfängeradresse konfiguriert (VITE_NIM_LEARNING_RECIPIENT ist nicht gesetzt). Das Freischalten mit echten NIM bleibt deaktiviert, bis eine Empfängeradresse hinterlegt ist.",
+  "market.paymentsMisconfigured":
+    "Die konfigurierte Empfängeradresse ist keine gültige Nimiq-Adresse, deshalb bleibt das Freischalten mit NIM deaktiviert. Prüfe VITE_NIM_LEARNING_RECIPIENT — dort gehört eine NQ…-Adresse hin, keine 0x…-Adresse.",
   "market.unlocked": "{title} freigeschaltet — Zahlung über Nimiq Pay bestätigt.",
   "market.unlocked.sim": "{title} im DEMOMODUS freigeschaltet (simulierte Zahlung).",
   "market.popular": "Beliebt",
@@ -375,7 +377,12 @@ export default {
   "market.noUsdtRecipient": "Für USDT-Zahlungen ist keine Empfängeradresse konfiguriert.",
   "market.usdtDisabled":
     "Es ist keine USDT-Empfängeradresse konfiguriert (VITE_USDT_LEARNING_RECIPIENT ist nicht gesetzt). Das Freischalten mit USDT bleibt deaktiviert, bis eine EVM-Adresse hinterlegt ist.",
+  "market.usdtMisconfigured":
+    "Die konfigurierte USDT-Empfängeradresse ist keine gültige EVM-Adresse, deshalb bleibt das Freischalten mit USDT deaktiviert. Prüfe VITE_USDT_LEARNING_RECIPIENT — dort gehört eine 0x…-Adresse hin, keine NQ…-Adresse.",
   "pay.title": "Lernpaket freischalten",
+  "pay.unlockTitle": "{title} freischalten",
+  "pay.noRecipient":
+    "Für dieses Paket ist noch keine {asset}-Empfängeradresse konfiguriert. Das Freischalten mit {asset} bleibt deaktiviert, bis eine Empfängeradresse für Lehrende hinterlegt ist.",
   "pay.disabled": "Zahlungen deaktiviert",
   "pay.demoBadge": "DEMOMODUS — Simulation",
   "pay.liveBadge": "Nimiq Pay • live",

@@ -41,7 +41,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
   const evm = useEvmWallet();
   const { learner, recordPendingPayment, clearPendingPayment } = useLearner();
   const [step, setStep] = useState(STEP.REVIEW);
-  const { t } = useI18n();
+  const { t, tOr } = useI18n();
   const [result, setResult] = useState(null);
   const [pendingKey, setPendingKey] = useState("pay.awaiting");
   const [selectedAsset, setSelectedAsset] = useState("NIM");
@@ -141,7 +141,9 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
         {step === STEP.REVIEW && (
           <div className="anim-fade">
             <div className="flex items-center justify-between wrap gap-8" style={{ marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 20 }}>Unlock {pack.title}</h3>
+              <h3 style={{ margin: 0, fontSize: 20 }}>
+                {t("pay.unlockTitle", { title: tOr(`pack.${pack.id}.title`, pack.title) })}
+              </h3>
               {disabled ? (
                 <Badge tone="rose">{t("pay.disabled")}</Badge>
               ) : demo ? (
@@ -154,10 +156,7 @@ export default function LearningPaymentModal({ pack, open, onClose, onSuccess })
             {disabled && (
               <div className="notice danger" style={{ marginBottom: 16 }}>
                 <span aria-hidden="true">⚠️</span>
-                <span>
-                  No {selectedAsset} recipient address is configured for this pack yet. Unlocking with {selectedAsset} is
-                  disabled until an educator recipient address is configured.
-                </span>
+                <span>{t("pay.noRecipient", { asset: selectedAsset })}</span>
               </div>
             )}
 

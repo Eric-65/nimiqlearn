@@ -424,6 +424,8 @@ export default {
   "market.demoBadge": "DEMO MODE — payments simulated",
   "market.paymentsDisabled":
     "No learning-pack recipient address is configured (VITE_NIM_LEARNING_RECIPIENT is unset). Unlocking with real NIM is disabled until an educator recipient address is configured.",
+  "market.paymentsMisconfigured":
+    "The configured learning-pack recipient is not a valid Nimiq address, so unlocking with NIM stays disabled. Check VITE_NIM_LEARNING_RECIPIENT — it needs an NQ… address, not an 0x… one.",
   "market.unlocked": "{title} unlocked — payment confirmed via Nimiq Pay.",
   "market.unlocked.sim": "{title} unlocked in DEMO MODE (simulated payment).",
   "market.popular": "Popular",
@@ -444,6 +446,9 @@ export default {
 
   /* ---------------- payment modal ---------------- */
   "pay.title": "Unlock learning pack",
+  "pay.unlockTitle": "Unlock {title}",
+  "pay.noRecipient":
+    "No {asset} recipient address is configured for this pack yet. Unlocking with {asset} is disabled until an educator recipient address is configured.",
   "pay.disabled": "Payment disabled",
   "pay.demoBadge": "DEMO MODE — simulation",
   "pay.liveBadge": "Nimiq Pay • live",
@@ -474,6 +479,8 @@ export default {
   "market.noUsdtRecipient": "No recipient address is configured for USDT payments.",
   "market.usdtDisabled":
     "No USDT recipient address is configured (VITE_USDT_LEARNING_RECIPIENT is unset). Unlocking with USDT is disabled until an educator EVM address is configured.",
+  "market.usdtMisconfigured":
+    "The configured USDT recipient is not a valid EVM address, so unlocking with USDT stays disabled. Check VITE_USDT_LEARNING_RECIPIENT — it needs an 0x… address, not an NQ… one.",
 
   /* ---------------- Home ---------------- */
   "home.hero.line1": "Learn smarter.",

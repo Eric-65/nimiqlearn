@@ -352,6 +352,8 @@ export default {
   "market.demoBadge": "데모 모드 — 결제는 시뮬레이션",
   "market.paymentsDisabled":
     "학습 팩 수신 주소가 설정되지 않았습니다(VITE_NIM_LEARNING_RECIPIENT 미설정). 교육자 수신 주소가 설정될 때까지 실제 NIM 잠금 해제는 비활성화됩니다.",
+  "market.paymentsMisconfigured":
+    "설정된 수령 주소가 올바른 Nimiq 주소가 아니어서 NIM 잠금 해제가 계속 비활성화되어 있습니다. VITE_NIM_LEARNING_RECIPIENT 를 확인하세요 — 0x… 가 아니라 NQ… 주소가 필요합니다.",
   "market.unlocked": "{title} 잠금 해제됨 — Nimiq Pay로 결제가 확인되었습니다.",
   "market.unlocked.sim": "{title} 데모 모드에서 잠금 해제됨(시뮬레이션 결제).",
   "market.popular": "인기",
@@ -369,7 +371,12 @@ export default {
   "market.noUsdtRecipient": "USDT 결제용 수신 주소가 설정되지 않았습니다.",
   "market.usdtDisabled":
     "USDT 수신 주소가 설정되지 않았습니다(VITE_USDT_LEARNING_RECIPIENT 미설정). 교육자 EVM 주소가 설정될 때까지 USDT 잠금 해제는 비활성화됩니다.",
+  "market.usdtMisconfigured":
+    "설정된 USDT 수령 주소가 올바른 EVM 주소가 아니어서 USDT 잠금 해제가 계속 비활성화되어 있습니다. VITE_USDT_LEARNING_RECIPIENT 를 확인하세요 — NQ… 가 아니라 0x… 주소가 필요합니다.",
   "pay.title": "학습 팩 잠금 해제",
+  "pay.unlockTitle": "{title} 잠금 해제",
+  "pay.noRecipient":
+    "이 팩에 대한 {asset} 수령 주소가 아직 설정되지 않았습니다. 교육자 수령 주소가 설정될 때까지 {asset} 잠금 해제는 비활성화됩니다.",
   "pay.disabled": "결제 비활성화됨",
   "pay.demoBadge": "데모 모드 — 시뮬레이션",
   "pay.liveBadge": "Nimiq Pay • 실시간",

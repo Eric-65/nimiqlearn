@@ -357,6 +357,8 @@ export default {
   "market.demoBadge": "MODE DÉMO — paiements simulés",
   "market.paymentsDisabled":
     "Aucune adresse de destinataire n'est configurée pour les packs (VITE_NIM_LEARNING_RECIPIENT n'est pas définie). Le déverrouillage en NIM réels est désactivé tant qu'une adresse de formateur n'est pas configurée.",
+  "market.paymentsMisconfigured":
+    "L'adresse de destinataire configurée n'est pas une adresse Nimiq valide, donc le déverrouillage en NIM reste désactivé. Vérifie VITE_NIM_LEARNING_RECIPIENT : il lui faut une adresse NQ…, pas une 0x….",
   "market.unlocked": "{title} déverrouillé — paiement confirmé via Nimiq Pay.",
   "market.unlocked.sim": "{title} déverrouillé en MODE DÉMO (paiement simulé).",
   "market.popular": "Populaire",
@@ -374,7 +376,12 @@ export default {
   "market.noUsdtRecipient": "Aucune adresse de destinataire n'est configurée pour les paiements en USDT.",
   "market.usdtDisabled":
     "Aucune adresse de destinataire USDT n'est configurée (VITE_USDT_LEARNING_RECIPIENT n'est pas définie). Le déverrouillage en USDT est désactivé tant qu'une adresse EVM de formateur n'est pas configurée.",
+  "market.usdtMisconfigured":
+    "L'adresse de destinataire USDT configurée n'est pas une adresse EVM valide, donc le déverrouillage en USDT reste désactivé. Vérifie VITE_USDT_LEARNING_RECIPIENT : il lui faut une adresse 0x…, pas une NQ….",
   "pay.title": "Déverrouiller un pack d'apprentissage",
+  "pay.unlockTitle": "Débloquer {title}",
+  "pay.noRecipient":
+    "Aucune adresse de destinataire {asset} n'est encore configurée pour ce pack. Le déverrouillage en {asset} est désactivé tant qu'une adresse d'éducateur n'est pas configurée.",
   "pay.disabled": "Paiements désactivés",
   "pay.demoBadge": "MODE DÉMO — simulation",
   "pay.liveBadge": "Nimiq Pay • en direct",

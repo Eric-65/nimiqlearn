@@ -353,6 +353,8 @@ export default {
   "market.demoBadge": "デモモード — 支払いはシミュレーション",
   "market.paymentsDisabled":
     "学習パックの受取先アドレスが設定されていません（VITE_NIM_LEARNING_RECIPIENT が未設定）。教育者の受取先アドレスを設定するまで、実際の NIM でのアンロックは無効です。",
+  "market.paymentsMisconfigured":
+    "設定された受取アドレスが有効な Nimiq アドレスではないため、NIM でのアンロックは無効のままです。VITE_NIM_LEARNING_RECIPIENT を確認してください。0x… ではなく NQ… のアドレスが必要です。",
   "market.unlocked": "{title} をアンロックしました — Nimiq Pay で支払いを確認しました。",
   "market.unlocked.sim": "{title} をデモモードでアンロックしました（シミュレーション支払い）。",
   "market.popular": "人気",
@@ -370,7 +372,12 @@ export default {
   "market.noUsdtRecipient": "USDT 支払い用の受取先アドレスが設定されていません。",
   "market.usdtDisabled":
     "USDT の受取先アドレスが設定されていません（VITE_USDT_LEARNING_RECIPIENT が未設定）。教育者の EVM アドレスを設定するまで、USDT でのアンロックは無効です。",
+  "market.usdtMisconfigured":
+    "設定された USDT 受取アドレスが有効な EVM アドレスではないため、USDT でのアンロックは無効のままです。VITE_USDT_LEARNING_RECIPIENT を確認してください。NQ… ではなく 0x… のアドレスが必要です。",
   "pay.title": "学習パックをアンロック",
+  "pay.unlockTitle": "{title} をアンロック",
+  "pay.noRecipient":
+    "このパックの {asset} 受取アドレスはまだ設定されていません。教育者の受取アドレスが設定されるまで、{asset} でのアンロックは無効です。",
   "pay.disabled": "支払いは無効",
   "pay.demoBadge": "デモモード — シミュレーション",
   "pay.liveBadge": "Nimiq Pay • ライブ",
