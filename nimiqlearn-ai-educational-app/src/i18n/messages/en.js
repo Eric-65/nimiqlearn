@@ -777,4 +777,13 @@ export default {
   "topic.sql-databases.description": "Tables, queries, and asking a database questions.",
   "topic.how-web-works.name": "How the web works",
   "topic.how-web-works.description": "Requests, responses, DNS, and what happens when you open a page.",
+
+  /* ---------------- Site footer ---------------- */
+  "footer.nimiq": "Nimiq",
+  "footer.resources": "Resources",
+  "footer.howItWorks": "How it works",
+  "footer.miniAppsDocs": "Mini Apps docs",
+  "footer.explorer": "Block explorer",
+  "footer.developer": "Developer",
+  "footer.aria": "Links and resources",
 };

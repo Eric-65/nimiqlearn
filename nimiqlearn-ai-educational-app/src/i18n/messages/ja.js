@@ -849,4 +849,13 @@ export default {
   "content.how-web-works.misconception": "学習者はウェブページが「ブラウザの中に保存されている」と思い描きますが、ブラウザは訪れるたびにファイルを要求し、返ってきたレスポンスからページを組み立て直します。",
   "content.how-web-works.analogy": "DNS は電話帳、リクエストはあなたのかける電話、レスポンスは受話器の向こうから返ってくる答えです。",
   "content.how-web-works.example": "example.com と入力すると DNS で IP を調べ、GET / を送り、サーバーはページの HTML とともに 200 OK を返します。",
+
+  /* ---------------- Site footer ---------------- */
+  "footer.nimiq": "Nimiq",
+  "footer.resources": "リソース",
+  "footer.howItWorks": "使い方",
+  "footer.miniAppsDocs": "Mini Apps ドキュメント",
+  "footer.explorer": "ブロックエクスプローラー",
+  "footer.developer": "開発者",
+  "footer.aria": "リンクとリソース",
 };

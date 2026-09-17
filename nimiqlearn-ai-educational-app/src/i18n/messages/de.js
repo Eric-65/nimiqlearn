@@ -854,4 +854,13 @@ export default {
   "content.how-web-works.misconception": "Lernende stellen sich vor, die Webseite sei 'im Browser gespeichert' — der Browser fordert die Dateien bei jedem Besuch neu an und baut die Seite aus der Antwort zusammen.",
   "content.how-web-works.analogy": "Das DNS ist ein Telefonbuch, die Anfrage ist dein Anruf, und die Antwort ist das, was zurückgerufen wird.",
   "content.how-web-works.example": "example.com einzutippen schlägt die IP per DNS nach, sendet GET / und der Server antwortet mit 200 OK und dem HTML der Seite.",
+
+  /* ---------------- Site footer ---------------- */
+  "footer.nimiq": "Nimiq",
+  "footer.resources": "Ressourcen",
+  "footer.howItWorks": "So funktioniert es",
+  "footer.miniAppsDocs": "Mini-Apps-Doku",
+  "footer.explorer": "Block-Explorer",
+  "footer.developer": "Entwicklung",
+  "footer.aria": "Links und Ressourcen",
 };

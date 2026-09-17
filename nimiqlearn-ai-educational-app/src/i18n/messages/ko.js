@@ -848,4 +848,13 @@ export default {
   "content.how-web-works.misconception": "학습자들은 웹 페이지가 '브라우저에 저장되어 있다'고 상상하지만, 브라우저는 방문할 때마다 파일을 요청하고 응답을 받아 페이지를 다시 조립합니다.",
   "content.how-web-works.analogy": "DNS는 전화번호부, 요청은 여러분이 거는 전화, 응답은 수화기 너머에서 돌아오는 대답입니다.",
   "content.how-web-works.example": "example.com 을 입력하면 DNS로 IP를 찾고 GET / 을 보내며, 서버는 페이지의 HTML과 함께 200 OK 로 응답합니다.",
+
+  /* ---------------- Site footer ---------------- */
+  "footer.nimiq": "Nimiq",
+  "footer.resources": "자료",
+  "footer.howItWorks": "작동 방식",
+  "footer.miniAppsDocs": "Mini Apps 문서",
+  "footer.explorer": "블록 탐색기",
+  "footer.developer": "개발자",
+  "footer.aria": "링크 및 자료",
 };

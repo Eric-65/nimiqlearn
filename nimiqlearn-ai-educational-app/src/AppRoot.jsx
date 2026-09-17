@@ -9,6 +9,7 @@ import { countNotifications } from "./services/notificationService.js";
 import { computeXp } from "./services/xpService.js";
 import AIStatus from "./components/ai/AIStatus.jsx";
 import WalletDiagnostics from "./components/payments/WalletDiagnostics.jsx";
+import SiteFooter from "./components/layout/SiteFooter.jsx";
 // @ts-ignore - plain JavaScript/JSX in this phase
 import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 import Home from "./pages/Home.jsx";
@@ -220,6 +221,12 @@ function Shell() {
             <Page />
           </ErrorBoundary>
         </main>
+
+        {/* Outside <main>, so it is a sibling landmark rather than page
+            content, and outside the per-page ErrorBoundary, so a crashing
+            page never takes the licence and attribution links down with
+            it. */}
+        <SiteFooter />
       </div>
 
       {/* Development-only diagnostics (no-op in production builds) */}

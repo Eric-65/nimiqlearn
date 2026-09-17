@@ -847,4 +847,13 @@ export default {
   "content.how-web-works.misconception": "学习者想象网页是“存在浏览器里”的——其实浏览器每次访问都会重新请求文件，再用响应把页面拼装起来。",
   "content.how-web-works.analogy": "DNS 是电话簿，请求是你打出的电话，响应是电话那头喊回来的答复。",
   "content.how-web-works.example": "输入 example.com 会通过 DNS 查到它的 IP，发送 GET /，服务器随即以 200 OK 返回页面的 HTML。",
+
+  /* ---------------- Site footer ---------------- */
+  "footer.nimiq": "Nimiq",
+  "footer.resources": "资源",
+  "footer.howItWorks": "运作方式",
+  "footer.miniAppsDocs": "Mini Apps 文档",
+  "footer.explorer": "区块浏览器",
+  "footer.developer": "开发者",
+  "footer.aria": "链接与资源",
 };

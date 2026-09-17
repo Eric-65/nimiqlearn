@@ -853,4 +853,13 @@ export default {
   "content.how-web-works.misconception": "Les élèves imaginent la page web 'stockée dans le navigateur' — le navigateur redemande les fichiers à chaque visite et reconstruit la page à partir de la réponse.",
   "content.how-web-works.analogy": "Le DNS est un annuaire, la requête est ton appel, et la réponse est ce qu'on te crie en retour.",
   "content.how-web-works.example": "Taper example.com fait chercher son IP via le DNS, envoie GET /, et le serveur répond 200 OK avec le HTML de la page.",
+
+  /* ---------------- Site footer ---------------- */
+  "footer.nimiq": "Nimiq",
+  "footer.resources": "Ressources",
+  "footer.howItWorks": "Comment ça marche",
+  "footer.miniAppsDocs": "Docs Mini Apps",
+  "footer.explorer": "Explorateur de blocs",
+  "footer.developer": "Développement",
+  "footer.aria": "Liens et ressources",
 };

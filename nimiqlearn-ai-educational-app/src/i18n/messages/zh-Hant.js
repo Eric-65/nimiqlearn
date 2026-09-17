@@ -847,4 +847,13 @@ export default {
   "content.how-web-works.misconception": "學習者想像網頁是「存在瀏覽器裡」的——其實瀏覽器每次造訪都會重新請求檔案，再用回應把頁面組裝起來。",
   "content.how-web-works.analogy": "DNS 是電話簿，請求是你打出的電話，回應是電話那頭喊回來的答覆。",
   "content.how-web-works.example": "輸入 example.com 會透過 DNS 查到它的 IP，送出 GET /，伺服器隨即以 200 OK 回傳頁面的 HTML。",
+
+  /* ---------------- Site footer ---------------- */
+  "footer.nimiq": "Nimiq",
+  "footer.resources": "資源",
+  "footer.howItWorks": "運作方式",
+  "footer.miniAppsDocs": "Mini Apps 文件",
+  "footer.explorer": "區塊瀏覽器",
+  "footer.developer": "開發者",
+  "footer.aria": "連結與資源",
 };

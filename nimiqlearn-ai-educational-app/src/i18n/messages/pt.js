@@ -853,4 +853,13 @@ export default {
   "content.how-web-works.misconception": "Os alunos imaginam a página web 'guardada no navegador' — o navegador pede os ficheiros a cada visita e monta a página a partir da resposta.",
   "content.how-web-works.analogy": "O DNS é uma lista telefónica, o pedido é a tua chamada, e a resposta é o que te respondem do outro lado.",
   "content.how-web-works.example": "Escrever example.com procura o IP através do DNS, envia GET / e o servidor responde 200 OK com o HTML da página.",
+
+  /* ---------------- Site footer ---------------- */
+  "footer.nimiq": "Nimiq",
+  "footer.resources": "Recursos",
+  "footer.howItWorks": "Como funciona",
+  "footer.miniAppsDocs": "Documentação Mini Apps",
+  "footer.explorer": "Explorador de blocos",
+  "footer.developer": "Desenvolvimento",
+  "footer.aria": "Ligações e recursos",
 };
