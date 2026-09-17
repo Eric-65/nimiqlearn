@@ -12,6 +12,7 @@ import Badge from "../components/ui/Badge.jsx";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import AIStatus from "../components/ai/AIStatus.jsx";
+import TopicVideo from "../components/knowledge/TopicVideo.jsx";
 
 export default function Learn() {
   const { route, navigate } = useNav();
@@ -161,6 +162,11 @@ export default function Learn() {
               </Button>
             </div>
           </Card>
+
+          {/* Above the activity on purpose: a learner who has one watches it
+              and then answers. Renders nothing for the many topics with no
+              verified video, so their page is unchanged. */}
+          <TopicVideo topicId={topicId} />
 
           {decision && activity && (
             <>

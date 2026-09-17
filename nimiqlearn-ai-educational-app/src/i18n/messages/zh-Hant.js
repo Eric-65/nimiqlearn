@@ -867,6 +867,14 @@ export default {
   "footer.developer": "開發者",
   "footer.aria": "連結與資源",
 
+  /* ---------------- 影片課程 ---------------- */
+  "video.title": "影片課程",
+  "video.aria": "本主題的影片課程",
+  "video.unsupported": "您的瀏覽器無法播放此影片。",
+  "video.englishOnly": "目前僅提供英文版。",
+  "video.subtitled": "{spoken}講解，附{subtitles}字幕。",
+  "video.commons": "在維基共享資源檢視",
+
   /* ---- Curriculum teaching content: Nimiq ---- */
   "content.nimiq-blockchain.definition": "Nimiq 是一條公開的權益證明區塊鏈，其設計目標是從網頁瀏覽器直接接入。節點透過共識就同一份共享歷史達成一致；在用戶端建立共識之前，它還不能信任自己看到的餘額。",
   "content.nimiq-blockchain.kp0": "位址可供人閱讀，以 NQ 開頭，按每四個字元一組、共九組書寫。",

@@ -874,6 +874,14 @@ export default {
   "footer.developer": "Entwicklung",
   "footer.aria": "Links und Ressourcen",
 
+  /* ---------------- Videolektionen ---------------- */
+  "video.title": "Videolektion",
+  "video.aria": "Videolektion zu diesem Thema",
+  "video.unsupported": "Dein Browser kann dieses Video nicht abspielen.",
+  "video.englishOnly": "Derzeit nur auf Englisch verfügbar.",
+  "video.subtitled": "Gesprochen auf {spoken}, mit Untertiteln auf {subtitles}.",
+  "video.commons": "Auf Wikimedia Commons ansehen",
+
   /* ---- Curriculum teaching content: Nimiq ---- */
   "content.nimiq-blockchain.definition": "Nimiq ist eine öffentliche Proof-of-Stake-Blockchain, die sich direkt aus einem Webbrowser erreichen lässt. Ihre Knoten einigen sich per Konsens auf eine gemeinsame Historie, und solange ein Client keinen Konsens hergestellt hat, kann er seiner eigenen Sicht auf die Guthaben nicht trauen.",
   "content.nimiq-blockchain.kp0": "Adressen sind menschenlesbar, beginnen mit NQ und werden in neun Vierergruppen geschrieben.",

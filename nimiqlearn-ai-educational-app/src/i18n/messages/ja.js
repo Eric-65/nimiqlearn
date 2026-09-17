@@ -869,6 +869,14 @@ export default {
   "footer.developer": "開発者",
   "footer.aria": "リンクとリソース",
 
+  /* ---------------- 動画レッスン ---------------- */
+  "video.title": "動画レッスン",
+  "video.aria": "このトピックの動画レッスン",
+  "video.unsupported": "このブラウザーでは動画を再生できません。",
+  "video.englishOnly": "現在は英語版のみです。",
+  "video.subtitled": "音声は{spoken}、字幕は{subtitles}です。",
+  "video.commons": "ウィキメディア・コモンズで見る",
+
   /* ---- Curriculum teaching content: Nimiq ---- */
   "content.nimiq-blockchain.definition": "Nimiq は、ウェブブラウザから直接つながるように設計された公開のプルーフ・オブ・ステーク型ブロックチェーンです。ノードは合意によって一つの共有された履歴に同意し、クライアントは合意が成立するまで自分が見ている残高を信用できません。",
   "content.nimiq-blockchain.kp0": "アドレスは人が読める形式で NQ から始まり、4 文字ずつ 9 組に区切って書きます。",

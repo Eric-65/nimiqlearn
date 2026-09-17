@@ -1004,3 +1004,61 @@ button { font-family: inherit; }
   }
   .site-footer-inner { gap: 24px 28px; }
 }
+
+/* ============================================================
+   Video lesson card
+   ------------------------------------------------------------
+   The player sits flush inside the card's padding and keeps its
+   16:9 box, so a topic does not reflow when the video's real
+   dimensions arrive — Commons files range from 4:3 lecture
+   captures to widescreen animations, and letting the element
+   size itself made the whole page jump on load.
+   ============================================================ */
+.video-card {
+  display: grid;
+  gap: 12px;
+}
+
+.video-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.video-duration {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.video-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  /* Letterbox rather than crop: a 4:3 lecture recording with the working
+     rendered on a blackboard cannot afford to have its edges cut off. */
+  object-fit: contain;
+  background: #000;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  display: block;
+}
+
+.video-language {
+  margin: 0;
+  color: var(--c-text-dim);
+}
+
+.video-credit {
+  margin: 0;
+}
+
+.video-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.video-credit a:hover,
+.video-credit a:focus-visible {
+  color: var(--c-text);
+}

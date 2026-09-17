@@ -873,6 +873,14 @@ export default {
   "footer.developer": "Développement",
   "footer.aria": "Liens et ressources",
 
+  /* ---------------- Leçons vidéo ---------------- */
+  "video.title": "Leçon vidéo",
+  "video.aria": "Leçon vidéo pour ce sujet",
+  "video.unsupported": "Votre navigateur ne peut pas lire cette vidéo.",
+  "video.englishOnly": "Disponible uniquement en anglais pour l'instant.",
+  "video.subtitled": "Parlée en {spoken}, avec des sous-titres en {subtitles}.",
+  "video.commons": "Voir sur Wikimedia Commons",
+
   /* ---- Curriculum teaching content: Nimiq ---- */
   "content.nimiq-blockchain.definition": "Nimiq est une blockchain publique en preuve d'enjeu, conçue pour être atteinte directement depuis un navigateur web. Ses nœuds s'accordent sur un historique unique par le consensus, et tant qu'un client n'a pas établi le consensus, il ne peut pas se fier à sa propre vue des soldes.",
   "content.nimiq-blockchain.kp0": "Les adresses sont lisibles par un humain et commencent par NQ, écrites en neuf groupes de quatre.",

@@ -867,6 +867,14 @@ export default {
   "footer.developer": "开发者",
   "footer.aria": "链接与资源",
 
+  /* ---------------- 视频课程 ---------------- */
+  "video.title": "视频课程",
+  "video.aria": "本主题的视频课程",
+  "video.unsupported": "您的浏览器无法播放此视频。",
+  "video.englishOnly": "目前仅提供英文版。",
+  "video.subtitled": "{spoken}讲解，配有{subtitles}字幕。",
+  "video.commons": "在维基共享资源查看",
+
   /* ---- Curriculum teaching content: Nimiq ---- */
   "content.nimiq-blockchain.definition": "Nimiq 是一条公开的权益证明区块链，其设计目标是从网页浏览器直接接入。节点通过共识就同一份共享历史达成一致；在客户端建立共识之前，它还不能信任自己看到的余额。",
   "content.nimiq-blockchain.kp0": "地址可供人阅读，以 NQ 开头，按每四个字符一组、共九组书写。",

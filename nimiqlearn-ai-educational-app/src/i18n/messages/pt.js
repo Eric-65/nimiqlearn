@@ -873,6 +873,14 @@ export default {
   "footer.developer": "Desenvolvimento",
   "footer.aria": "Ligações e recursos",
 
+  /* ---------------- Lições em vídeo ---------------- */
+  "video.title": "Lição em vídeo",
+  "video.aria": "Lição em vídeo para este tema",
+  "video.unsupported": "O teu navegador não consegue reproduzir este vídeo.",
+  "video.englishOnly": "Por agora, só está disponível em inglês.",
+  "video.subtitled": "Falado em {spoken}, com legendas em {subtitles}.",
+  "video.commons": "Ver na Wikimedia Commons",
+
   /* ---- Curriculum teaching content: Nimiq ---- */
   "content.nimiq-blockchain.definition": "O Nimiq é uma cadeia de blocos pública de prova de participação, pensada para ser alcançada diretamente a partir de um navegador web. Os seus nós acordam um único histórico partilhado através do consenso e, enquanto um cliente não tiver estabelecido consenso, não pode confiar na sua própria visão dos saldos.",
   "content.nimiq-blockchain.kp0": "Os endereços são legíveis por pessoas e começam por NQ, escritos em nove grupos de quatro.",

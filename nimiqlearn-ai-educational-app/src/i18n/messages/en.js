@@ -796,4 +796,12 @@ export default {
   "footer.explorer": "Block explorer",
   "footer.developer": "Developer",
   "footer.aria": "Links and resources",
+
+  /* ---------------- Video lessons ---------------- */
+  "video.title": "Video lesson",
+  "video.aria": "Video lesson for this topic",
+  "video.unsupported": "Your browser cannot play this video.",
+  "video.englishOnly": "Only available in English for now.",
+  "video.subtitled": "Spoken in {spoken}, with {subtitles} subtitles.",
+  "video.commons": "View on Wikimedia Commons",
 };

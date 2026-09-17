@@ -868,6 +868,14 @@ export default {
   "footer.developer": "개발자",
   "footer.aria": "링크 및 자료",
 
+  /* ---------------- 동영상 강의 ---------------- */
+  "video.title": "동영상 강의",
+  "video.aria": "이 주제의 동영상 강의",
+  "video.unsupported": "이 브라우저에서는 동영상을 재생할 수 없습니다.",
+  "video.englishOnly": "현재는 영어로만 제공됩니다.",
+  "video.subtitled": "{spoken} 음성에 {subtitles} 자막이 있습니다.",
+  "video.commons": "위키미디어 공용에서 보기",
+
   /* ---- Curriculum teaching content: Nimiq ---- */
   "content.nimiq-blockchain.definition": "Nimiq은 웹 브라우저에서 바로 닿을 수 있도록 설계된 공개 지분증명 블록체인입니다. 노드들은 합의를 통해 하나의 공유된 기록에 동의하며, 클라이언트가 합의를 이루기 전까지는 자신이 본 잔액을 신뢰할 수 없습니다.",
   "content.nimiq-blockchain.kp0": "주소는 사람이 읽을 수 있고 NQ로 시작하며, 네 글자씩 아홉 묶음으로 적습니다.",
