@@ -55,6 +55,9 @@ export async function generateActivityContentRemote({ type, topic, level = "begi
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type,
+        /* The id, not just the name: the server decides from it whether
+           this is a Nimiq topic and should get the Nimiq grounding. */
+        topicId: topic.id,
         topicName: topic.name,
         topicDescription: topic.description || "",
         topicContent,

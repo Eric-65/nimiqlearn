@@ -39,7 +39,7 @@ export async function handleTutorFeedback(body = {}) {
   const client = getOpenAI();
   if (!client) return notConfigured("The AI Tutor");
 
-  const { topic, referenceAnswer, learnerExplanation, assessment, locale } = body;
+  const { topic, topicId, learnerLevel, referenceAnswer, learnerExplanation, assessment, locale } = body;
 
   if (typeof learnerExplanation !== "string" || !learnerExplanation.trim()) {
     return badRequest("A non-empty 'learnerExplanation' string is required.");
@@ -80,7 +80,7 @@ export async function handleTutorFeedback(body = {}) {
       max_tokens: 400,
       temperature: 0.4,
       messages: [
-        { role: "system", content: buildTutorSystemPrompt(topic, locale) },
+        { role: "system", content: buildTutorSystemPrompt(topic, locale, { topicId, level: learnerLevel }) },
         { role: "user", content: userMessage },
       ],
     });
@@ -159,6 +159,7 @@ export async function handleLearnActivity(body = {}) {
 
   const {
     type,
+    topicId,
     topicName,
     topicDescription,
     topicContent,
@@ -178,6 +179,7 @@ export async function handleLearnActivity(body = {}) {
   const systemPrompt = buildActivitySystemPrompt({
     type,
     level: level || "beginner",
+    topicId,
     topicName,
     topicDescription,
     targetMisconception,

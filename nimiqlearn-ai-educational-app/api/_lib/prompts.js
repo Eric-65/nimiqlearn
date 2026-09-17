@@ -10,14 +10,75 @@
 
 import { languageInstruction } from "./openai.js";
 
-export function buildTutorSystemPrompt(topic, locale) {
+/* ------------------------------------------------------------------
+   Nimiq grounding
+   ------------------------------------------------------------------
+   The curriculum now teaches Nimiq itself, so the model has to be RIGHT
+   about it rather than fluent. These facts come from the official Nimiq
+   Mini Apps documentation and are the only Nimiq specifics the model is
+   licensed to state as fact.
+
+   This is grounding, not retrieval: the model cannot read nimiq.dev, X
+   or the live web from here, and inventing supply figures, prices,
+   roadmap dates or partnership claims is exactly how a confident
+   educational app teaches something false. Hence the closing rule —
+   anything outside this block is either reasoned from it or declined.
+   ------------------------------------------------------------------ */
+const NIMIQ_FACTS = [
+  "Nimiq is the blockchain; NIM is its native coin. They are not interchangeable names.",
+  "NIM's smallest unit is the Luna: 1 NIM = 100,000 Luna. Provider transaction methods take Luna, not NIM.",
+  "Nimiq is proof-of-stake — validators stake NIM to produce blocks; there is no proof-of-work mining.",
+  "Nimiq addresses are human-readable, begin with NQ, and are printed in nine groups of four characters.",
+  "A client can read the block height without consensus, but must not trust a balance until consensus is established.",
+  "Nimiq Pay is a mobile wallet that also hosts mini apps: web apps in a WebView that reach the wallet through injected providers.",
+  "A mini app never sees a private key. Account access, message signing and transactions each need the person's explicit approval in a native dialog; reading chain state does not.",
+  "Mini apps reach NIM through the Mini App SDK and EVM chains through window.ethereum. USDT and USDC use 6 decimals, not 18.",
+  "Nimiq has a testnet, where free test NIM is available, so payment flows can be demonstrated without real funds.",
+].map((f) => `- ${f}`).join("\n");
+
+/* Matches the Nimiq branch of the curriculum tree in
+   src/data/mockTopics.js. Kept as ids, not a name substring, so a maths
+   topic that merely mentions a wallet is never mistaken for one. */
+const NIMIQ_TOPIC_IDS = new Set(["nimiq", "nimiq-essentials", "nimiq-blockchain", "nim-token", "nimiq-pay"]);
+
+export function isNimiqTopic(topicId) {
+  return typeof topicId === "string" && NIMIQ_TOPIC_IDS.has(topicId);
+}
+
+/* Beginner and advanced are genuinely different lessons about the same
+   fact, not the same lesson at two reading speeds. */
+function levelGuidance(level) {
+  const l = String(level || "").toLowerCase();
+  if (l.startsWith("adv")) {
+    return "Pitch this at an ADVANCED learner: use the precise term, give the exact mechanism or unit, and name the edge case or failure mode a practitioner would actually hit. Do not pad with reassurance.";
+  }
+  return "Pitch this at a BEGINNER: one idea at a time, concrete before abstract, and define a term the first time it appears. Never assume prior blockchain or programming knowledge.";
+}
+
+function nimiqGrounding(level) {
+  return [
+    "This topic is about Nimiq itself, so the following are the authoritative facts. Teach from them and do not contradict them:",
+    NIMIQ_FACTS,
+    levelGuidance(level),
+    "If the learner asks something these facts do not cover — token price, market data, supply figures, roadmap, team or partnerships — say plainly that you do not have that information and point them at the official Nimiq documentation, rather than guessing.",
+  ].join("\n");
+}
+
+export function buildTutorSystemPrompt(topic, locale, { topicId, level } = {}) {
+  const nimiq = isNimiqTopic(topicId);
   return [
     "You are NimiqLearn AI, an encouraging tutor built into the ExplainBack feature of the NimiqLearn educational app.",
     topic ? `The learner is explaining: ${topic}.` : "The learner is explaining a concept.",
     "The app's own rubric grader has already scored their explanation — you are given that score and its findings.",
     "Confirm what they got right, clearly name what's missing or wrong, and if their explanation is incomplete or partly incorrect, give a short, complete, correct explanation of the concept so they have something solid to compare against.",
     "Keep the whole reply under about 180 words, plain prose, no markdown headers or bullet lists.",
-    "Never discuss wallets, payments, or blockchain transactions — that is a separate, unrelated part of the app.",
+    /* The blanket ban had to go conditional once Nimiq became something the
+       app teaches: on a Nimiq topic it would gag the tutor on the very
+       subject being explained. On every other topic it still holds — a
+       learner explaining quadratics has no business being sold a wallet. */
+    nimiq
+      ? nimiqGrounding(level)
+      : "Never discuss wallets, payments, or blockchain transactions — that is a separate, unrelated part of the app.",
     languageInstruction(locale),
   ].join(" ");
 }
@@ -57,7 +118,7 @@ function cleanList(list, max, maxLen) {
     .map((s) => `"${s.trim().slice(0, maxLen)}"`);
 }
 
-export function buildActivitySystemPrompt({ type, level, topicName, topicDescription, targetMisconception, previousQuestions = [], previousAngles = [], locale }) {
+export function buildActivitySystemPrompt({ type, level, topicId, topicName, topicDescription, targetMisconception, previousQuestions = [], previousAngles = [], locale }) {
   const needsChoices = ANSWERABLE_ACTIVITY_TYPES.has(type);
   const isExplanation = EXPLANATION_ACTIVITY_TYPES.has(type);
   const alreadyAsked = cleanList(previousQuestions, 8, 200);
@@ -66,9 +127,11 @@ export function buildActivitySystemPrompt({ type, level, topicName, topicDescrip
   return [
     "You are NimiqLearn, an adaptive tutor. Generate a short, clear learning activity.",
     `Learner level: ${level}.`,
+    levelGuidance(level),
     `Activity type: ${type}.`,
     `Topic: ${topicName}.`,
     topicDescription ? `Description: ${topicDescription}.` : "",
+    isNimiqTopic(topicId) ? nimiqGrounding(level) : "",
     targetMisconception ? `Target the misconception: "${targetMisconception}".` : "",
     'Return ONLY a JSON object with this exact shape: {"angle": "the one specific sub-aspect of the topic this activity is about, 3-8 words", "prompt": "one-line instruction to the learner", "body": "optional 1-2 sentence content", "question": "the question or task", "options": ["answer choices"], "correctIndex": 0, "explanation": "brief explanation of the correct answer"}',
     "Every topic has many distinct sub-aspects: individual rules or formulas, each variable's role, edge cases, common mistakes, a worked numeric example, a real-world application, a comparison with a related idea, what happens when one quantity changes. Pick exactly ONE for this activity and name it in 'angle'.",

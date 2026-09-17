@@ -777,6 +777,16 @@ export default {
   "topic.sql-databases.description": "Tables, queries, and asking a database questions.",
   "topic.how-web-works.name": "How the web works",
   "topic.how-web-works.description": "Requests, responses, DNS, and what happens when you open a page.",
+  "topic.nimiq.name": "Nimiq",
+  "topic.nimiq.description": "The chain NimiqLearn runs on, the coin it moves, and the wallet that carries it.",
+  "topic.nimiq-essentials.name": "Nimiq essentials",
+  "topic.nimiq-essentials.description": "How the network, the coin and the wallet fit together.",
+  "topic.nimiq-blockchain.name": "Nimiq blockchain",
+  "topic.nimiq-blockchain.description": "A browser-first proof-of-stake chain, and what consensus means for it.",
+  "topic.nim-token.name": "NIM",
+  "topic.nim-token.description": "The coin Nimiq runs on, and the Luna it is counted in.",
+  "topic.nimiq-pay.name": "Nimiq Pay",
+  "topic.nimiq-pay.description": "The wallet that hosts mini apps, and the sandbox they run in.",
 
   /* ---------------- Site footer ---------------- */
   "footer.nimiq": "Nimiq",

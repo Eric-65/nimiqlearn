@@ -108,6 +108,23 @@ export const TOPIC_TREE = [
       },
     ],
   },
+  {
+    id: "nimiq",
+    name: "Nimiq",
+    description: "The chain NimiqLearn runs on, the coin it moves, and the wallet that carries it.",
+    children: [
+      {
+        id: "nimiq-essentials",
+        name: "Nimiq essentials",
+        description: "How the network, the coin and the wallet fit together.",
+        children: [
+          { id: "nimiq-blockchain", name: "Nimiq blockchain", description: "A browser-first proof-of-stake chain, and what consensus means for it.", difficulty: 1 },
+          { id: "nim-token", name: "NIM", description: "The coin Nimiq runs on, and the Luna it is counted in.", difficulty: 1 },
+          { id: "nimiq-pay", name: "Nimiq Pay", description: "The wallet that hosts mini apps, and the sandbox they run in.", difficulty: 2 },
+        ],
+      },
+    ],
+  },
 ];
 
 /* Leaf-topic starter content used by the deterministic engine */
@@ -423,6 +440,42 @@ export const TOPIC_CONTENT = {
     misconception: "Learners imagine a web page being 'stored in the browser' — the browser requests files each visit and assembles the page from the response.",
     analogy: "DNS is a phone book, the request is your call, and the response is the answer shouted back down the line.",
     example: "Typing example.com looks up its IP via DNS, sends GET /, and the server replies 200 OK with the page's HTML.",
+  },
+  "nimiq-blockchain": {
+    definition:
+      "Nimiq is a public, proof-of-stake blockchain designed to be reached straight from a web browser. Its nodes agree on one shared history through consensus, and until a client has established consensus it cannot yet trust its own view of balances.",
+    keyPoints: [
+      "Addresses are human-readable and begin with NQ, printed in nine groups of four.",
+      "Validators produce blocks by staking NIM, rather than by spending electricity to mine.",
+      "A client checks whether consensus is established before trusting a balance; reading the block height needs no permission.",
+    ],
+    misconception: "Learners call the chain 'NIM' and the coin 'Nimiq'. It is the other way round: Nimiq is the network, NIM is the coin that moves on it.",
+    analogy: "The chain is the railway and NIM is the freight — one is the infrastructure, the other is what travels on it.",
+    example: "A wallet that has just opened can report a block number while consensus is still establishing, which is why an app shows 'Waiting for network' instead of a balance it cannot yet prove.",
+  },
+  "nim-token": {
+    definition:
+      "NIM is the native coin of the Nimiq blockchain. Amounts are counted internally in Luna, its smallest unit: 1 NIM = 100,000 Luna, so an application converts before it either displays a balance or builds a transaction.",
+    keyPoints: [
+      "1 NIM = 100,000 Luna, and the provider's transaction methods take Luna, not NIM.",
+      "NIM pays transaction fees and is what validators stake to secure the chain.",
+      "Show a person an amount in NIM; send the chain an amount in Luna.",
+    ],
+    misconception: "Learners pass a NIM amount straight into a method that expects Luna, sending one hundred-thousandth of what they meant.",
+    analogy: "NIM and Luna are euros and cents, except the split is 100,000 rather than 100.",
+    example: "0.5 NIM is 50,000 Luna. Passing 0.5 to sendBasicTransaction would move 0.5 Luna — effectively nothing.",
+  },
+  "nimiq-pay": {
+    definition:
+      "Nimiq Pay is a mobile wallet that can also host mini apps: web apps loaded in a WebView that talk to the wallet through injected providers. The mini app never sees a private key, and every payment or signature is confirmed by the person in a native dialog.",
+    keyPoints: [
+      "Mini apps reach NIM through the Mini App SDK, and EVM chains through window.ethereum.",
+      "Account access, signing and transactions each need explicit approval; reading chain state does not.",
+      "Keys never leave the wallet — a mini app can request a payment, never authorise one.",
+    ],
+    misconception: "Learners assume a mini app holds or can spend the user's funds. It can only ask: the wallet and the person decide, and a declined dialog is a normal outcome to handle, not an error.",
+    analogy: "A mini app is a market stall inside a bank — it can hand you a bill, but only the teller moves the money, and only once you say yes.",
+    example: "NimiqLearn asks Nimiq Pay to send 0.5 NIM for a learning pack. Nimiq Pay shows the recipient and the amount, and nothing moves until the learner approves it.",
   },
 };
 

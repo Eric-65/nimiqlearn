@@ -62,12 +62,15 @@ export async function checkTutorAvailable() {
  * and complete/correct it when it's partial or wrong.
  * @param {object} params
  * @param {string} [params.topic] - human-readable topic name
+ * @param {string} [params.topicId] - curriculum id; decides server-side whether
+ *   this is a Nimiq topic and gets the Nimiq grounding
+ * @param {string} [params.learnerLevel] - "beginner" or "advanced"
  * @param {string} [params.referenceAnswer] - the topic's canonical definition
  * @param {string} params.learnerExplanation - the learner's own explanation
  * @param {{score?: number, missingConcepts?: string[], misconceptions?: string[]}} [params.assessment]
  * @returns {Promise<{ok: true, feedback: string} | {ok: false, error: string}>}
  */
-export async function askExplainBackTutor({ topic, referenceAnswer, learnerExplanation, assessment }) {
+export async function askExplainBackTutor({ topic, topicId, learnerLevel, referenceAnswer, learnerExplanation, assessment }) {
   if (!TUTOR_CONFIGURED) {
     return { ok: false, error: "The AI Tutor isn't configured yet." };
   }
@@ -80,7 +83,7 @@ export async function askExplainBackTutor({ topic, referenceAnswer, learnerExpla
       fetch(`${TUTOR_API_URL}/api/tutor/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, referenceAnswer, learnerExplanation, assessment, ...localePayload() }),
+        body: JSON.stringify({ topic, topicId, learnerLevel, referenceAnswer, learnerExplanation, assessment, ...localePayload() }),
         signal,
       }),
     REQUEST_TIMEOUT_MS

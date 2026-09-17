@@ -28,6 +28,10 @@ export default function AITutorPanel({ topic, referenceAnswer, learnerExplanatio
     setError(null);
     const result = await askExplainBackTutor({
       topic: topic?.name,
+      topicId: topic?.id,
+      /* The rubric's own mastery estimate is the best signal available here
+         for how much depth this learner can take. */
+      learnerLevel: (evaluation?.masteryEstimate ?? 0) >= 70 ? "advanced" : "beginner",
       referenceAnswer,
       learnerExplanation,
       assessment: {
