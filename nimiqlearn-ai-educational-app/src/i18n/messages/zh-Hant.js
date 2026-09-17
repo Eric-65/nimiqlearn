@@ -866,6 +866,7 @@ export default {
   "footer.explorer": "區塊瀏覽器",
   "footer.developer": "開發者",
   "footer.aria": "連結與資源",
+  "footer.changeLanguage": "變更語言",
 
   /* ---------------- 影片課程 ---------------- */
   "video.title": "影片課程",

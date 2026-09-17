@@ -872,6 +872,7 @@ export default {
   "footer.explorer": "Explorador de blocos",
   "footer.developer": "Desenvolvimento",
   "footer.aria": "Ligações e recursos",
+  "footer.changeLanguage": "Mudar idioma",
 
   /* ---------------- Lições em vídeo ---------------- */
   "video.title": "Lição em vídeo",

@@ -1,5 +1,6 @@
 import React from "react";
 import { useI18n } from "../../hooks/useI18n.js";
+import { useNav } from "../../context/NavContext.jsx";
 
 /**
  * Site footer — attribution and outbound links, on every page.
@@ -46,6 +47,11 @@ const GROUPS = [
 
 export default function SiteFooter() {
   const { t } = useI18n();
+  const { navigate } = useNav();
+
+  /* Read from the clock rather than hard-coded, so the line does not quietly
+     go stale on 1 January. */
+  const year = new Date().getFullYear();
 
   return (
     <footer className="site-footer" aria-label={t("footer.aria")}>
@@ -69,6 +75,33 @@ export default function SiteFooter() {
             </ul>
           </nav>
         ))}
+      </div>
+
+      {/* Below the two groups, centred: the language switch and the copyright
+          line. "Change language" sits above the copyright because it is the
+          one thing here a learner might actually need — someone who cannot
+          read the page has to find it without reading the page, which is why
+          it is a link of its own down here as well as a card in Settings.
+
+          It is a real <a> with a real href, so it can be middle-clicked and
+          reads as a link to a screen reader, but the click is handled by the
+          router: letting the hash change on its own would land the learner on
+          Settings still scrolled to the bottom of the page they left, and the
+          language card is at the top. */}
+      <div className="site-footer-bottom">
+        <a
+          className="site-footer-language"
+          href="#/settings"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("settings");
+          }}
+        >
+          {t("footer.changeLanguage")}
+        </a>
+        {/* "NimiqLearn" is the product name and stays as it is in every
+            language; the year is a number. Nothing here needs translating. */}
+        <p className="site-footer-copyright">© {year} NimiqLearn</p>
       </div>
     </footer>
   );

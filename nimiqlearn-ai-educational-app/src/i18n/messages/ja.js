@@ -868,6 +868,7 @@ export default {
   "footer.explorer": "ブロックエクスプローラー",
   "footer.developer": "開発者",
   "footer.aria": "リンクとリソース",
+  "footer.changeLanguage": "言語を変更",
 
   /* ---------------- 動画レッスン ---------------- */
   "video.title": "動画レッスン",

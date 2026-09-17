@@ -867,6 +867,7 @@ export default {
   "footer.explorer": "블록 탐색기",
   "footer.developer": "개발자",
   "footer.aria": "링크 및 자료",
+  "footer.changeLanguage": "언어 변경",
 
   /* ---------------- 동영상 강의 ---------------- */
   "video.title": "동영상 강의",

@@ -796,6 +796,7 @@ export default {
   "footer.explorer": "Block explorer",
   "footer.developer": "Developer",
   "footer.aria": "Links and resources",
+  "footer.changeLanguage": "Change language",
 
   /* ---------------- Video lessons ---------------- */
   "video.title": "Video lesson",
