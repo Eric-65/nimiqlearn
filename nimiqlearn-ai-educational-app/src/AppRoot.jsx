@@ -149,7 +149,7 @@ function Shell() {
         </div>
       </aside>
 
-      <div className="main">
+      <div className={`main${page === "home" ? " has-footer" : ""}`}>
         <header className="topbar">
           <div className="small muted" style={{ fontWeight: 600 }}>
             {t(`nav.${NAV_ITEMS.some((n) => n.path === page) ? page : "home"}`)}
@@ -222,11 +222,15 @@ function Shell() {
           </ErrorBoundary>
         </main>
 
-        {/* Outside <main>, so it is a sibling landmark rather than page
+        {/* Home only. On every other tab the footer would sit under the
+            page's own content and compete with it; on Home it reads as the
+            end of a landing page, which is what it is.
+
+            Outside <main>, so it is a sibling landmark rather than page
             content, and outside the per-page ErrorBoundary, so a crashing
             page never takes the licence and attribution links down with
             it. */}
-        <SiteFooter />
+        {page === "home" && <SiteFooter />}
       </div>
 
       {/* Development-only diagnostics (no-op in production builds) */}

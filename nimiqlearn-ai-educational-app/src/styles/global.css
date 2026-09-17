@@ -247,7 +247,7 @@ button { font-family: inherit; }
   width: 100%;
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: clamp(24px, 4vw, 48px) clamp(18px, 4vw, 44px) clamp(28px, 4vw, 48px);
+  padding: clamp(24px, 4vw, 48px) clamp(18px, 4vw, 44px) 96px;
   /* No `both`/`forwards` fill-mode here on purpose: those hold the "to"
      keyframe's `transform: translateY(0)` on this element FOREVER after
      the animation ends, which (per spec) turns .page into a containing
@@ -664,7 +664,7 @@ button { font-family: inherit; }
     max-width: 100%;
   }
 
-  .page { padding-bottom: 28px; }
+  .page { padding-bottom: 120px; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
 
   /* The AI status badge ("NimiqLearn AI • AI unavailable" etc.) is a
@@ -925,6 +925,11 @@ button { font-family: inherit; }
 /* Attribution and outbound links, below every page. Deliberately quiet:
    link colour sits at --c-text-dim and only lifts to --c-text on hover, so
    the footer never competes with the page it follows. */
+/* Only the page that is followed by a footer drops its bottom padding —
+   the footer reserves the fixed nav's height instead. Every other page
+   keeps its own clearance, or its last row would sit under the nav. */
+.main.has-footer .page { padding-bottom: clamp(28px, 4vw, 48px); }
+
 .site-footer {
   border-top: 1px solid var(--c-border);
   background: var(--c-bg-soft);
@@ -943,7 +948,7 @@ button { font-family: inherit; }
   display: grid;
   /* auto-fit rather than a fixed count: two columns side by side wherever
      there is room, stacking on their own on a narrow phone. */
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 28px 40px;
 }
 
