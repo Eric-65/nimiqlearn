@@ -11,6 +11,7 @@ import { makeKnowledgeEntry, INITIAL_LEARNER, LEARNER_STATE_SCHEMA_VERSION, crea
 import { subscribeToWalletChanges, getStoredSession } from "../services/nimiqWalletService.js";
 import { findTopic } from "../data/mockTopics.js";
 import { evaluateExplanation } from "../services/assessmentService.js";
+import { withMasteryStage, appendEvidence } from "../services/masteryService.js";
 import {
   updateKnowledgeAfterEvaluation,
   applyActivityResult,
@@ -47,6 +48,54 @@ const LearnerContext = createContext(null);
  * values from what the old blob actually recorded. Never breaks an
  * existing user's data by discarding it — only fills gaps.
  */
+/**
+ * v2 -> v3: the evidence ledger (masteryService.js).
+ *
+ * A profile saved before the ledger existed recorded only counters — how
+ * many attempts were right, not WHAT they demonstrated. That cannot be
+ * recovered, and inventing it would put "you explained this" in front of a
+ * learner who never did.
+ *
+ * So the migration claims the least the old data actually supports: each
+ * correct attempt becomes one RECALL, marked `inferred` so it is visibly
+ * reconstructed rather than earned; a stored ExplainBack evaluation
+ * (lastEvaluatedAt with a passing mastery) becomes one EXPLAIN, because
+ * that one IS specifically recorded. Nothing is ever inferred as APPLY:
+ * the old shape has no way to distinguish a practice problem from a quiz
+ * question, so CAN_APPLY has to be re-earned — one deliberate, visible
+ * demotion, in exchange for never overstating what somebody has shown.
+ */
+function upgradeToEvidenceLedger(entry, original) {
+  if (Array.isArray(original?.evidence) && original.evidence.length) {
+    return withMasteryStage({ ...entry, evidence: original.evidence });
+  }
+  const at = entry.lastStudiedAt || entry.lastEvaluatedAt || Date.now();
+  let upgraded = { ...entry, evidence: [] };
+
+  const correct = Math.min(entry.correctAttempts ?? 0, 8);
+  for (let i = 0; i < correct; i++) {
+    upgraded = appendEvidence(upgraded, { kind: "RECALL", passed: true, at, inferred: true });
+  }
+  const incorrect = Math.min(entry.incorrectAttempts ?? 0, 8);
+  for (let i = 0; i < incorrect; i++) {
+    upgraded = appendEvidence(upgraded, { kind: "RECALL", passed: false, at, inferred: true });
+  }
+  if (entry.lastEvaluatedAt && (entry.mastery ?? 0) >= 50) {
+    upgraded = appendEvidence(upgraded, {
+      kind: "EXPLAIN",
+      passed: true,
+      activityType: "EXPLAIN_BACK",
+      score: entry.mastery ?? null,
+      at: entry.lastEvaluatedAt,
+      inferred: true,
+    });
+  }
+  for (let i = 0; i < Math.min(entry.reviewCount ?? 0, 4); i++) {
+    upgraded = appendEvidence(upgraded, { kind: "REVIEW", passed: true, at, inferred: true });
+  }
+  return withMasteryStage(upgraded);
+}
+
 export function migrateLearnerState(persisted) {
   if (!persisted || !Array.isArray(persisted.knowledge)) return null;
   const fromVersion = persisted.version ?? 0;
@@ -67,10 +116,11 @@ export function migrateLearnerState(persisted) {
       attempts: correctAttempts + incorrectAttempts,
       lastStudiedAt,
     };
-    return makeKnowledgeEntry(entry.topicId, entry.topicName, {
+    const withDefaults = makeKnowledgeEntry(entry.topicId, entry.topicName, {
       ...upgraded,
       confidence: entry.confidence ?? calculateConfidence(upgraded),
     });
+    return upgradeToEvidenceLedger(withDefaults, entry);
   });
 
   return { ...persisted, version: LEARNER_STATE_SCHEMA_VERSION, knowledge };

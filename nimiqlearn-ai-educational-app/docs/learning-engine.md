@@ -60,9 +60,12 @@ same `learner.knowledge` tree — see the per-service table below.
 ### `assessmentService.js` (ExplainBack assessment, Layer 2)
 - **Input**: `{ topic, referenceAnswer?, learnerExplanation, learnerLevel, preferAI }`
 - **Processing**: deterministic rubric baseline (`computeRubricBaseline`) always
-  runs first; if SmolLM2 is ready, the baseline is fed to it as a compact
-  signal and its prose becomes the natural-language feedback. Mastery is
-  never solely the model's — see "Mastery calculation" below.
+  runs first; the baseline is then fed to NimiqLearn AI (OpenAI, via
+  `/api/assess/feedback`) as a compact signal, and its prose becomes the
+  natural-language feedback. The score itself is NOT the model's: the
+  backend overwrites `masteryEstimate` with the deterministic rubric score
+  server-side, because a prompt instruction is not a guarantee. See
+  "Mastery calculation" below.
 - **Output** (the ExplainBack result contract): `{ conceptId, score,
   masteryEstimate, strengths, missingConcepts, misconceptions, feedback,
   nextAction, nextChallenge, source, confidence: "model"|"heuristic", aiPending, note }`.
@@ -108,8 +111,8 @@ comment in `knowledgeService.js` for the full worked explanation.
   keeps its original return shape so no existing caller had to change.
 - **Output**: `{ priorityScore (0-100), dueNow, intervalDays,
   recommendedReviewAt, nextReviewAt, levelLabel }`. Never decided by the
-  LLM — SmolLM2 only ever generates review *content* (see `ForgetMeNot.jsx`
-  → `generateActivityContent`).
+  LLM — NimiqLearn AI only ever generates review *content* (see
+  `ForgetMeNot.jsx` → `generateActivityContent`).
 
 **Bug found and fixed while extracting `calculateReviewPriority()`**: the
 previous single implementation computed a weighted sum on a 0-100 scale
@@ -227,3 +230,120 @@ pass — the fix that mattered here was making the underlying
   "forget" yet. This is pre-existing behavior (not changed this pass) —
   flagged here because it's the kind of thing this document exists to
   surface, not because it was fixed.
+
+
+---
+
+# The mastery model, the coach, and Study Sprints
+
+Added in the AI Mastery Coach work. Everything above still stands — this
+layer sits on top of it and changes nothing about how mastery, review
+priority or activity selection are computed.
+
+## Mastery stages (`src/services/masteryService.js`)
+
+```
+NEW → LEARNING → CAN_RECALL → CAN_EXPLAIN → CAN_APPLY → MASTERED
+```
+
+A stage says what the learner can DO, and each one has to be unlocked by
+evidence of that specific kind. The mastery *number* cannot unlock a stage
+on its own: four lucky multiple-choice guesses raise it, and no number of
+them shows somebody can explain an idea to another person.
+
+`REVIEW_DUE` is in the product brief's list but is deliberately not a
+stage — it is orthogonal. A concept at CAN_APPLY that is due for review is
+still CAN_APPLY; demoting it would be a claim the evidence contradicts.
+`displayStage()` surfaces "review due" for the UI while the real stage
+stays underneath.
+
+### The evidence ledger
+
+Every knowledge entry carries `evidence[]`, appended by knowledgeService's
+three state transitions so no caller can forget to record one:
+
+| Activity | Evidence kind | Unlocks |
+|---|---|---|
+| MULTIPLE_CHOICE, SHORT_EXPLANATION, ANALOGY, EXAMPLE | `RECALL` | CAN_RECALL |
+| OPEN_RESPONSE, EXPLAIN_BACK | `EXPLAIN` | CAN_EXPLAIN |
+| PRACTICE | `APPLY` | CAN_APPLY |
+| REVIEW | `REVIEW` | MASTERED (2 passed + mastery ≥ 85) |
+
+**Watching a video unlocks nothing.** A video is input, not evidence.
+
+Stages are monotonic: a later wrong answer lowers the mastery estimate and
+can make a review due, which is how forgetting is represented, but "you
+explained this correctly on Tuesday" stays true on Wednesday. MASTERED is
+the one exception, because its definition includes a live mastery
+threshold.
+
+### Migration (v2 → v3)
+
+`upgradeToEvidenceLedger()` in LearnerContext. Old profiles recorded only
+counters — how many attempts were right, not what they demonstrated. The
+migration claims the least the old data supports: each correct attempt
+becomes one `RECALL` marked `inferred`, a stored ExplainBack evaluation
+becomes one `EXPLAIN`. **Nothing is ever inferred as APPLY**, so CAN_APPLY
+has to be re-earned. That is one deliberate, visible demotion in exchange
+for never overstating what somebody has shown.
+
+## The coach (`src/services/coachService.js`)
+
+`recommendNextAction()` answers one question across ALL concepts: which
+concept, which activity, how long, and why. Nothing else in the app chose
+*between* concepts — which is exactly the decision a learner should not
+have to make.
+
+Priority order, and the reason for it:
+
+1. **A review that is due.** Forgetting is the only failure mode with a
+   deadline. Only concepts the learner has actually studied are eligible —
+   the review queue scores unopened entries too, and "you last worked on
+   this yesterday" in front of something never opened is false.
+2. **A misconception to repair.** A wrong idea contradicts what comes
+   next, so it compounds.
+3. **The concept closest to its next stage.** Momentum — a finished
+   concept is worth more than three half-started ones.
+4. **Something new.**
+
+Every branch returns the evidence that triggered it, which is what the
+"Why this?" affordance renders. The activity itself is delegated to
+`learningLoopService.getNextLearningActivity()` → `decideNextActivity()`,
+so no decision is re-implemented here.
+
+### Adaptive difficulty
+
+`difficultyFor(entry)` → `FOUNDATION | STANDARD | CHALLENGE`, from stage,
+mastery and recent correctness together. Two wrong answers in the last
+three force FOUNDATION regardless of mastery; CHALLENGE needs CAN_APPLY,
+mastery ≥ 65 AND a clean recent run. One correct answer never raises it.
+The level maps onto the `beginner|intermediate|advanced` the backend
+prompt already understands.
+
+## Study Sprint (`src/pages/StudySprint.jsx`)
+
+One short, complete pass at a concept: lesson → retrieval → explanation →
+what changed. **What it contains is not fixed** — the sprint includes only
+the steps that serve the demonstration the concept needs next, so a
+learner who can already recall something does not sit through the video,
+and one who has never seen it is not asked to explain it back.
+
+It ends with WHAT CHANGED, read off the ledger. A sprint where nothing
+moved says so: a learner told "great progress!" after a wrong answer
+learns to stop reading the screen.
+
+## AI routes used
+
+Unchanged, and all still server-side:
+
+| Route | Used by | Purpose |
+|---|---|---|
+| `/api/tutor/health` | `useAiBackend` | is the backend up AND keyed |
+| `/api/learn/activity` | Sprint, Learn, ForgetMeNot | generate the practice question |
+| `/api/assess/feedback` | Sprint, ExplainBack | grade an explanation |
+| `/api/tutor/feedback` | AI Tutor panel | critique an explanation |
+| `/api/learn/question` | LessonQuestions | answer a question about a lesson |
+
+`OPENAI_API_KEY` is read only in `api/_lib/openai.js` and `server/index.js`
+(`process.env`). It is never prefixed `VITE_` and never reaches the
+browser — verified against the built bundle.

@@ -14,6 +14,7 @@ import SiteFooter from "./components/layout/SiteFooter.jsx";
 import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 import Home from "./pages/Home.jsx";
 import Learn from "./pages/Learn.jsx";
+import StudySprint from "./pages/StudySprint.jsx";
 import ExplainBack from "./pages/ExplainBack.jsx";
 import ForgetMeNot from "./pages/ForgetMeNot.jsx";
 import Knowledge from "./pages/Knowledge.jsx";
@@ -55,6 +56,9 @@ const NAV_GROUPS = ["Study", "Economy", "You"];
 
 const PAGES = {
   home: Home,
+  /* The route Today's Plan opens. Not in the nav: a sprint is something
+     the coach sends you into, not a section you browse to. */
+  sprint: StudySprint,
   learn: Learn,
   explain: ExplainBack,
   review: ForgetMeNot,
