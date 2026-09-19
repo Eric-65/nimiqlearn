@@ -65,9 +65,25 @@ async function api(params) {
 const IMAGEINFO = {
   action: "query",
   prop: "imageinfo",
-  iiprop: "url|size|mime|extmetadata|user",
+  iiprop: "url|size|mime|mediatype|extmetadata|user",
   iiextmetadatafilter: "LicenseShortName|UsageTerms|Artist|Attribution|Credit|Restrictions",
 };
+
+/* Whether a Commons file is a video.
+ *
+ * NOT the MIME type. MediaWiki reports every Ogg container as
+ * `application/ogg` — Theora video and Vorbis audio alike — so a check on
+ * `mime.startsWith("video/")` rejected two real videos in the library
+ * (Solving-quadratic-equations.ogv, 640x480, 161 s; PythagoreEuclide.ogv)
+ * as "not a video". `mediatype` is the field MediaWiki itself classifies
+ * the file with (VIDEO / AUDIO / BITMAP / …), and it is what the Commons
+ * UI uses to pick a player, so it is the authoritative answer here. The
+ * MIME prefix is kept as a fallback for any response that omits it. */
+function isVideo(info) {
+  if (!info) return false;
+  if (info.mediatype) return info.mediatype === "VIDEO";
+  return (info.mime || "").startsWith("video/");
+}
 
 async function lookupByTitle(title) {
   const data = await api({ ...IMAGEINFO, titles: title });
@@ -108,7 +124,7 @@ async function lookupBySearch(searchTitle) {
   const pages = data?.query?.pages || [];
   /* Only video files. A search for a lesson title happily returns the
      thumbnail JPEGs that illustrate it. */
-  const video = pages.find((p) => (p.imageinfo?.[0]?.mime || "").startsWith("video/"));
+  const video = pages.find((p) => isVideo(p.imageinfo?.[0]));
   if (!video) return null;
   return { title: video.title, info: video.imageinfo?.[0] || null, viaSearch: true };
 }
@@ -165,8 +181,8 @@ async function verifyEntry(entry) {
   if (!found?.info) return { id: entry.id, ok: false, reason: "not found on Commons" };
 
   const { info, title, viaSearch } = found;
-  if (!(info.mime || "").startsWith("video/")) {
-    return { id: entry.id, ok: false, reason: `not a video (${info.mime})` };
+  if (!isVideo(info)) {
+    return { id: entry.id, ok: false, reason: `not a video (${info.mediatype || info.mime})` };
   }
 
   const license = readLicense(info.extmetadata);

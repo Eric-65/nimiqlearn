@@ -18,7 +18,7 @@
    ============================================================ */
 
 export const VIDEO_VERIFICATION = {
-  "generatedAt": "2026-09-19T06:40:47.931Z",
+  "generatedAt": "2026-09-19T07:07:51.264Z",
   "entries": {
     "linear-equations-de-01": {
       "commonsTitle": "File:Lineare Gleichungssysteme und Lösungsverfahren - kolleg24 Mathematik.webm",
@@ -273,6 +273,38 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "KI-Campus",
       "machineCheckedAt": "2026-09-19T06:40:47.620Z",
+      "contentConfirmed": false,
+      "verifiedAt": null
+    },
+    "quadratics-en-01": {
+      "commonsTitle": "File:Solving-quadratic-equations.ogv",
+      "commonsUrl": "https://commons.wikimedia.org/wiki/File:Solving-quadratic-equations.ogv",
+      "directVideoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Solving-quadratic-equations.ogv?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "usedTranscode": false,
+      "originalBytes": 5515332,
+      "streamBytes": 5515332,
+      "durationSeconds": 161,
+      "subtitleLanguages": [],
+      "license": "CC BY-SA 3.0",
+      "restrictions": null,
+      "attribution": "Mosborne01",
+      "machineCheckedAt": "2026-09-19T07:07:44.064Z",
+      "contentConfirmed": false,
+      "verifiedAt": null
+    },
+    "pythagorean-theorem-fr-01": {
+      "commonsTitle": "File:PythagoreEuclide.ogv",
+      "commonsUrl": "https://commons.wikimedia.org/wiki/File:PythagoreEuclide.ogv",
+      "directVideoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/65/PythagoreEuclide.ogv?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "usedTranscode": false,
+      "originalBytes": 97154,
+      "streamBytes": 97154,
+      "durationSeconds": 15,
+      "subtitleLanguages": [],
+      "license": "CC BY-SA 3.0",
+      "restrictions": null,
+      "attribution": "HB",
+      "machineCheckedAt": "2026-09-19T07:07:50.946Z",
       "contentConfirmed": false,
       "verifiedAt": null
     }
