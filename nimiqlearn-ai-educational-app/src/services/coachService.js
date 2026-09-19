@@ -51,6 +51,28 @@ export const PLAN_KINDS = ["REVIEW", "REPAIR", "ADVANCE", "START"];
 
 const entryFor = (knowledge, topicId) => knowledge.find((k) => k.topicId === topicId) || null;
 
+/* The shortest gap that can count as a review.
+   A review exists to catch a concept before it fades, so something
+   studied minutes ago cannot be one — however the interval arithmetic
+   scores it. Without this, finishing the diagnostic immediately produced
+   "you last worked on this yesterday, it is due for review" about five
+   concepts answered seconds earlier: the first recommendation a new
+   learner ever sees, and plainly false. Six hours is the smallest gap
+   over which "do you still remember it?" is a real question. */
+const MIN_REVIEW_GAP_MS = 6 * 60 * 60 * 1000;
+
+/** Review candidates the learner has genuinely studied, and not just now. */
+export function reviewableNow(knowledge, dueNow, now = Date.now()) {
+  return dueNow.filter((row) => {
+    const entry = entryFor(knowledge, row.topicId);
+    if (!entry) return false;
+    const studied = (entry.evidence?.length ?? 0) > 0 || (entry.mastery ?? 0) > 0 || entry.lastStudiedAt;
+    if (!studied) return false;
+    const last = entry.lastStudiedAt || entry.lastReviewedAt || entry.lastEvaluatedAt || null;
+    return !last || now - last >= MIN_REVIEW_GAP_MS;
+  });
+}
+
 /* A concept the learner has touched but not finished — the pool rule 3
    ranks. Sorted by how close it is to its next stage, which is stage rank
    first (a concept at CAN_APPLY needs one review; one at LEARNING needs
@@ -160,10 +182,7 @@ export function recommendNextAction({ knowledge = [], dueNow = [], learner = nul
      seen is both false and the fastest way to lose their trust in the
      recommendation. A never-started concept falls through to rule 4, where
      it is correctly offered as somewhere to start. */
-  const studied = dueNow.filter((row) => {
-    const entry = entryFor(knowledge, row.topicId);
-    return Boolean(entry && ((entry.evidence?.length ?? 0) > 0 || (entry.mastery ?? 0) > 0 || entry.lastStudiedAt));
-  });
+  const studied = reviewableNow(knowledge, dueNow);
   if (studied.length) {
     const top = [...studied].sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0))[0];
     const entry = entryFor(knowledge, top.topicId);
@@ -216,9 +235,13 @@ export function recommendNextAction({ knowledge = [], dueNow = [], learner = nul
  */
 export function coachSummary({ knowledge = [], dueNow = [], learner = null } = {}) {
   const stageOf = (k) => k.masteryStage || deriveMasteryStage(k);
+  /* The same filter the recommendation uses. A "3 reviews due" badge that
+     the coach would never actually offer is a number the learner cannot
+     act on. */
+  const reviewable = reviewableNow(knowledge, dueNow);
   const demonstrated = knowledge.filter((k) => STAGE_RANK[stageOf(k)] >= STAGE_RANK.CAN_RECALL);
   return {
-    reviewsDue: dueNow.length,
+    reviewsDue: reviewable.length,
     mastered: knowledge.filter((k) => stageOf(k) === "MASTERED").length,
     inProgress: demonstrated.filter((k) => stageOf(k) !== "MASTERED").length,
     streakDays: learner?.streakDays ?? 0,

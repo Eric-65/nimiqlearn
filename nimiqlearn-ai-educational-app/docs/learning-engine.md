@@ -347,3 +347,54 @@ Unchanged, and all still server-side:
 `OPENAI_API_KEY` is read only in `api/_lib/openai.js` and `server/index.js`
 (`process.env`). It is never prefixed `VITE_` and never reaches the
 browser — verified against the built bundle.
+
+## Onboarding & diagnostic (`src/services/onboardingService.js`)
+
+Four taps, then an optional check. Every question asked in onboarding is
+asked before the learner has seen anything work — the worst moment to ask
+one — so each has to change what the app does next: goal picks the
+curriculum branch, familiarity sets the starting difficulty, session length
+defines a sprint. There is no name field because a name changes nothing.
+
+Skipping is *recorded* (`onboardingSkippedAt`), because "never answered"
+and "declined" must be different facts or the app asks again every reload.
+A returning learner with real history is never shown it at all.
+
+### Stating a goal ends the demo
+
+An unsigned-in visitor starts on the demo profile "Alex", with invented
+mastery so the app looks alive. The moment a learner states a goal, that
+fiction stops being a showcase and becomes something the coach acts on —
+it outranked a real goal and recommended reviewing a concept the learner
+had never opened. So an untouched demo profile is cleared on `setGoal`,
+exactly as `loadOrCreateWallet` already does for a real wallet. A profile
+with real work on it is never touched.
+
+### What a diagnostic answer means
+
+One question per concept — five questions about quadratics tell you how
+good somebody is at quadratics, which you were going to find out anyway;
+one each across five concepts tells you where to start.
+
+Every question asks twice: the answer, then "how sure were you?". The pair
+is worth far more than the answer:
+
+| Answer | Sure? | Recorded as | Why |
+|---|---|---|---|
+| Right | Yes | `RECALL` passed → **CAN_RECALL** | They know it. Never taught from scratch. |
+| Right | No | mastery only, **no evidence** | A guess is indistinguishable from knowledge here. |
+| Wrong | Yes | `RECALL` failed + **misconception** | The most useful answer in the exercise: a named wrong idea the coach repairs. |
+| Wrong | No | `RECALL` failed | An ordinary gap. |
+
+Written in one commit (`recordDiagnostic`), not one per answer: these are a
+snapshot taken before any teaching, and pushing them through
+`recordActivityResult` would put five activities in the history and award
+XP for something nobody studied.
+
+### Minimum review gap
+
+`reviewableNow()` in coachService refuses to call a concept "due" within 6
+hours of being studied, however the interval arithmetic scores it. Without
+it, finishing the diagnostic produced "you last worked on this yesterday,
+it is due for review" about five concepts answered seconds earlier — the
+first recommendation a new learner ever sees, and plainly false.

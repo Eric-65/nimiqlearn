@@ -1532,3 +1532,123 @@ button { font-family: inherit; }
   .todays-plan-stats { gap: 6px; }
   .todays-plan-stat dd { font-size: 18px; }
 }
+
+/* ============================================================
+   Onboarding & diagnostic
+   ------------------------------------------------------------
+   A bottom sheet on a phone, a centred card on a desktop: the
+   same markup, positioned by where the thumb is. One question
+   per screen with large targets, because a four-field form on a
+   phone is a scroll and a keyboard where four taps would do.
+   ============================================================ */
+.onboarding-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(6, 12, 30, 0.62);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+
+.onboarding-sheet {
+  width: 100%;
+  max-width: 460px;
+  background: var(--c-card-bg);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-lg);
+  padding: clamp(20px, 5vw, 30px);
+  box-shadow: var(--shadow-md, var(--shadow-sm));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+.onboarding-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.onboarding-progress span {
+  height: 3px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--c-surface-3);
+}
+
+.onboarding-progress span.on { background: var(--c-teal, var(--st-strong)); }
+
+.onboarding-title { margin: 0 0 6px; font-size: clamp(19px, 4.5vw, 23px); line-height: 1.2; }
+.onboarding-sub { margin: 0 0 20px; color: var(--c-text-dim); font-size: 14px; }
+
+.onboarding-options { display: grid; gap: 10px; }
+
+/* 52px, comfortably above the 44px minimum — these are the first things
+   anybody taps in the app and they are tapped in a hurry. */
+.onboarding-option,
+.diagnostic-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  text-align: left;
+  font: inherit;
+  font-size: 15px;
+  color: var(--c-text);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.onboarding-option:hover,
+.diagnostic-option:hover,
+.onboarding-option:focus-visible,
+.diagnostic-option:focus-visible {
+  border-color: var(--c-border-strong);
+  background: var(--c-surface-3);
+}
+
+.onboarding-option.selected,
+.diagnostic-option.selected {
+  border-color: var(--c-teal, var(--st-strong));
+  background: var(--c-blue-soft, var(--c-surface-3));
+}
+
+.onboarding-actions { display: grid; gap: 12px; justify-items: start; }
+
+.onboarding-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-border);
+}
+
+.diagnostic-options { display: grid; gap: 10px; }
+
+.diagnostic-confidence {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--c-border);
+}
+
+.diagnostic-row { margin-bottom: 16px; }
+
+.diagnostic-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+  font-size: 15px;
+}
+
+@media (min-width: 720px) {
+  .onboarding-scrim { align-items: center; }
+}
