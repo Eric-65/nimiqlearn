@@ -880,7 +880,7 @@ export default {
   "footer.aria": "Links und Ressourcen",
   "footer.changeLanguage": "Sprache ändern",
   "learn.watching.title": "Sieh dir zuerst die Lektion an.",
-  "learn.watching.body": "Deine Übungsfrage erscheint, wenn das Video endet – oder spring vor, wann immer du bereit bist.",
+  "learn.watching.body": "Wenn du fertig bist, tippe auf den Button unten – damit erscheint deine Übungsfrage zu dieser Lektion.",
   "learn.watching.done": "Gesehen – jetzt üben",
   "common.save": "Speichern",
   "nwallet.signedIn": "Angemeldet",

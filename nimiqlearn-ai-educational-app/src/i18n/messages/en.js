@@ -803,7 +803,7 @@ export default {
   "footer.aria": "Links and resources",
   "footer.changeLanguage": "Change language",
   "learn.watching.title": "Watch the lesson first.",
-  "learn.watching.body": "Your practice question will appear when the video ends — or skip ahead whenever you're ready.",
+  "learn.watching.body": "When you're done, tap the button below — that's what brings up your practice question for this lesson.",
   "learn.watching.done": "I've watched it — practise",
   "common.save": "Save",
   "nwallet.signedIn": "Signed in",

@@ -879,7 +879,7 @@ export default {
   "footer.aria": "Liens et ressources",
   "footer.changeLanguage": "Changer de langue",
   "learn.watching.title": "Regardez d'abord la leçon.",
-  "learn.watching.body": "Votre question d'entraînement apparaîtra à la fin de la vidéo — ou passez à la suite dès que vous êtes prêt.",
+  "learn.watching.body": "Quand vous avez terminé, appuyez sur le bouton ci-dessous — c'est lui qui fait apparaître votre question d'entraînement sur cette leçon.",
   "learn.watching.done": "Vu — s'entraîner",
   "common.save": "Enregistrer",
   "nwallet.signedIn": "Connecté",

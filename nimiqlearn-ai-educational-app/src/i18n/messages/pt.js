@@ -879,7 +879,7 @@ export default {
   "footer.aria": "Ligações e recursos",
   "footer.changeLanguage": "Mudar idioma",
   "learn.watching.title": "Vê primeiro a lição.",
-  "learn.watching.body": "A tua pergunta de prática aparece quando o vídeo terminar — ou avança quando estiveres pronto.",
+  "learn.watching.body": "Quando terminares, toca no botão abaixo — é isso que faz aparecer a tua pergunta de prática sobre esta lição.",
   "learn.watching.done": "Já vi — praticar",
   "common.save": "Guardar",
   "nwallet.signedIn": "Sessão iniciada",

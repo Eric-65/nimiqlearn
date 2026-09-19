@@ -873,7 +873,7 @@ export default {
   "footer.aria": "链接与资源",
   "footer.changeLanguage": "更改语言",
   "learn.watching.title": "请先观看课程。",
-  "learn.watching.body": "视频结束后会出现练习题，也可以随时跳过直接练习。",
+  "learn.watching.body": "看完后，点击下方按钮，即可显示本课的练习题。",
   "learn.watching.done": "看完了 — 开始练习",
   "common.save": "保存",
   "nwallet.signedIn": "已登录",

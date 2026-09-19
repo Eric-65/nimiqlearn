@@ -873,7 +873,7 @@ export default {
   "footer.aria": "連結與資源",
   "footer.changeLanguage": "變更語言",
   "learn.watching.title": "請先觀看課程。",
-  "learn.watching.body": "影片結束後會出現練習題，也可以隨時跳過直接練習。",
+  "learn.watching.body": "看完後，點選下方按鈕，即可顯示本課的練習題。",
   "learn.watching.done": "看完了 — 開始練習",
   "common.save": "儲存",
   "nwallet.signedIn": "已登入",

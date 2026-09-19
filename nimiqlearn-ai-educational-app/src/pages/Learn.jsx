@@ -28,16 +28,27 @@ export default function Learn() {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  /* Watch-first mode. A learner who opened a course from Home came to
-     WATCH it; generating an activity the moment they land would put a
-     question on screen they cannot answer while the lesson plays — and
-     spend an AI call on it. So while `watching` is set, no activity is
-     requested at all (the request is never sent, which is stronger than
-     asking the model to hold back). It clears when the video ends or the
-     learner presses the button under it; either way the activity is then
-     generated as normal. Switching topic by chip is the normal Learn flow
-     and is never held. */
-  const [watching, setWatching] = useState(() => route.params?.watch === "1" && Boolean(initialTopic));
+  /* Lesson phase, for a learner who opened a course from Home.
+
+       "watching"   — the video, the "watch first" notice and the question
+                      box are on screen; NO activity is requested. The
+                      request is never sent, which is a stronger guarantee
+                      than asking the model to hold back, and it spends no
+                      AI call on a question nobody can answer mid-video.
+       "practising" — the learner tapped "I've watched it — practise". The
+                      lesson UI (video, notice, question box) is cleared
+                      and ONLY THEN is the activity generated and shown.
+                      That tap is the one and only trigger: the video
+                      reaching its end does nothing by itself.
+       null         — the ordinary Learn flow (topic chosen by chip, or
+                      arrived without ?watch): everything shows at once,
+                      exactly as before. Choosing a chip always returns to
+                      this. */
+  const [lessonPhase, setLessonPhase] = useState(() =>
+    route.params?.watch === "1" && initialTopic ? "watching" : null
+  );
+  const watching = lessonPhase === "watching";
+  const practising = lessonPhase === "practising";
 
   const topic = topicId ? findTopic(topicId) : null;
   const entry = topicId ? getEntry(topicId) : null;
@@ -90,15 +101,16 @@ export default function Learn() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId, watching]);
 
-  /* Choosing another topic by chip leaves watch-first mode: that is the
-     ordinary Learn flow, and the hold only ever applied to the course the
-     learner arrived on. */
+  /* Choosing another topic by chip is the ordinary Learn flow; the lesson
+     phase only ever applied to the course the learner arrived on. */
   const pickTopic = (id) => {
-    setWatching(false);
+    setLessonPhase(null);
     setTopicId(id);
   };
 
-  const finishWatching = () => setWatching(false);
+  /* The button. Clears the lesson UI; the effect above then requests the
+     activity, because `watching` has just become false. */
+  const startPractising = () => setLessonPhase("practising");
 
   const handleAnswer = (correct, text) => {
     if (!topicId) return;
@@ -188,27 +200,37 @@ export default function Learn() {
           {/* Above the activity on purpose: a learner who has one watches it
               and then answers. Renders nothing for the many topics with no
               verified video, so their page is unchanged. */}
-          <TopicVideo topicId={topicId} onEnded={finishWatching} />
+          {/* The lesson: video, then (from a course) the watch-first notice,
+              then the question box. All three leave the screen together the
+              moment the learner taps "I've watched it — practise", so the
+              practice question that follows has the page to itself. In the
+              ordinary flow (no lesson phase) they stay, above the activity. */}
+          {!practising && (
+            <>
+              <TopicVideo topicId={topicId} />
 
-          {/* Watch-first: the lesson is playing, so no activity has been
-              requested. The learner moves on when the video ends, or now. */}
-          {watching && (
-            <div className="notice info anim-pop" role="status" style={{ margin: 0 }}>
-              <span aria-hidden="true">🎬</span>
-              <span>
-                <strong>{t("learn.watching.title")}</strong> {t("learn.watching.body")}
-              </span>
-              <Button variant="teal" size="sm" onClick={finishWatching} style={{ marginLeft: "auto" }}>
-                {t("learn.watching.done")}
-              </Button>
-            </div>
+              {watching && (
+                <div className="notice info anim-pop" role="status" style={{ margin: 0 }}>
+                  <span aria-hidden="true">🎬</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <strong>{t("learn.watching.title")}</strong> {t("learn.watching.body")}
+                    {/* Below the text, not beside it: beside it, a phone
+                        squeezed the button into a four-line column. */}
+                    <div style={{ marginTop: 12 }}>
+                      <Button variant="teal" size="sm" onClick={startPractising}>
+                        {t("learn.watching.done")}
+                      </Button>
+                    </div>
+                  </span>
+                </div>
+              )}
+
+              {/* A learner who watched and did not follow something asks here.
+                  Present for every topic, video or not — the tutor answers
+                  from the topic's reference content either way. */}
+              <LessonQuestions topicId={topicId} />
+            </>
           )}
-
-          {/* Directly under the lesson, before the activity: a learner who
-              watched and did not follow something asks here, then answers.
-              Present for every topic, video or not — the tutor answers from
-              the topic's reference content either way. */}
-          <LessonQuestions topicId={topicId} />
 
           {!watching && decision && activity && (
             <>

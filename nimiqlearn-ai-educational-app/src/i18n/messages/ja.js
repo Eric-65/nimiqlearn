@@ -875,7 +875,7 @@ export default {
   "footer.aria": "リンクとリソース",
   "footer.changeLanguage": "言語を変更",
   "learn.watching.title": "まずレッスンを見ましょう。",
-  "learn.watching.body": "練習問題は動画が終わると表示されます。準備ができたらいつでも先に進めます。",
+  "learn.watching.body": "見終わったら下のボタンをタップしてください。それでこのレッスンの練習問題が表示されます。",
   "learn.watching.done": "見終わった — 練習する",
   "common.save": "保存",
   "nwallet.signedIn": "サインイン済み",

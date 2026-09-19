@@ -874,7 +874,7 @@ export default {
   "footer.aria": "링크 및 자료",
   "footer.changeLanguage": "언어 변경",
   "learn.watching.title": "먼저 강의를 시청하세요.",
-  "learn.watching.body": "연습 문제는 동영상이 끝나면 나타납니다. 준비되면 언제든 건너뛸 수 있습니다.",
+  "learn.watching.body": "다 보셨으면 아래 버튼을 누르세요. 그러면 이 강의의 연습 문제가 나타납니다.",
   "learn.watching.done": "다 봤어요 — 연습하기",
   "common.save": "저장",
   "nwallet.signedIn": "로그인됨",
