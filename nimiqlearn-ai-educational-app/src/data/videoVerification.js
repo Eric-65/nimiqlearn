@@ -18,7 +18,7 @@
    ============================================================ */
 
 export const VIDEO_VERIFICATION = {
-  "generatedAt": "2026-09-19T07:07:51.264Z",
+  "generatedAt": "2026-09-19T07:09:50.332Z",
   "entries": {
     "linear-equations-de-01": {
       "commonsTitle": "File:Lineare Gleichungssysteme und Lösungsverfahren - kolleg24 Mathematik.webm",
@@ -305,6 +305,22 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "HB",
       "machineCheckedAt": "2026-09-19T07:07:50.946Z",
+      "contentConfirmed": false,
+      "verifiedAt": null
+    },
+    "angles-de-01": {
+      "commonsTitle": "File:Winkel konstruieren - Serlo.ogv",
+      "commonsUrl": "https://commons.wikimedia.org/wiki/File:Winkel_konstruieren_-_Serlo.ogv",
+      "directVideoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/27/Winkel_konstruieren_-_Serlo.ogv?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "usedTranscode": false,
+      "originalBytes": 19776202,
+      "streamBytes": 19776202,
+      "durationSeconds": 339,
+      "subtitleLanguages": [],
+      "license": "CC BY-SA 4.0",
+      "restrictions": null,
+      "attribution": "Serlo Education e.V.",
+      "machineCheckedAt": "2026-09-19T07:09:50.016Z",
       "contentConfirmed": false,
       "verifiedAt": null
     }

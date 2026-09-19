@@ -204,15 +204,20 @@ export const VIDEO_LIBRARY = {
     de: [
       candidate({
         id: "angles-de-01",
-        /* No commonsTitle: the research only ever produced a CATEGORY
-           (Category:Videos of angles (geometry)), which is a listing page,
-           not a playable file. The verifier has to search for it. */
+        /* The research only produced a CATEGORY, so this entry originally
+           had to be found by search — and the search's video filter used
+           the MIME type, which rejects every .ogv (see isVideo() in the
+           verifier). Resolved by querying the Commons search API directly:
+           this is the one file it returns for "Winkel konstruieren", and
+           its description is "Erklärvideo zum Thema 'Wie konstruiere ich
+           Winkel?'" — a Serlo explainer on constructing angles. */
+        commonsTitle: "File:Winkel konstruieren - Serlo.ogv",
         searchTitle: "Winkel konstruieren",
         audioLanguage: "de",
         durationSeconds: 339,
         license: "CC BY-SA 4.0",
-        attribution: "Serlo Education",
-        note: "Research gave a Commons category, not a file. The exact file is unidentified — verification must name it.",
+        attribution: "Serlo Education e.V.",
+        note: "An explainer on constructing angles with compass and ruler — check it also covers what an angle is, or it may be a step past a first lesson.",
       }),
     ],
   },
@@ -407,12 +412,15 @@ export const VIDEO_LIBRARY = {
    something adjacent. Named here so the gap is a recorded decision and not
    an oversight the next person silently "fixes" with a bad match. */
 export const DELIBERATELY_EMPTY = {
+  /* All three re-checked 2026-09-19 against the Commons search API itself
+     (generator=search, filetype:video, mediatype VIDEO only), not a chat
+     transcript — in en/de/fr/es where the topic has a common name. */
   "descriptive-stats":
-    "No instructional video found for mean/median/mode. Commons has good diagrams for it, but a diagram is not a lesson.",
+    "No instructional video found for mean/median/mode. Commons has good diagrams for it, but a diagram is not a lesson. API search for 'mean median mode' / 'Mittelwert Median Modus' / 'moyenne médiane mode' / 'media mediana moda' returns nothing on-topic.",
   "chemical-bonding":
-    "The only candidate found was a molecular-dynamics simulation of argon solvation, which shows hydrogen bonding at molecular scale but is not a beginner bonding lesson.",
+    "The only candidate found was a molecular-dynamics simulation of argon solvation, which shows hydrogen bonding at molecular scale but is not a beginner bonding lesson. API search for 'chemical bonding', 'ionic bond covalent bond', 'chemische Bindung', 'Ionenbindung' returns zero video files.",
   "cell-structure":
-    "Commons has a large cell-biology video category, but the research never resolved it to a single beginner lesson.",
+    "Commons has a large cell-biology video category, but every video in it is a research-paper supplementary clip (microscopy of a single organelle or protein), not a lesson. API search for 'cell structure organelles', 'animal cell plant cell', 'Zelle Aufbau' returns only those.",
 };
 
 /** Every candidate in the library, flattened — for the verifier and for tests. */
