@@ -91,7 +91,10 @@ export default function CourseCarousel() {
             const video = selection.video;
             const entry = getEntry(topicId);
             const duration = formatDuration(video.durationSeconds);
-            const open = () => navigate("learn", { topic: topicId });
+            /* `watch` tells Learn the learner is arriving to WATCH: hold the activity
+               until the lesson is over, rather than generating a question they
+               would have to ignore while the video plays. */
+            const open = () => navigate("learn", { topic: topicId, watch: "1" });
             return (
               <article key={topicId} className="course-card">
                 <button type="button" className="course-thumb" onClick={open} aria-label={t("courses.open", { topic: topic?.name || topicId })}>

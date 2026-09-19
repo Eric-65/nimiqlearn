@@ -28,6 +28,17 @@ export default function Learn() {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  /* Watch-first mode. A learner who opened a course from Home came to
+     WATCH it; generating an activity the moment they land would put a
+     question on screen they cannot answer while the lesson plays — and
+     spend an AI call on it. So while `watching` is set, no activity is
+     requested at all (the request is never sent, which is stronger than
+     asking the model to hold back). It clears when the video ends or the
+     learner presses the button under it; either way the activity is then
+     generated as normal. Switching topic by chip is the normal Learn flow
+     and is never held. */
+  const [watching, setWatching] = useState(() => route.params?.watch === "1" && Boolean(initialTopic));
+
   const topic = topicId ? findTopic(topicId) : null;
   const entry = topicId ? getEntry(topicId) : null;
 
@@ -75,9 +86,19 @@ export default function Learn() {
   );
 
   useEffect(() => {
-    if (topicId) loadActivity(topicId);
+    if (topicId && !watching) loadActivity(topicId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicId]);
+  }, [topicId, watching]);
+
+  /* Choosing another topic by chip leaves watch-first mode: that is the
+     ordinary Learn flow, and the hold only ever applied to the course the
+     learner arrived on. */
+  const pickTopic = (id) => {
+    setWatching(false);
+    setTopicId(id);
+  };
+
+  const finishWatching = () => setWatching(false);
 
   const handleAnswer = (correct, text) => {
     if (!topicId) return;
@@ -119,7 +140,7 @@ export default function Learn() {
             <button
               key={leaf.id}
               className={`chip ${active ? "active" : ""}`}
-              onClick={() => setTopicId(leaf.id)}
+              onClick={() => pickTopic(leaf.id)}
               aria-pressed={active}
             >
               <span className="status-dot" style={{ background: STATUS_META[e?.status]?.color || "var(--st-new)" }} aria-hidden="true" />
@@ -167,7 +188,21 @@ export default function Learn() {
           {/* Above the activity on purpose: a learner who has one watches it
               and then answers. Renders nothing for the many topics with no
               verified video, so their page is unchanged. */}
-          <TopicVideo topicId={topicId} />
+          <TopicVideo topicId={topicId} onEnded={finishWatching} />
+
+          {/* Watch-first: the lesson is playing, so no activity has been
+              requested. The learner moves on when the video ends, or now. */}
+          {watching && (
+            <div className="notice info anim-pop" role="status" style={{ margin: 0 }}>
+              <span aria-hidden="true">🎬</span>
+              <span>
+                <strong>{t("learn.watching.title")}</strong> {t("learn.watching.body")}
+              </span>
+              <Button variant="teal" size="sm" onClick={finishWatching} style={{ marginLeft: "auto" }}>
+                {t("learn.watching.done")}
+              </Button>
+            </div>
+          )}
 
           {/* Directly under the lesson, before the activity: a learner who
               watched and did not follow something asks here, then answers.
@@ -175,7 +210,7 @@ export default function Learn() {
               the topic's reference content either way. */}
           <LessonQuestions topicId={topicId} />
 
-          {decision && activity && (
+          {!watching && decision && activity && (
             <>
               <LearningActivity
                 key={activity.loadedAt}

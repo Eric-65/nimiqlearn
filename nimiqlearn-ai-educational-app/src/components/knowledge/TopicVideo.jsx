@@ -27,7 +27,12 @@ import {
  * route back to the source, so the author, the licence and the Commons link
  * ship with the video rather than in a page the learner will never open.
  */
-export default function TopicVideo({ topicId }) {
+/**
+ * @param onEnded  called when the video plays to the end — Learn uses it to
+ *                 move a learner who arrived from a course on to practice
+ *                 without their having to press anything.
+ */
+export default function TopicVideo({ topicId, onEnded }) {
   const { t, locale } = useI18n();
 
   const selection = useMemo(() => selectVideo(topicId, locale), [topicId, locale]);
@@ -81,6 +86,7 @@ export default function TopicVideo({ topicId }) {
         preload="metadata"
         playsInline
         crossOrigin="anonymous"
+        onEnded={onEnded}
       >
         {video.subtitleLanguages.map((lang) => (
           <track
