@@ -561,6 +561,11 @@ export default {
   "home.story.browse": "Browse the marketplace",
   "home.story.wallet": "Wallet & payments",
   "home.story.imageAlt": "A student reading in a modern library aisle",
+  "home.nimiq.title": "Built on Nimiq",
+  "home.nimiq.sub": "Learn about the network behind NimiqLearn.",
+  "home.nimiq.videoTitle": "Meet Nimiq – Crypto made Easy",
+  "home.nimiq.watch": "Watch on YouTube",
+  "home.nimiq.body": "NimiqLearn is built as a Nimiq Mini App and connects to Nimiq Pay for blockchain features.",
 
   "home.pick.eyebrow": "Start anywhere",
   "home.pick.title": "Pick a concept and explain it back",

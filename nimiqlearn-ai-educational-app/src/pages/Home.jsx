@@ -6,6 +6,7 @@ import { useAiBackend } from "../hooks/useAiBackend.js";
 import { useI18n } from "../hooks/useI18n.js";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
+import BuiltOnNimiq from "../components/layout/BuiltOnNimiq.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import { LEAF_TOPICS, findTopic } from "../data/mockTopics.js";
 import { LEARNING_PACKS } from "../data/mockLearningPacks.js";
@@ -289,6 +290,9 @@ export default function Home() {
           </div>
         </Card>
       </section>
+
+      {/* ================= BUILT ON NIMIQ ================= */}
+      <BuiltOnNimiq />
 
       {/* ================= CURRICULUM TEASER ================= */}
       <section style={{ marginTop: 64 }}>
