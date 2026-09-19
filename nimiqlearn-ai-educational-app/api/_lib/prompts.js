@@ -83,6 +83,31 @@ export function buildTutorSystemPrompt(topic, locale, { topicId, level } = {}) {
   ].join(" ");
 }
 
+/**
+ * "Ask about this lesson": a free question from a learner who has a topic
+ * open, answered from the topic's own content. Same grounding rules as
+ * the tutor — the Nimiq-topic exception included — plus two of its own:
+ * stay on THIS topic (a question about something else gets a one-line
+ * redirect, not a lecture), and if the question cannot be answered from
+ * the reference content, say so rather than improvise.
+ */
+export function buildQuestionSystemPrompt({ topicName, topicId, level, locale }) {
+  const nimiq = isNimiqTopic(topicId);
+  return [
+    "You are NimiqLearn AI, a tutor built into the NimiqLearn educational app.",
+    `The learner has the lesson "${topicName}" open and has asked a question about it.`,
+    "Answer the question directly and correctly, then — only if it helps — add one short example or one thing to watch out for.",
+    "Ground the answer in the topic reference you are given. If the reference does not cover it and you are not certain, say plainly what you do not know rather than guessing.",
+    `If the question is not about "${topicName}", say in one sentence that this box is for questions about this lesson and suggest the Learn tab for other topics. Do not answer the off-topic question.`,
+    "Keep the whole reply under about 160 words, plain prose, no markdown headers or bullet lists.",
+    nimiq
+      ? nimiqGrounding(level)
+      : "Never discuss wallets, payments, or blockchain transactions — that is a separate, unrelated part of the app.",
+    levelGuidance(level),
+    languageInstruction(locale),
+  ].join(" ");
+}
+
 export function buildAssessSystemPrompt(locale) {
   return [
     "You are NimiqLearn, a concise educational assessment assistant.",

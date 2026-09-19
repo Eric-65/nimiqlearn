@@ -31,7 +31,7 @@ function formatDate(ts, locale) {
  */
 export default function Profile() {
   const { navigate } = useNav();
-  const { knowledge, learner, dueNow } = useLearner();
+  const { knowledge, learner, dueNow, isWalletProfile, profileAddress } = useLearner();
   const nimiq = useNimiq();
   const stats = computeXp(knowledge);
 
@@ -72,13 +72,28 @@ export default function Profile() {
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: 24 }}>{t(levelTitleKey(stats.level))}</h2>
+              {/* Three states, and they are different things: a WALLET PROFILE
+                  (authenticated — this progress is filed under that address and
+                  comes back on any device), merely CONNECTED (the wallet reported
+                  an address but nothing was signed, so the guest profile is still
+                  in use), or a local guest. */}
               <p className="small muted" style={{ margin: "4px 0 0" }}>
-                {nimiq.address ? (
-                  <>{t("profile.signedIn")} · <span style={{ fontFamily: "monospace", fontSize: 12.5 }}>{truncateAddress(nimiq.address)}</span></>
+                {isWalletProfile ? (
+                  <>{t("profile.walletAccount")} · <span style={{ fontFamily: "monospace", fontSize: 12.5 }}>{truncateAddress(profileAddress)}</span></>
+                ) : nimiq.address ? (
+                  <>{t("profile.connectedNotSigned")} · <span style={{ fontFamily: "monospace", fontSize: 12.5 }}>{truncateAddress(nimiq.address)}</span></>
                 ) : (
                   t("profile.localLearner")
                 )}
               </p>
+              {isWalletProfile && (
+                <p className="tiny muted" style={{ margin: "6px 0 0" }}>
+                  {learner.adoptedFromGuest ? t("profile.walletAdopted") : t("profile.walletSaved")}
+                </p>
+              )}
+              {!isWalletProfile && nimiq.address && (
+                <p className="tiny muted" style={{ margin: "6px 0 0" }}>{t("profile.signInToSave")}</p>
+              )}
             </div>
           </div>
           <div style={{ textAlign: "right", minWidth: 180 }}>

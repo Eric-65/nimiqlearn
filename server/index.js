@@ -41,7 +41,7 @@ try {
   /* no .env file present — env vars may be set another way */
 }
 
-const { handleHealth, handleTutorFeedback, handleAssessFeedback, handleLearnActivity } = await import(
+const { handleHealth, handleTutorFeedback, handleAssessFeedback, handleLearnActivity, handleLessonQuestion } = await import(
   "../nimiqlearn-ai-educational-app/api/_lib/handlers.js"
 );
 
@@ -69,6 +69,7 @@ app.get("/api/tutor/health", route(async () => handleHealth()));
 app.post("/api/tutor/feedback", route(handleTutorFeedback));
 app.post("/api/assess/feedback", route(handleAssessFeedback));
 app.post("/api/learn/activity", route(handleLearnActivity));
+app.post("/api/learn/question", route(handleLessonQuestion));
 
 app.listen(PORT, () => {
   console.log(

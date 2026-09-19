@@ -17,6 +17,7 @@ import {
   buildTutorSystemPrompt,
   buildAssessSystemPrompt,
   buildActivitySystemPrompt,
+  buildQuestionSystemPrompt,
   spreadCorrectAnswer,
   findRepeatedQuestion,
 } from "./prompts.js";
@@ -231,5 +232,49 @@ export async function handleLearnActivity(body = {}) {
     return { status: 200, json: { ok: true, value: spreadCorrectAnswer(value, type) } };
   } catch (err) {
     return openAiErrorResponse(err, "Activity generation");
+  }
+}
+
+/**
+ * POST /api/learn/question — "Ask about this lesson".
+ * Body: { question, topicId, topicName, topicContent?, level?, locale? }
+ * Returns: { ok: true, value: { answer } }
+ */
+export async function handleLessonQuestion(body = {}) {
+  const client = getOpenAI();
+  if (!client) return notConfigured("Lesson questions");
+
+  const { question, topicId, topicName, topicContent, level, locale } = body;
+
+  if (typeof question !== "string" || !question.trim()) {
+    return badRequest("'question' is required.");
+  }
+  if (typeof topicName !== "string" || !topicName.trim()) {
+    return badRequest("'topicName' is required.");
+  }
+  if (question.length > MAX_MESSAGE_LENGTH) {
+    return badRequest(`Question is too long (max ${MAX_MESSAGE_LENGTH} characters).`);
+  }
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: OPENAI_MODEL,
+      max_tokens: 320,
+      temperature: 0.4,
+      messages: [
+        { role: "system", content: buildQuestionSystemPrompt({ topicName, topicId, level: level || "beginner", locale }) },
+        {
+          role: "user",
+          content: `Topic reference: ${JSON.stringify(topicContent || {}).slice(0, 2000)}\n\nLearner's question: ${question.trim()}`,
+        },
+      ],
+    });
+    const answer = completion.choices?.[0]?.message?.content?.trim();
+    if (!answer) {
+      return { status: 502, json: { ok: false, error: "The tutor returned an empty answer." } };
+    }
+    return { status: 200, json: { ok: true, value: { answer } } };
+  } catch (err) {
+    return openAiErrorResponse(err, "Lesson question");
   }
 }

@@ -66,6 +66,11 @@ export function makeKnowledgeEntry(topicId, topicName, overrides = {}) {
     recentPerformance: [],
     coveredQuestions: [],
     coveredAngles: [],
+    /* Questions the learner asked about this topic and the tutor's answers,
+       newest first, capped — see recordLessonQuestion in LearnerContext.
+       Additive and read with a `|| []` guard, so entries saved before it
+       existed need no migration. */
+    questions: [],
     ...overrides,
   };
 }
@@ -75,6 +80,40 @@ export function makeKnowledgeEntry(topicId, topicName, overrides = {}) {
 // stored blob from an older (or missing) version before use.
 // v2: added coveredQuestions/coveredAngles to each knowledge entry.
 export const LEARNER_STATE_SCHEMA_VERSION = 2;
+
+/**
+ * A brand-new profile owned by a Nimiq wallet — what a learner gets the
+ * first time they sign in with an address NimiqLearn has not seen.
+ *
+ * Deliberately NOT a copy of INITIAL_LEARNER below: that one is the demo
+ * learner "Alex", with invented mastery (88% on linear equations, a
+ * six-day streak) that exists so an unsigned-in visitor sees a populated
+ * app. A real account under a real address must start from zero, or the
+ * Knowledge Map would show a stranger's made-up progress under the
+ * learner's own wallet. The address is the identity: it is the id, and
+ * the display name until the learner sets one.
+ */
+export function createWalletLearner(address, now = Date.now()) {
+  const compact = String(address).replace(/\s+/g, "");
+  return {
+    version: LEARNER_STATE_SCHEMA_VERSION,
+    id: `wallet:${compact}`,
+    walletAddress: address,
+    name: address.length > 14 ? `${address.slice(0, 9)}…${address.slice(-4)}` : address,
+    avatarEmoji: "🎓",
+    level: 1,
+    xp: 0,
+    xpToNext: 500,
+    streakDays: 0,
+    coins: 0,
+    studyMinutes: 0,
+    createdAt: now,
+    unlockedPacks: [],
+    pendingPayments: [],
+    knowledge: [],
+    history: [],
+  };
+}
 
 export const INITIAL_LEARNER = {
   version: LEARNER_STATE_SCHEMA_VERSION,

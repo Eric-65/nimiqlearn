@@ -152,3 +152,44 @@ export function formatDuration(seconds) {
 export function topicsWithVideo(locale) {
   return Object.keys(VIDEO_LIBRARY).filter((id) => selectVideo(id, locale) !== null);
 }
+
+/* The order the Home carousel presents courses in. There is no real
+   popularity signal (no like counts, no learner counts — and the app will
+   not invent them), so "top" is editorial: short, well-licensed, squarely
+   on-topic first. Anything not listed comes after, in library order. */
+const FEATURED_ORDER = [
+  "newtons-second-law",
+  "dna-genetics",
+  "quadratics",
+  "ai-fundamentals",
+  "python-basics",
+  "waves-sound",
+  "atoms-elements",
+  "proofs",
+  "electricity-basics",
+  "energy-work",
+];
+
+/**
+ * Courses for the Home carousel: topics with a playable video for this
+ * locale, English preferred, in editorial order, at most `limit`. Each
+ * item carries the selected video so the card can show its poster,
+ * duration and spoken language without a second lookup.
+ */
+export function featuredCourses(locale, { limit = 6 } = {}) {
+  const rank = (id) => {
+    const i = FEATURED_ORDER.indexOf(id);
+    return i === -1 ? FEATURED_ORDER.length : i;
+  };
+  return Object.keys(VIDEO_LIBRARY)
+    .map((topicId) => ({ topicId, selection: selectVideo(topicId, locale) }))
+    .filter((c) => c.selection !== null)
+    /* Mostly English: a video spoken in the learner's language or English
+       ranks above one only matched by subtitles. */
+    .sort((a, b) => {
+      const subA = a.selection.match === MATCH_SUBTITLES ? 1 : 0;
+      const subB = b.selection.match === MATCH_SUBTITLES ? 1 : 0;
+      return subA - subB || rank(a.topicId) - rank(b.topicId);
+    })
+    .slice(0, limit);
+}

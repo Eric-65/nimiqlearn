@@ -10,9 +10,11 @@ import Badge from "../components/ui/Badge.jsx";
 import ProgressBar from "../components/ui/ProgressBar.jsx";
 
 export default function Knowledge() {
-  const { navigate } = useNav();
+  const { navigate, route } = useNav();
   const { learner, knowledge, averageMastery, dueNow, reviewQueue, getEntry } = useLearner();
-  const [selectedTopicId, setSelectedTopicId] = useState(null);
+  /* Opens straight onto a concept when arrived at with ?topic — the Home
+     carousel's "More info" lands here. */
+  const [selectedTopicId, setSelectedTopicId] = useState(route.params?.topic || null);
   const { t, tPlural } = useI18n();
 
   const weak = knowledge.filter((k) => k.status === "LEARNING" || (k.status === "NEW" && !k.lastEvaluatedAt));

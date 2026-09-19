@@ -122,6 +122,7 @@ const candidate = (entry) => {
     durationSeconds: v?.durationSeconds ?? entry.durationSeconds ?? null,
     commonsUrl: v?.commonsUrl || commonsPageUrl(entry.commonsTitle),
     directVideoUrl: v?.directVideoUrl || null,
+    posterUrl: v?.posterUrl || null,
     verified: machineOk && contentOk && isCommercialUseOk(license),
     verifiedAt: machineOk && contentOk ? v.verifiedAt || null : null,
   };

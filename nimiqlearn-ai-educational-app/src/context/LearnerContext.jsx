@@ -7,7 +7,8 @@
    ============================================================ */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { makeKnowledgeEntry, INITIAL_LEARNER, LEARNER_STATE_SCHEMA_VERSION } from "../data/mockLearner.js";
+import { makeKnowledgeEntry, INITIAL_LEARNER, LEARNER_STATE_SCHEMA_VERSION, createWalletLearner } from "../data/mockLearner.js";
+import { subscribeToWalletChanges } from "../services/nimiqWalletService.js";
 import { findTopic } from "../data/mockTopics.js";
 import { evaluateExplanation } from "../services/assessmentService.js";
 import {
@@ -23,7 +24,16 @@ import { decideNextActivity } from "../services/learnLoopService.js";
 import { logEvent } from "../services/eventLogService.js";
 import { createEntitlement, hasEntitlement, createPendingPayment } from "../services/entitlementService.js";
 
-const STORAGE_KEY = "nimiqlearn:learner:v1";
+/* ---------------- one profile per wallet ----------------
+   The guest profile lives under the original key, so nothing that was
+   saved before wallet profiles existed is lost or moved. A learner who
+   signs in with Nimiq Pay gets a profile of their own, keyed by the
+   AUTHENTICATED address — the one they proved by signing a message, not
+   merely the one the wallet reported on connect. That profile is their
+   account: sign in on any device with the same wallet and it comes back;
+   sign out and the app returns to the guest profile, untouched. */
+const GUEST_KEY = "nimiqlearn:learner:v1";
+const walletKey = (address) => `${GUEST_KEY}:${String(address).replace(/\s+/g, "")}`;
 
 const LearnerContext = createContext(null);
 
@@ -66,9 +76,9 @@ export function migrateLearnerState(persisted) {
   return { ...persisted, version: LEARNER_STATE_SCHEMA_VERSION, knowledge };
 }
 
-function loadPersisted() {
+function loadPersisted(key) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.knowledge)) return null;
@@ -78,33 +88,91 @@ function loadPersisted() {
   }
 }
 
+function writePersisted(key, learner) {
+  try {
+    localStorage.setItem(key, JSON.stringify(learner));
+  } catch {
+    /* storage full / private mode — ignore */
+  }
+}
+
+/* Whether a guest has actually done anything, as opposed to still holding
+   the untouched demo learner. Decides what a first sign-in starts from. */
+function hasRealProgress(learner) {
+  return Array.isArray(learner?.history) && learner.history.length > 0;
+}
+
+function loadGuest() {
+  const persisted = loadPersisted(GUEST_KEY);
+  if (persisted) {
+    return { ...INITIAL_LEARNER, ...persisted, knowledge: refreshAllReviewPriorities(persisted.knowledge) };
+  }
+  return { ...INITIAL_LEARNER, knowledge: refreshAllReviewPriorities(INITIAL_LEARNER.knowledge) };
+}
+
+/* The profile for an authenticated address. Three cases, in order:
+   1. It has been here before → its own saved progress.
+   2. First sign-in, and the guest has real progress → the guest's work
+      is ADOPTED as this wallet's starting point, so nobody loses what
+      they did in the ten minutes before they decided to sign in. The
+      guest profile itself is left as it was.
+   3. First sign-in, untouched demo guest → a blank profile. The demo
+      learner's invented mastery must never be filed under a real
+      address as if the learner had earned it. */
+function loadOrCreateWallet(address, guest) {
+  const persisted = loadPersisted(walletKey(address));
+  if (persisted) {
+    return { ...createWalletLearner(address), ...persisted, knowledge: refreshAllReviewPriorities(persisted.knowledge) };
+  }
+  if (hasRealProgress(guest)) {
+    const blank = createWalletLearner(address);
+    /* Everything the guest earned, under the wallet's identity. */
+    return { ...blank, ...guest, id: blank.id, walletAddress: blank.walletAddress, name: blank.name, createdAt: blank.createdAt, adoptedFromGuest: true };
+  }
+  return createWalletLearner(address);
+}
+
 export function LearnerProvider({ children }) {
-  const [learner, setLearner] = useState(() => {
-    const persisted = loadPersisted();
-    if (persisted) {
-      return {
-        ...INITIAL_LEARNER,
-        ...persisted,
-        knowledge: refreshAllReviewPriorities(persisted.knowledge),
-      };
-    }
-    return { ...INITIAL_LEARNER, knowledge: refreshAllReviewPriorities(INITIAL_LEARNER.knowledge) };
-  });
+  /* The storage key and the learner it belongs to are ONE piece of state,
+     changed together. Kept apart, a pending debounced save could fire
+     after the key had switched but before the new learner had loaded —
+     and write the guest's data over a wallet profile, or one wallet's
+     over another's. Bundled, the save effect can only ever see a matched
+     pair. */
+  const [session, setSession] = useState(() => ({ key: GUEST_KEY, learner: loadGuest() }));
+  const learner = session.learner;
+  const setLearner = useCallback(
+    (next) => setSession((s) => ({ ...s, learner: typeof next === "function" ? next(s.learner) : next })),
+    []
+  );
   const saveTimer = useRef(null);
   const learnerRef = useRef(learner);
   learnerRef.current = learner;
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   useEffect(() => {
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(learner));
-      } catch {
-        /* storage full / private mode — ignore */
-      }
-    }, 250);
+    saveTimer.current = setTimeout(() => writePersisted(session.key, session.learner), 250);
     return () => clearTimeout(saveTimer.current);
-  }, [learner]);
+  }, [session]);
+
+  /* Follow the wallet: an authenticated address selects its profile; losing
+     authentication (sign-out, disconnect, session expiry) returns to the
+     guest. Whatever profile is current is flushed to storage first, so a
+     save still sitting in the 250 ms debounce is not lost in the switch. */
+  useEffect(() => {
+    return subscribeToWalletChanges((wallet) => {
+      const address = wallet?.authenticated?.address || null;
+      const nextKey = address ? walletKey(address) : GUEST_KEY;
+      const current = sessionRef.current;
+      if (nextKey === current.key) return;
+      clearTimeout(saveTimer.current);
+      writePersisted(current.key, current.learner);
+      const guest = current.key === GUEST_KEY ? current.learner : loadGuest();
+      setSession({ key: nextKey, learner: address ? loadOrCreateWallet(address, guest) : guest });
+    });
+  }, []);
 
   const addHistory = (entry) =>
     setLearner((l) => ({
@@ -264,6 +332,18 @@ export function LearnerProvider({ children }) {
     }));
   }, []);
 
+  /** Saves a lesson question and its answer on the topic's entry, newest
+   * first. Part of the profile, so a wallet learner's questions come back
+   * with their account on any device. Capped at 20 per topic. */
+  const recordLessonQuestionAction = useCallback(({ topicId, question, answer }) => {
+    if (!question || !answer) return;
+    logEvent({ eventType: "LESSON_QUESTION_ASKED", topicId });
+    patchKnowledge(topicId, (entry) => ({
+      ...entry,
+      questions: [{ question, answer, at: Date.now() }, ...(entry.questions || [])].slice(0, 20),
+    }));
+  }, []);
+
   const recordReviewAction = useCallback(({ topicId, correct, optionCount = null }) => {
     logEvent({ eventType: "REVIEW_COMPLETED", topicId, correct });
     const latest = learnerRef.current;
@@ -312,13 +392,20 @@ export function LearnerProvider({ children }) {
     }));
   }, []);
 
+  /* Resets whichever profile is current — a wallet profile back to blank
+     under that wallet, the guest back to the demo learner. Never touches
+     any other profile. */
   const resetLearnerAction = useCallback(() => {
+    const { key, learner: current } = sessionRef.current;
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(key);
     } catch {
       /* ignore */
     }
-    setLearner({ ...INITIAL_LEARNER, knowledge: refreshAllReviewPriorities(INITIAL_LEARNER.knowledge) });
+    const fresh = current.walletAddress
+      ? createWalletLearner(current.walletAddress)
+      : { ...INITIAL_LEARNER, knowledge: refreshAllReviewPriorities(INITIAL_LEARNER.knowledge) };
+    setSession({ key, learner: fresh });
   }, []);
 
   const value = useMemo(() => {
@@ -330,11 +417,16 @@ export function LearnerProvider({ children }) {
       knowledge,
       reviewQueue,
       dueNow,
+      /* Which profile this is: the address it is filed under, or null for
+         the guest. Components use it to say "saved to your wallet". */
+      profileAddress: learner.walletAddress || null,
+      isWalletProfile: Boolean(learner.walletAddress),
       averageMastery: averageMastery(knowledge),
       getEntry,
       evaluateExplanation: evaluateExplanationAction,
       recordActivityResult: recordActivityResultAction,
       recordActivityCoverage: recordActivityCoverageAction,
+      recordLessonQuestion: recordLessonQuestionAction,
       recordReview: recordReviewAction,
       unlockPack: unlockPackAction,
       recordPendingPayment: recordPendingPaymentAction,
@@ -346,6 +438,7 @@ export function LearnerProvider({ children }) {
     evaluateExplanationAction,
     recordActivityResultAction,
     recordActivityCoverageAction,
+    recordLessonQuestionAction,
     recordReviewAction,
     unlockPackAction,
     recordPendingPaymentAction,

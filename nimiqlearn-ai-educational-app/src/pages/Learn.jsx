@@ -13,6 +13,7 @@ import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import AIStatus from "../components/ai/AIStatus.jsx";
 import TopicVideo from "../components/knowledge/TopicVideo.jsx";
+import LessonQuestions from "../components/knowledge/LessonQuestions.jsx";
 
 export default function Learn() {
   const { route, navigate } = useNav();
@@ -167,6 +168,12 @@ export default function Learn() {
               and then answers. Renders nothing for the many topics with no
               verified video, so their page is unchanged. */}
           <TopicVideo topicId={topicId} />
+
+          {/* Directly under the lesson, before the activity: a learner who
+              watched and did not follow something asks here, then answers.
+              Present for every topic, video or not — the tutor answers from
+              the topic's reference content either way. */}
+          <LessonQuestions topicId={topicId} />
 
           {decision && activity && (
             <>

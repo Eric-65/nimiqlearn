@@ -67,6 +67,12 @@ const IMAGEINFO = {
   prop: "imageinfo",
   iiprop: "url|size|mime|mediatype|extmetadata|user",
   iiextmetadatafilter: "LicenseShortName|UsageTerms|Artist|Attribution|Credit|Restrictions",
+  /* Asking for a scaled rendition makes Commons return `thumburl` — for a
+     video, a JPEG of a frame at that width. That is the card thumbnail
+     and the player's poster, from Commons itself rather than guessed
+     from a URL pattern that could change. 640 is wide enough for a
+     three-up card row and a phone-width poster alike. */
+  iiurlwidth: "640",
 };
 
 /* Whether a Commons file is a video.
@@ -203,6 +209,9 @@ async function verifyEntry(entry) {
       commonsTitle: title,
       commonsUrl: info.descriptionurl || commonsPageUrl(title),
       directVideoUrl: stream?.url || info.url,
+      /* Frame thumbnail Commons rendered for this file, or null if it
+         could not — never a made-up URL. */
+      posterUrl: info.thumburl || null,
       usedTranscode: Boolean(stream),
       originalBytes: info.size ?? null,
       streamBytes: stream?.bytes ?? info.size ?? null,

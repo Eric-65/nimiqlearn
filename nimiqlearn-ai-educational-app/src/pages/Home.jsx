@@ -7,6 +7,7 @@ import { useI18n } from "../hooks/useI18n.js";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 import BuiltOnNimiq from "../components/layout/BuiltOnNimiq.jsx";
+import CourseCarousel from "../components/home/CourseCarousel.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import { LEAF_TOPICS, findTopic } from "../data/mockTopics.js";
 import { LEARNING_PACKS } from "../data/mockLearningPacks.js";
@@ -309,6 +310,9 @@ export default function Home() {
           <button className="chip" onClick={() => navigate("learn")}>{t("home.pick.allTopics")}</button>
         </div>
       </section>
+
+      {/* ================= VIDEO COURSES ================= */}
+      <CourseCarousel />
 
       <section style={{ marginTop: 72, textAlign: "center" }}>
         <Button variant="primary" size="lg" onClick={() => navigate("learn")}>{t("home.finalCta")}</Button>

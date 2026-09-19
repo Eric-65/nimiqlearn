@@ -4,6 +4,7 @@ import Badge from "../ui/Badge.jsx";
 import { useI18n } from "../../hooks/useI18n.js";
 import Button from "../ui/Button.jsx";
 import { useNimiq } from "../../hooks/useNimiq.js";
+import { useLearner } from "../../hooks/useLearner.js";
 import { NIMIQ_STATUS } from "../../services/nimiqWalletService.js";
 
 function truncateAddress(address) {
@@ -32,6 +33,7 @@ export default function NimiqWalletStatus() {
   const nimiq = useNimiq();
   const [copied, setCopied] = useState(false);
   const [signInError, setSignInError] = useState(null);
+  const { isWalletProfile, learner } = useLearner();
 
   /**
    * navigator.clipboard is SECURE-CONTEXT ONLY, so it is simply `undefined`
@@ -170,6 +172,23 @@ export default function NimiqWalletStatus() {
       </div>
       {signInError && (
         <p className="tiny" style={{ color: "var(--c-rose)", marginTop: 8, marginBottom: 0 }} role="alert">{signInError}</p>
+      )}
+
+      {/* The account this wallet unlocked. Shown only once the profile has
+          actually switched (isWalletProfile comes from LearnerContext, not
+          from the auth flag), so it never claims a profile that is not yet
+          the one in use. */}
+      {isWalletProfile && (
+        <div className="notice success" style={{ margin: "14px 0 0" }} role="status">
+          <span aria-hidden="true">👤</span>
+          <span>
+            <strong>{t("nwallet.profile.title")}</strong>{" "}
+            {learner.adoptedFromGuest ? t("nwallet.profile.adopted") : t("nwallet.profile.body")}
+          </span>
+        </div>
+      )}
+      {nimiq.status === NIMIQ_STATUS.CONNECTED && !nimiq.isAuthenticated && (
+        <p className="tiny muted" style={{ margin: "12px 0 0" }}>{t("nwallet.profile.hint")}</p>
       )}
     </Card>
   );
