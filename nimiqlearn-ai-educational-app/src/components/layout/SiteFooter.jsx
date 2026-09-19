@@ -39,6 +39,10 @@ const GROUPS = [
       { labelKey: "footer.howItWorks", href: "https://youtu.be/qPjU2qBD23k?si=hnaWluNrOHTpSRIN" },
       { label: "GitHub", href: "https://github.com/Eric-65/nimiqlearn" },
       { label: "MIT License", href: "https://github.com/Eric-65/nimiqlearn?tab=MIT-1-ov-file" },
+      /* Internal (`page`): every video and brand asset the app uses, with
+         creator, licence and source. Sits next to the licence link because
+         it is the same question — what is this made of, and on what terms. */
+      { labelKey: "footer.credits", href: "#/credits", page: "credits" },
       { labelKey: "footer.explorer", href: "https://nimiq.watch/" },
       { labelKey: "footer.developer", href: "https://x.com/eric0xbt" },
     ],
@@ -62,14 +66,30 @@ export default function SiteFooter() {
             <ul className="site-footer-links">
               {group.links.map((link) => (
                 <li key={link.href}>
-                  <a
-                    className="site-footer-link"
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {link.labelKey ? t(link.labelKey) : link.label}
-                  </a>
+                  {link.page ? (
+                    /* Same treatment as the language link below: a real
+                       href for middle-click and screen readers, routed by
+                       navigate() so the new page opens at the top. */
+                    <a
+                      className="site-footer-link"
+                      href={link.href}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate(link.page);
+                      }}
+                    >
+                      {link.labelKey ? t(link.labelKey) : link.label}
+                    </a>
+                  ) : (
+                    <a
+                      className="site-footer-link"
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {link.labelKey ? t(link.labelKey) : link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

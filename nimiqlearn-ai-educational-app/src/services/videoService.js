@@ -113,6 +113,30 @@ export function noVideoReason(topicId) {
   return "Candidates exist but none has passed verification.";
 }
 
+/**
+ * The licence's own page, from the short name Commons reports
+ * ("CC BY-SA 4.0", "CC BY 3.0", "CC0", "Public domain"). Every CC licence
+ * asks that a reuse link to the licence text, not just name it, so this is
+ * what the credit line and the credits page link to. Null for anything not
+ * recognised — a wrong link is worse than no link.
+ */
+export function licenseUrl(license) {
+  if (!license) return null;
+  const s = String(license).trim();
+  if (/^CC0\b/i.test(s)) return "https://creativecommons.org/publicdomain/zero/1.0/";
+  if (/public domain/i.test(s)) return "https://creativecommons.org/publicdomain/mark/1.0/";
+  const m = s.match(/^CC\s+(BY(?:-SA)?(?:-NC)?(?:-ND)?)\s+(\d\.\d)/i);
+  if (!m) return null;
+  return `https://creativecommons.org/licenses/${m[1].toLowerCase()}/${m[2]}/`;
+}
+
+/** Where an entry stands: playable, machine-checked only, or unchecked. */
+export function verificationStatus(entry) {
+  if (entry?.verified) return "playable";
+  if (entry?.directVideoUrl) return "awaiting-review";
+  return "unchecked";
+}
+
 /** mm:ss / h:mm:ss, or null when the real duration is not known yet. */
 export function formatDuration(seconds) {
   if (!Number.isFinite(seconds) || seconds <= 0) return null;

@@ -24,6 +24,7 @@ import Leaderboard from "./pages/Leaderboard.jsx";
 import Profile from "./pages/Profile.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import Settings from "./pages/Settings.jsx";
+import Credits from "./pages/Credits.jsx";
 
 /* Nav is grouped rather than one flat list of twelve: "Study" is the daily
    loop, "Economy" is wallet/marketplace, "You" is the personal surface.
@@ -65,6 +66,10 @@ const PAGES = {
   profile: Profile,
   notifications: Notifications,
   settings: Settings,
+  /* Reached from the footer, not the nav: a provenance record, not a
+     study surface. The topbar title falls back to "home" for it — see
+     the render below — so nav.credits is still needed as a label. */
+  credits: Credits,
 };
 
 function Brand() {
@@ -152,7 +157,10 @@ function Shell() {
       <div className={`main${page === "home" ? " has-footer" : ""}`}>
         <header className="topbar">
           <div className="small muted" style={{ fontWeight: 600 }}>
-            {t(`nav.${NAV_ITEMS.some((n) => n.path === page) ? page : "home"}`)}
+            {/* Any registered page, not only nav items: Credits is reached
+                from the footer and has no nav entry, and a topbar reading
+                "Home" over it was wrong. Unknown routes still fall back. */}
+            {t(`nav.${PAGES[page] ? page : "home"}`)}
           </div>
           <div className="topbar-spacer" />
 

@@ -1063,6 +1063,50 @@ button { font-family: inherit; }
   color: var(--c-text);
 }
 
+/* Credits page: one <dl> per video, label/value rows. Labels get a fixed
+   column on wide screens and stack above their values on a phone, where a
+   two-column dl with a Commons file name in it would overflow the card. */
+.credit-entry {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border);
+}
+
+.credit-entry:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.credit-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 4px 12px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.credit-row dt {
+  color: var(--c-text-dim);
+}
+
+.credit-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.credit-row a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .credit-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-bottom: 6px;
+  }
+}
+
 /* Centred block under the two link groups: the language switch, then the
    copyright. The rule above it separates it from the groups without adding a
    second heavy line next to the footer's own top border. */
