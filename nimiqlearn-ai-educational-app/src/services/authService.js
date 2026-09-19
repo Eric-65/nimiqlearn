@@ -18,7 +18,22 @@
    ============================================================ */
 
 const SESSION_STORAGE_KEY = "nimiqlearn:wallet-auth";
-const SESSION_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+/* Two different lifetimes, deliberately kept apart.
+
+   The CHALLENGE window is how long the message the wallet signs stays
+   valid — short, so a captured signature cannot be replayed later. Five
+   minutes is plenty to read the prompt and tap Sign.
+
+   The SESSION is how long the resulting sign-in lasts — the account the
+   learner is signed into, in the sense a Google account stays signed in.
+   That is weeks, not minutes: a learner who opens the app tomorrow should
+   find their own profile waiting, not be sent back to the guest and asked
+   to sign again. Signing out clears it early; a different wallet signing
+   in replaces it. (One value used to serve both, and the sign-in silently
+   lapsed five minutes after it was granted.) */
+const CHALLENGE_WINDOW_MS = 5 * 60 * 1000;
+const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 function secureNonce() {
   const cryptoObj = typeof crypto !== "undefined" ? crypto : globalThis.crypto;
@@ -35,7 +50,8 @@ function secureNonce() {
  */
 export function createAuthChallenge({ address }) {
   const issuedAt = new Date();
-  const expiresAt = new Date(issuedAt.getTime() + SESSION_DURATION_MS);
+  /* The Expires line the learner sees in Nimiq Pay is the CHALLENGE window. */
+  const expiresAt = new Date(issuedAt.getTime() + CHALLENGE_WINDOW_MS);
   const nonce = secureNonce();
   const origin = typeof window !== "undefined" ? window.location.origin : "unknown-origin";
   const message = [
@@ -52,11 +68,14 @@ export function createAuthChallenge({ address }) {
   return { message, nonce, issuedAt, expiresAt };
 }
 
-export function createSession({ address, issuedAt, expiresAt }) {
+/* The challenge's `expiresAt` is deliberately ignored: the challenge has
+   done its job the moment the wallet signed it. The session gets its own,
+   long lifetime — see SESSION_DURATION_MS. */
+export function createSession({ address, issuedAt }) {
   const session = {
     address,
     authenticatedAt: issuedAt.toISOString(),
-    expiresAt: expiresAt.toISOString(),
+    expiresAt: new Date(issuedAt.getTime() + SESSION_DURATION_MS).toISOString(),
   };
   try {
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));

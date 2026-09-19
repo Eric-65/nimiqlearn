@@ -103,7 +103,16 @@ let state = {
   blockNumber: null,
   language: null,
   error: null,
-  authenticated: null, // { address, authenticatedAt, expiresAt } — see authenticateWithNimiqPay()
+  /* { address, authenticatedAt, expiresAt } — see authenticateWithNimiqPay().
+     Rehydrated from the stored session AT LOAD, before any provider call:
+     the sign-in is the account the learner is in, and it must survive
+     closing the app — the way a Google sign-in does — without a native
+     dialog every time. It used to be restored only inside
+     refreshAccountState(), i.e. only after a fresh tap on Connect, so every
+     app open began as the guest. The wallet CONNECTION is a separate,
+     live thing, established on demand for paying or signing; being signed
+     in does not require it, and the UI keeps the two apart. */
+  authenticated: getStoredSession(),
 };
 
 function detectInitialStatus() {
@@ -179,9 +188,16 @@ async function refreshAccountState() {
     blockNumber,
     error: address ? null : "Nimiq Pay did not return an account.",
   });
-  // Rehydrate a still-valid prior sign-in for this exact address, so a
-  // page reload doesn't silently drop a session that hasn't expired.
-  if (address) setState({ authenticated: getStoredSession(address) });
+  // The session is for one exact address. If the wallet that just connected
+  // is a DIFFERENT one, the learner is switching accounts: the old sign-in
+  // is ended (cleared, not merely hidden — otherwise the profile layer would
+  // still find it in storage and keep serving the previous wallet's profile
+  // under the new wallet), and the new wallet has to sign in for itself.
+  if (address) {
+    const session = getStoredSession(address);
+    if (!session && getStoredSession()) clearSession();
+    setState({ authenticated: session });
+  }
 }
 
 function onProviderConnect() {

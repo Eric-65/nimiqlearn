@@ -8,7 +8,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { makeKnowledgeEntry, INITIAL_LEARNER, LEARNER_STATE_SCHEMA_VERSION, createWalletLearner } from "../data/mockLearner.js";
-import { subscribeToWalletChanges } from "../services/nimiqWalletService.js";
+import { subscribeToWalletChanges, getStoredSession } from "../services/nimiqWalletService.js";
 import { findTopic } from "../data/mockTopics.js";
 import { evaluateExplanation } from "../services/assessmentService.js";
 import {
@@ -139,7 +139,17 @@ export function LearnerProvider({ children }) {
      and write the guest's data over a wallet profile, or one wallet's
      over another's. Bundled, the save effect can only ever see a matched
      pair. */
-  const [session, setSession] = useState(() => ({ key: GUEST_KEY, learner: loadGuest() }));
+  const [session, setSession] = useState(() => {
+    /* Start on the signed-in account, if there is one, from the very first
+       render — not on the guest with a switch a moment later. The stored
+       session is what says who is signed in; the wallet need not be
+       connected for the learner to be in their account. */
+    const stored = getStoredSession();
+    if (stored?.address) {
+      return { key: walletKey(stored.address), learner: loadOrCreateWallet(stored.address, loadGuest()) };
+    }
+    return { key: GUEST_KEY, learner: loadGuest() };
+  });
   const learner = session.learner;
   const setLearner = useCallback(
     (next) => setSession((s) => ({ ...s, learner: typeof next === "function" ? next(s.learner) : next })),
@@ -332,6 +342,17 @@ export function LearnerProvider({ children }) {
     }));
   }, []);
 
+  /** The name the learner goes by. Trimmed and capped; an empty name falls
+   * back to the profile's default (the shortened address for a wallet
+   * account) rather than leaving the header blank. */
+  const setDisplayNameAction = useCallback((name) => {
+    const clean = String(name || "").trim().slice(0, 40);
+    setLearner((l) => {
+      const fallback = l.walletAddress ? createWalletLearner(l.walletAddress).name : INITIAL_LEARNER.name;
+      return { ...l, name: clean || fallback };
+    });
+  }, []);
+
   /** Saves a lesson question and its answer on the topic's entry, newest
    * first. Part of the profile, so a wallet learner's questions come back
    * with their account on any device. Capped at 20 per topic. */
@@ -427,6 +448,7 @@ export function LearnerProvider({ children }) {
       recordActivityResult: recordActivityResultAction,
       recordActivityCoverage: recordActivityCoverageAction,
       recordLessonQuestion: recordLessonQuestionAction,
+      setDisplayName: setDisplayNameAction,
       recordReview: recordReviewAction,
       unlockPack: unlockPackAction,
       recordPendingPayment: recordPendingPaymentAction,
@@ -439,6 +461,7 @@ export function LearnerProvider({ children }) {
     recordActivityResultAction,
     recordActivityCoverageAction,
     recordLessonQuestionAction,
+    setDisplayNameAction,
     recordReviewAction,
     unlockPackAction,
     recordPendingPaymentAction,

@@ -94,9 +94,14 @@ export default function NimiqWalletStatus() {
   return (
     <Card title={t("nwallet.title")} sub={t("nwallet.sub")}>
       <div className="flex items-center gap-8 wrap" style={{ marginBottom: 16 }}>
+        {/* "Signed in" is the ACCOUNT and stands on its own: it comes from the
+            stored session and survives closing the app, whether or not the
+            wallet happens to be connected right now. The connection badges
+            below it describe the live link, which is only needed to pay or
+            sign. Showing both is deliberate — they are different facts. */}
+        {nimiq.isAuthenticated && <Badge tone="gold" dot>{t("nwallet.signedIn")}</Badge>}
         {nimiq.status === NIMIQ_STATUS.INITIALIZING && <Badge tone="amber" dot>{t("wallet.connecting")}</Badge>}
-        {nimiq.status === NIMIQ_STATUS.CONNECTED && nimiq.isAuthenticated && <Badge tone="teal" dot>{t("nwallet.authenticated")}</Badge>}
-        {nimiq.status === NIMIQ_STATUS.CONNECTED && !nimiq.isAuthenticated && <Badge tone="teal" dot>{t("wallet.walletConnected")}</Badge>}
+        {nimiq.status === NIMIQ_STATUS.CONNECTED && <Badge tone="teal" dot>{t("wallet.walletConnected")}</Badge>}
         {nimiq.status === NIMIQ_STATUS.NIMIQ_PAY_AVAILABLE && <Badge tone="slate" dot>{t("nwallet.detected")}</Badge>}
         {nimiq.status === NIMIQ_STATUS.ERROR && <Badge tone="rose" dot>{t("wallet.connFailed")}</Badge>}
         {nimiq.status === NIMIQ_STATUS.BROWSER_MODE && <Badge tone="amber" dot>{t("wallet.notAvailable")}</Badge>}
@@ -161,13 +166,18 @@ export default function NimiqWalletStatus() {
         {nimiq.status === NIMIQ_STATUS.ERROR && (
           <Button variant="outline" onClick={nimiq.connect}>{t("common.tryAgain")}</Button>
         )}
-        {nimiq.status === NIMIQ_STATUS.CONNECTED && (
+        {nimiq.status === NIMIQ_STATUS.CONNECTED && !nimiq.isAuthenticated && (
           <>
             <Button variant="outline" onClick={nimiq.disconnect}>{t("wallet.disconnect")}</Button>
-            {!nimiq.isAuthenticated && (
-              <Button variant="outline" onClick={handleSignIn}>{t("nwallet.signIn")}</Button>
-            )}
+            <Button variant="nimiq" onClick={handleSignIn}>{t("nwallet.signIn")}</Button>
           </>
+        )}
+        {/* Signed in: one button, "Sign out", the account action. It ends the
+            session AND drops the connection, so the next open is the guest —
+            which is what signing out of an account means. disconnectWallet()
+            already does both, connected or not. */}
+        {nimiq.isAuthenticated && (
+          <Button variant="outline" onClick={nimiq.disconnect}>{t("nwallet.signOut")}</Button>
         )}
       </div>
       {signInError && (

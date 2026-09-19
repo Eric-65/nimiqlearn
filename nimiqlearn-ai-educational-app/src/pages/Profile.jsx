@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useNimiq } from "../hooks/useNimiq.js";
@@ -31,7 +31,9 @@ function formatDate(ts, locale) {
  */
 export default function Profile() {
   const { navigate } = useNav();
-  const { knowledge, learner, dueNow, isWalletProfile, profileAddress } = useLearner();
+  const { knowledge, learner, dueNow, isWalletProfile, profileAddress, setDisplayName } = useLearner();
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
   const nimiq = useNimiq();
   const stats = computeXp(knowledge);
 
@@ -71,7 +73,43 @@ export default function Profile() {
               🧠
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: 24 }}>{t(levelTitleKey(stats.level))}</h2>
+              {/* An account has a name. For a wallet account the learner sets
+                  it here; until then it is the shortened address. The level
+                  title, previously the heading, becomes the line under it. */}
+              {editingName ? (
+                <form
+                  className="flex items-center gap-8 wrap"
+                  onSubmit={(e) => { e.preventDefault(); setDisplayName(draftName); setEditingName(false); }}
+                >
+                  <input
+                    className="input"
+                    value={draftName}
+                    maxLength={40}
+                    autoFocus
+                    aria-label={t("profile.name")}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    style={{ fontSize: 18, fontWeight: 700, padding: "6px 10px", maxWidth: 260 }}
+                  />
+                  <Button type="submit" variant="primary" size="sm">{t("common.save")}</Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setEditingName(false)}>{t("common.cancel")}</Button>
+                </form>
+              ) : (
+                <h2 className="flex items-center gap-10" style={{ margin: 0, fontSize: 24 }}>
+                  {learner.name}
+                  {isWalletProfile && (
+                    <button
+                      type="button"
+                      onClick={() => { setDraftName(learner.name); setEditingName(true); }}
+                      aria-label={t("profile.editName")}
+                      title={t("profile.editName")}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-text-faint)", fontSize: 16, padding: 6, minWidth: 44, minHeight: 44 }}
+                    >
+                      ✎
+                    </button>
+                  )}
+                </h2>
+              )}
+              <p className="small" style={{ margin: "2px 0 0", color: "var(--c-gold)", fontWeight: 600 }}>{t(levelTitleKey(stats.level))}</p>
               {/* Three states, and they are different things: a WALLET PROFILE
                   (authenticated — this progress is filed under that address and
                   comes back on any device), merely CONNECTED (the wallet reported
@@ -88,6 +126,7 @@ export default function Profile() {
               </p>
               {isWalletProfile && (
                 <p className="tiny muted" style={{ margin: "6px 0 0" }}>
+                  {t("profile.memberSince", { date: formatDate(learner.createdAt, locale) })} ·{" "}
                   {learner.adoptedFromGuest ? t("profile.walletAdopted") : t("profile.walletSaved")}
                 </p>
               )}
