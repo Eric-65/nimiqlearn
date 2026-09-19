@@ -398,3 +398,66 @@ hours of being studied, however the interval arithmetic scores it. Without
 it, finishing the diagnostic produced "you last worked on this yesterday,
 it is due for review" about five concepts answered seconds earlier — the
 first recommendation a new learner ever sees, and plainly false.
+
+## The mastery model in the UI
+
+Both surfaces that answer "what do I know" now read the stage ladder.
+
+### ForgetMeNot: three sections, not one ranked list
+
+`buildReviewSections()` splits the queue:
+
+| Section | What it is | Ordering |
+|---|---|---|
+| **Due now** | `isReviewable()` — studied, past the 6-hour floor, and due | misconception first, then priority |
+| **Coming up** | studied and scheduled, not yet worth asking | soonest first |
+| **Not started** | never opened — named, not listed | — |
+
+The flat list this replaces ranked *every* concept by priority score,
+including ones never opened. That put "review this" in front of material
+the learner had never seen and made the page disagree with Today's Plan
+about how many reviews were due. Both now apply the same `isReviewable()`
+rule, which lives in forgetMeNotService because it owns scheduling.
+
+Each row says **why** it is there — a misconception reads differently from
+a faded memory and is not repaired the same way — and the reason is
+section-aware: "about now is when it starts to fade" only appears under
+Due now, because a row held back by the six-hour floor is in Coming up and
+the section contradicts the sentence.
+
+Prerequisites are **not** a factor. The brief lists "important
+prerequisites" as a priority signal, and the curriculum has no prerequisite
+edges — only sibling ordering. Inferring a dependency graph from ordering
+would be a guess presented as a reason, so it is left out.
+
+### Staleness now includes `lastStudiedAt`
+
+`calculateReviewPriority` and `computeReviewRecommendation` fell back to
+`now - 30 days` when an entry had no `lastReviewedAt` or `lastEvaluatedAt`.
+A concept practised five hours ago has neither — it was not a review and
+not an ExplainBack — so it was scored, and displayed, as a month stale.
+`lastStudiedAt` is now in the chain; the 30-day fallback remains for an
+entry genuinely never touched.
+
+### Knowledge Map: stages, not bands
+
+Nodes and the legend are coloured by `masteryStage`. "Can explain" and
+"Developing" are different claims — one says what the learner
+demonstrated, the other describes a number — and the map is where somebody
+looks to answer "what do I actually know". The mastery percentage shows
+only once something has been demonstrated, so an untouched concept reads
+"Not started" rather than "Not started • 0%".
+
+The clock badge uses the same `buildReviewSections()` output, so a node can
+no longer read "Not started" and "⏳ Review" at once.
+
+### Concept panel: the evidence behind the stage
+
+Tapping a node shows the three demonstrations with ticks, read straight off
+the ledger rather than inferred from the stage — so a concept that was
+explained but never recalled displays honestly. Evidence reconstructed by
+the v2→v3 migration is labelled "from earlier work" rather than counted.
+Below it: the known misconception, and the one demonstration that would
+move the concept up ("Next: explain it, to reach Can explain"). The primary
+action is a sprint, because a sprint performs whichever demonstration is
+missing.

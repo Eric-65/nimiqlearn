@@ -4,7 +4,8 @@ import { useLearner } from "../hooks/useLearner.js";
 import { useAiBackend } from "../hooks/useAiBackend.js";
 import { useI18n } from "../hooks/useI18n.js";
 import { findTopic } from "../data/mockTopics.js";
-import { buildReviewQueue } from "../services/forgetMeNotService.js";
+import { buildReviewQueue, buildReviewSections } from "../services/forgetMeNotService.js";
+import { STAGE_LABEL_KEYS, STAGE_COLORS, deriveMasteryStage } from "../services/masteryService.js";
 import { generateActivityContent } from "../services/learnLoopService.js";
 import LearningActivity from "../components/ai/LearningActivity.jsx";
 import AIStatus from "../components/ai/AIStatus.jsx";
@@ -12,6 +13,48 @@ import Badge from "../components/ui/Badge.jsx";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import ProgressBar from "../components/ui/ProgressBar.jsx";
+
+/**
+ * One row of the queue.
+ *
+ * Carries the concept's mastery STAGE, not just a percentage: "Can
+ * explain, review due" tells a learner what they are protecting, where
+ * "62%" tells them a number. And it says WHY it is here — a misconception
+ * reads differently from a fading memory, and they are not repaired the
+ * same way.
+ */
+function ReviewRow({ row, stage, active, onStart, primary = false, t, tOr, tPlural }) {
+  return (
+    <Card hover style={{ padding: 16, borderColor: active ? "rgba(77,141,255,0.5)" : undefined }}>
+      <div className="flex items-center justify-between wrap gap-12">
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div className="flex items-center gap-8 wrap">
+            <span className="status-dot" style={{ background: STAGE_COLORS[stage] }} aria-hidden="true" />
+            <span className="strong" style={{ fontSize: 15 }}>{tOr(`topic.${row.topicId}.name`, row.topicName)}</span>
+            <Badge tone={stage === "MASTERED" ? "gold" : stage === "CAN_APPLY" || stage === "CAN_EXPLAIN" ? "teal" : stage === "CAN_RECALL" ? "blue" : "slate"}>
+              {t(STAGE_LABEL_KEYS[stage] || STAGE_LABEL_KEYS.NEW)}
+            </Badge>
+            {row.hasMisconception && <Badge tone="rose">{t("review.badge.misconception")}</Badge>}
+          </div>
+
+          <p className="small" style={{ margin: "8px 0 4px", color: "var(--c-text-dim)" }}>
+            {/* The day count goes through the plural machinery as a
+                phrase ("3 days ago" / "1 day ago") rather than as a bare
+                number dropped into a sentence — the "1 days" bug. */}
+            {t(row.reasonKey, { ago: tPlural("date.daysAgo", row.daysSinceReview || 0) })}
+          </p>
+          <p className="tiny muted" style={{ margin: "0 0 10px" }}>
+            {t("review.meta", { days: row.daysSinceReview, next: row.intervalDays, mastery: row.mastery })}
+          </p>
+          <ProgressBar value={row.priorityScore} tone="gold" ariaLabel={t("review.priorityAria", { score: row.priorityScore })} />
+        </div>
+        <Button variant={primary ? "primary" : "outline"} size="sm" onClick={onStart}>
+          {t("review.now")}
+        </Button>
+      </div>
+    </Card>
+  );
+}
 
 export default function ForgetMeNot() {
   const { route } = useNav();
@@ -24,9 +67,16 @@ export default function ForgetMeNot() {
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState(null);
 
+  /* Three sections rather than one ranked list — see buildReviewSections.
+     `queue` stays flat only to find the active row by id. */
+  const sections = buildReviewSections(knowledge);
   const queue = buildReviewQueue(knowledge);
-  const due = queue.filter((r) => r.dueNow);
+  const due = sections.due;
   const active = activeTopicId ? queue.find((r) => r.topicId === activeTopicId) : null;
+  const stageOf = (topicId) => {
+    const entry = knowledge.find((k) => k.topicId === topicId);
+    return entry?.masteryStage || deriveMasteryStage(entry || {});
+  };
 
   const startReview = useCallback(
     async (topicId) => {
@@ -84,32 +134,61 @@ export default function ForgetMeNot() {
       <div className="grid grid-2" style={{ alignItems: "start" }}>
         {/* Review queue */}
         <div style={{ display: "grid", gap: 14 }}>
-          {queue.length === 0 && (
+          {!sections.due.length && !sections.upcoming.length && (
             <Card><p className="small muted" style={{ margin: 0 }}>{t("review.empty")}</p></Card>
           )}
 
-          {queue.map((r) => (
-            <Card key={r.topicId} hover style={{ padding: 16, borderColor: activeTopicId === r.topicId ? "rgba(77,141,255,0.5)" : undefined, opacity: r.mastery === 0 ? 0.75 : 1 }}>
-              <div className="flex items-center justify-between wrap gap-12">
-                <div style={{ flex: 1, minWidth: 180 }}>
-                  <div className="flex items-center gap-8 wrap">
-                    <span className="strong" style={{ fontSize: 15 }}>{tOr(`topic.${r.topicId}.name`, r.topicName)}</span>
-                    <Badge tone={r.priorityScore >= 80 ? "rose" : r.priorityScore >= 65 ? "amber" : r.priorityScore >= 40 ? "blue" : "teal"}>
-                      {t(r.levelKey)}
-                    </Badge>
-                    {r.dueNow && <Badge tone="gold" dot>{t("review.due")}</Badge>}
-                  </div>
-                  <p className="tiny muted" style={{ margin: "6px 0 10px" }}>
-                    {t("review.meta", { days: r.daysSinceReview, next: r.intervalDays, mastery: r.mastery })}
-                  </p>
-                  <ProgressBar value={r.priorityScore} tone="gold" ariaLabel={t("review.priorityAria", { score: r.priorityScore })} />
-                </div>
-                <Button variant={r.dueNow ? "primary" : "outline"} size="sm" onClick={() => startReview(r.topicId)}>
-                  {t("review.now")}
-                </Button>
-              </div>
-            </Card>
-          ))}
+          {/* DUE — the only section that is work. Anything a learner can
+              act on right now, most costly first. */}
+          {sections.due.length > 0 && (
+            <>
+              <h2 className="review-section-heading">{t("review.section.due", { count: sections.due.length })}</h2>
+              {sections.due.map((r) => (
+                <ReviewRow
+                  key={r.topicId}
+                  row={r}
+                  stage={stageOf(r.topicId)}
+                  active={activeTopicId === r.topicId}
+                  onStart={() => startReview(r.topicId)}
+                  primary
+                  t={t}
+                  tOr={tOr}
+                  tPlural={tPlural}
+                />
+              ))}
+            </>
+          )}
+
+          {/* UPCOMING — the schedule, soonest first. Visible so the learner
+              can see the system working, but deliberately quiet: reviewing
+              something before its window undoes the spacing that makes it
+              work. */}
+          {sections.upcoming.length > 0 && (
+            <>
+              <h2 className="review-section-heading">{t("review.section.upcoming")}</h2>
+              {sections.upcoming.slice(0, 6).map((r) => (
+                <ReviewRow
+                  key={r.topicId}
+                  row={r}
+                  stage={stageOf(r.topicId)}
+                  active={activeTopicId === r.topicId}
+                  onStart={() => startReview(r.topicId)}
+                  t={t}
+                  tOr={tOr}
+                  tPlural={tPlural}
+                />
+              ))}
+            </>
+          )}
+
+          {/* UNSTARTED — not reviews. Named, not listed: a queue that
+              offers to "review" something never opened is why the old flat
+              list disagreed with Today's Plan. */}
+          {sections.unstarted.length > 0 && (
+            <p className="tiny muted" style={{ margin: 0 }}>
+              {t("review.unstarted", { count: sections.unstarted.length })}
+            </p>
+          )}
 
           <div className="notice" style={{ margin: 0 }}>
             <span aria-hidden="true">🧮</span>

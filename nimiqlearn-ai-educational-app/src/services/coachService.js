@@ -42,7 +42,7 @@
 
 import { findTopic, LEAF_TOPICS } from "../data/mockTopics.js";
 import { getNextLearningActivity } from "./learningLoopService.js";
-import { computeReviewRecommendation } from "./forgetMeNotService.js";
+import { computeReviewRecommendation, isReviewable } from "./forgetMeNotService.js";
 import { nextEvidenceNeeded, evidenceFor, deriveMasteryStage, STAGE_RANK } from "./masteryService.js";
 import { MASTERY_BANDS } from "../config/learningThresholds.js";
 
@@ -51,26 +51,12 @@ export const PLAN_KINDS = ["REVIEW", "REPAIR", "ADVANCE", "START"];
 
 const entryFor = (knowledge, topicId) => knowledge.find((k) => k.topicId === topicId) || null;
 
-/* The shortest gap that can count as a review.
-   A review exists to catch a concept before it fades, so something
-   studied minutes ago cannot be one — however the interval arithmetic
-   scores it. Without this, finishing the diagnostic immediately produced
-   "you last worked on this yesterday, it is due for review" about five
-   concepts answered seconds earlier: the first recommendation a new
-   learner ever sees, and plainly false. Six hours is the smallest gap
-   over which "do you still remember it?" is a real question. */
-const MIN_REVIEW_GAP_MS = 6 * 60 * 60 * 1000;
-
-/** Review candidates the learner has genuinely studied, and not just now. */
+/* Which due rows are genuinely reviewable. The rule itself lives in
+   forgetMeNotService, which owns scheduling — the coach only applies it,
+   so the queue page and Today's Plan can never disagree about what is
+   due. */
 export function reviewableNow(knowledge, dueNow, now = Date.now()) {
-  return dueNow.filter((row) => {
-    const entry = entryFor(knowledge, row.topicId);
-    if (!entry) return false;
-    const studied = (entry.evidence?.length ?? 0) > 0 || (entry.mastery ?? 0) > 0 || entry.lastStudiedAt;
-    if (!studied) return false;
-    const last = entry.lastStudiedAt || entry.lastReviewedAt || entry.lastEvaluatedAt || null;
-    return !last || now - last >= MIN_REVIEW_GAP_MS;
-  });
+  return dueNow.filter((row) => isReviewable(entryFor(knowledge, row.topicId), now));
 }
 
 /* A concept the learner has touched but not finished — the pool rule 3

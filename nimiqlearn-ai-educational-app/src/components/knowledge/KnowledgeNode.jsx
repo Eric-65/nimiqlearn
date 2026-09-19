@@ -1,6 +1,6 @@
 import React from "react";
 import { useI18n } from "../../hooks/useI18n.js";
-import { STATUS_META } from "../../services/knowledgeService.js";
+import { STAGE_LABEL_KEYS, STAGE_COLORS, STAGE_RANK, deriveMasteryStage } from "../../services/masteryService.js";
 
 /**
  * A single knowledge node.
@@ -14,10 +14,19 @@ export default function KnowledgeNode({ topic, knowledge, onSelect, index, due =
      there. The aria-label was built the same way and was still English
      inside a Korean UI. */
   const name = tOr(`topic.${topic.id}.name`, topic.name);
-  const statusLabel = t(`status.${String(knowledge?.status || "NEW").toLowerCase()}`);
-  const color = STATUS_META[knowledge?.status]?.color || "var(--st-new)";
-  const isWeak = knowledge?.status === "LEARNING" || (knowledge?.status === "NEW" && !knowledge.lastEvaluatedAt);
-  const isMastered = knowledge?.status === "MASTERED";
+  /* The node now reports the mastery STAGE rather than the mastery band.
+     "Can explain" and "Developing" are different claims: one says what the
+     learner has demonstrated, the other describes a number. The map is
+     where somebody looks to answer "what do I actually know", so it has to
+     answer with the demonstration. */
+  const stage = knowledge?.masteryStage || deriveMasteryStage(knowledge || {});
+  const stageLabel = t(STAGE_LABEL_KEYS[stage] || STAGE_LABEL_KEYS.NEW);
+  const color = STAGE_COLORS[stage] || "var(--st-new)";
+  /* "Fix this" is for a concept that has been attempted without landing —
+     not for one nobody has opened, which is simply new. */
+  const isWeak = stage === "LEARNING";
+  const isMastered = stage === "MASTERED";
+  const demonstrated = STAGE_RANK[stage] >= STAGE_RANK.CAN_RECALL;
 
   return (
     <button
@@ -47,7 +56,7 @@ export default function KnowledgeNode({ topic, knowledge, onSelect, index, due =
         e.currentTarget.style.transform = "translateX(0)";
         e.currentTarget.style.borderColor = isMastered ? "rgba(247,193,79,0.4)" : "var(--c-border)";
       }}
-      aria-label={t("node.aria", { name, status: statusLabel, due: due ? t("node.aria.due") : "" })}
+      aria-label={t("node.aria", { name, status: stageLabel, due: due ? t("node.aria.due") : "" })}
     >
       <span
         aria-hidden="true"
@@ -65,7 +74,8 @@ export default function KnowledgeNode({ topic, knowledge, onSelect, index, due =
           {name}
         </span>
         <span className="tiny muted" style={{ display: "block" }}>
-          {statusLabel} {knowledge?.mastery > 0 ? `• ${knowledge.mastery}%` : ""}
+          {stageLabel}
+          {demonstrated && knowledge?.mastery > 0 ? ` • ${knowledge.mastery}%` : ""}
         </span>
       </span>
       {due && (

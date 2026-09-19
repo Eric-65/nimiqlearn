@@ -1663,3 +1663,59 @@ button { font-family: inherit; }
   font-size: 16px;
   line-height: 1.5;
 }
+
+/* ============================================================
+   Review queue sections & concept evidence
+   ------------------------------------------------------------
+   The queue is three sections now (due / upcoming / unstarted),
+   so it needs a heading style quiet enough not to compete with
+   the page title but loud enough to separate work from schedule.
+   ============================================================ */
+.review-section-heading {
+  margin: 8px 0 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-dim);
+}
+
+.review-section-heading:first-child { margin-top: 0; }
+
+/* The three demonstrations behind a concept's stage. A ticked row is what
+   the learner has shown; an unticked one is not a failure, so it is dimmed
+   rather than coloured as a problem. */
+.detail-evidence {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.detail-evidence li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+  color: var(--c-text-dim);
+}
+
+.detail-evidence li.has { color: var(--c-text); font-weight: 600; }
+
+.detail-evidence li .tiny { margin-left: auto; font-weight: 400; }
+
+.detail-misconception {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  font-size: 14px;
+}
+
+.detail-next {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--c-text-dim);
+}

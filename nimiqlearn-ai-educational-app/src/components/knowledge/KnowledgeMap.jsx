@@ -2,7 +2,7 @@ import React from "react";
 import { useI18n } from "../../hooks/useI18n.js";
 import KnowledgeNode from "./KnowledgeNode.jsx";
 import { TOPIC_TREE } from "../../data/mockTopics.js";
-import { STATUS_META } from "../../services/knowledgeService.js";
+import { MASTERY_STAGES, STAGE_LABEL_KEYS, STAGE_COLORS } from "../../services/masteryService.js";
 
 /**
  * The signature animated knowledge tree.
@@ -12,7 +12,7 @@ import { STATUS_META } from "../../services/knowledgeService.js";
  */
 export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null, dueTopicIds = [] }) {
   const { t, tOr } = useI18n();
-  const getEntry = (topicId) => knowledge.find((k) => k.topicId === topicId) || { status: "NEW", mastery: 0 };
+  const getEntry = (topicId) => knowledge.find((k) => k.topicId === topicId) || { status: "NEW", mastery: 0, masteryStage: "NEW", evidence: [] };
   const dueSet = new Set(dueTopicIds);
 
   const renderBranch = (subject) => (
@@ -69,10 +69,13 @@ export default function KnowledgeMap({ knowledge, onSelect, recentTopicId = null
           <p className="small muted" style={{ margin: 0 }}>{t("knowledge.mapSub")}</p>
         </div>
         <div className="flex items-center gap-12 wrap">
-          {Object.entries(STATUS_META).map(([key, meta]) => (
-            <span key={key} className="flex items-center gap-6 tiny muted">
-              <span className="status-dot" style={{ background: meta.color }} aria-hidden="true" />
-              {t(`status.${key.toLowerCase()}`)}
+          {/* The legend is the mastery ladder, in order. Reading it left to
+              right is the progression itself, which is most of what a
+              first-time viewer needs to understand the map. */}
+          {MASTERY_STAGES.map((stage) => (
+            <span key={stage} className="flex items-center gap-6 tiny muted">
+              <span className="status-dot" style={{ background: STAGE_COLORS[stage] }} aria-hidden="true" />
+              {t(STAGE_LABEL_KEYS[stage])}
             </span>
           ))}
         </div>
