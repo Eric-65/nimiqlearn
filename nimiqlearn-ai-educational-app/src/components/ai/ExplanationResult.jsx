@@ -135,6 +135,15 @@ export default function ExplanationResult({ evaluation, beforeMastery = 0, after
 
       {/* the three analysis sections */}
       <Card>
+        {/* The grader's own sentence about THIS explanation, above the
+            lists. It was being generated on every submission and then
+            dropped: the learner saw three bulleted lists and never the one
+            plain-language line that says how it went. Lists are what to do
+            next; this is what just happened, and it reads first for the
+            same reason a person would say it first. */}
+        {(evaluation.summary || evaluation.feedback) && (
+          <p className="explanation-summary">{evaluation.summary || evaluation.feedback}</p>
+        )}
         <Section title={t("result.strengths")} items={evaluation.strengths} tone="teal" icon="✓" empty={t("result.strengths.empty")} />
         <Section title={t("result.missing")} items={evaluation.missingConcepts} tone="amber" icon="•" empty={t("result.missing.empty")} />
         <Section title={t("result.misconceptions")} items={evaluation.misconceptions} tone="rose" icon="•" empty={t("result.misconceptions.empty")} />

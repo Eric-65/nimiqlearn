@@ -1652,3 +1652,14 @@ button { font-family: inherit; }
 @media (min-width: 720px) {
   .onboarding-scrim { align-items: center; }
 }
+
+/* The grader's plain-language sentence, above the analysis lists. Set a
+   touch larger than body text and separated by a rule: it is the answer to
+   "how did I do", and the lists below it are the detail. */
+.explanation-summary {
+  margin: 0 0 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 16px;
+  line-height: 1.5;
+}
