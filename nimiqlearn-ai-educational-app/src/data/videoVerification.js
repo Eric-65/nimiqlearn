@@ -18,7 +18,7 @@
    ============================================================ */
 
 export const VIDEO_VERIFICATION = {
-  "generatedAt": "2026-09-19T07:09:50.332Z",
+  "generatedAt": "2026-09-19T12:52:54.263Z",
   "entries": {
     "linear-equations-de-01": {
       "commonsTitle": "File:Lineare Gleichungssysteme und Lösungsverfahren - kolleg24 Mathematik.webm",
@@ -33,8 +33,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "ARD kolleg24",
       "machineCheckedAt": "2026-09-19T06:40:03.933Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:41.951Z"
     },
     "functions-de-01": {
       "commonsTitle": "File:Lineare Funktionen - kolleg24 Mathematik.webm",
@@ -49,8 +49,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "ARD kolleg24",
       "machineCheckedAt": "2026-09-19T06:40:07.047Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:43.247Z"
     },
     "inequalities-de-01": {
       "commonsTitle": "File:Verwendung der Bernoulli-Ungleichung für Beweise ohne Logarithmus (Potenz ist kleinerer Term).webm",
@@ -65,8 +65,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "Stephan Kulla (User:Stephan Kulla)",
       "machineCheckedAt": "2026-09-19T06:40:09.782Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:43.933Z"
     },
     "exponents-de-01": {
       "commonsTitle": "File:Potenzgesetze - kolleg24 Mathematik.webm",
@@ -81,8 +81,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "ARD kolleg24",
       "machineCheckedAt": "2026-09-19T06:40:12.415Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:44.576Z"
     },
     "proofs-en-01": {
       "commonsTitle": "File:Visually-straight-lines-on-log-log-plots.webm",
@@ -97,8 +97,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "Renepick",
       "machineCheckedAt": "2026-09-19T06:40:16.193Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:45.953Z"
     },
     "pythagorean-theorem-de-01": {
       "commonsTitle": "File:Satz des Pythagoras – Beweis mit Scherung.webm",
@@ -113,8 +113,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "Christian Spannagel",
       "machineCheckedAt": "2026-09-19T06:40:19.025Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:46.646Z"
     },
     "circles-de-01": {
       "commonsTitle": "File:Flächeninhalt und Umfang von Rechteck und Kreis - kolleg24 Mathematik.webm",
@@ -129,8 +129,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "ARD kolleg24",
       "machineCheckedAt": "2026-09-19T06:40:22.155Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:48.043Z"
     },
     "probability-basics-es-01": {
       "commonsTitle": "File:Probabilidad.webm",
@@ -145,8 +145,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "4mduc14s99",
       "machineCheckedAt": "2026-09-19T06:40:24.928Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:48.744Z"
     },
     "newtons-second-law-en-01": {
       "commonsTitle": "File:STEMonstrations- Newton's 2nd Law of Motion.webm",
@@ -161,8 +161,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "NASA Johnson",
       "machineCheckedAt": "2026-09-19T06:40:27.668Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:49.380Z"
     },
     "energy-work-en-01": {
       "commonsTitle": "File:PlaneWork.webm",
@@ -177,8 +177,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "TheMonkeyEatsBananas",
       "machineCheckedAt": "2026-09-19T06:40:30.533Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:50.053Z"
     },
     "waves-sound-en-01": {
       "commonsTitle": "File:DopplerEffectBuzzer.webm",
@@ -193,8 +193,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "Stewart Feather",
       "machineCheckedAt": "2026-09-19T06:40:33.715Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:50.726Z"
     },
     "electricity-basics-en-01": {
       "commonsTitle": "File:8.02x - Lect 10 - Batteries, Power, Kirchhoff's Rules, Circuits, Kelvin Water Dropper.webm",
@@ -209,8 +209,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "Lectures by Walter Lewin. They will make you ♥ Physics.",
       "machineCheckedAt": "2026-09-19T06:40:36.637Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:51.386Z"
     },
     "atoms-elements-en-01": {
       "commonsTitle": "File:How Atoms Are Defying Gravity in NASA's Cold Atom Lab (SVS31389).webm",
@@ -225,8 +225,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "NASA's Scientific Visualization Studio - Global Science and Technology, Inc./Amy Moran",
       "machineCheckedAt": "2026-09-19T06:40:39.418Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:52.060Z"
     },
     "dna-genetics-en-01": {
       "commonsTitle": "File:DNA extraction explained - biology animation.webm",
@@ -241,8 +241,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "yourgenome",
       "machineCheckedAt": "2026-09-19T06:40:42.174Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:52.718Z"
     },
     "python-basics-en-01": {
       "commonsTitle": "File:Installing Jupyter Notebooks-Anaconda - Python for Beginners.webm",
@@ -257,8 +257,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "Alex The Analyst",
       "machineCheckedAt": "2026-09-19T06:40:44.910Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:53.441Z"
     },
     "ai-fundamentals-en-01": {
       "commonsTitle": "File:Artificial intelligence explained in 2 minutes - What exactly is AI?.webm",
@@ -273,8 +273,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "KI-Campus",
       "machineCheckedAt": "2026-09-19T06:40:47.620Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:54.263Z"
     },
     "quadratics-en-01": {
       "commonsTitle": "File:Solving-quadratic-equations.ogv",
@@ -289,8 +289,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "Mosborne01",
       "machineCheckedAt": "2026-09-19T07:07:44.064Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:42.535Z"
     },
     "pythagorean-theorem-fr-01": {
       "commonsTitle": "File:PythagoreEuclide.ogv",
@@ -305,8 +305,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "HB",
       "machineCheckedAt": "2026-09-19T07:07:50.946Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:47.333Z"
     },
     "angles-de-01": {
       "commonsTitle": "File:Winkel konstruieren - Serlo.ogv",
@@ -321,8 +321,8 @@ export const VIDEO_VERIFICATION = {
       "restrictions": null,
       "attribution": "Serlo Education e.V.",
       "machineCheckedAt": "2026-09-19T07:09:50.016Z",
-      "contentConfirmed": false,
-      "verifiedAt": null
+      "contentConfirmed": true,
+      "verifiedAt": "2026-09-19T12:52:45.258Z"
     }
   }
 };
