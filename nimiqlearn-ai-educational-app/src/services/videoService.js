@@ -36,6 +36,10 @@ import { VIDEO_LIBRARY, DELIBERATELY_EMPTY } from "../data/videoLibrary.js";
 export const MATCH_AUDIO = "audio";
 export const MATCH_SUBTITLES = "subtitles";
 export const MATCH_ENGLISH = "english-fallback";
+/* The learner chose this language themselves (a card in the "other
+   languages" section), so it is neither a match for their UI language nor
+   a fallback — the UI still names the spoken language, honestly. */
+export const MATCH_CHOSEN = "chosen";
 
 const ENGLISH = "en";
 
@@ -67,7 +71,7 @@ function hasSubtitlesFor(entry, locale) {
 /**
  * @returns {{video: object, match: string, requestedLanguage: string, spokenLanguage: string}|null}
  */
-export function selectVideo(topicId, locale, { includeUnverified = false } = {}) {
+export function selectVideo(topicId, locale, { includeUnverified = false, audioLanguage = null } = {}) {
   const byLanguage = VIDEO_LIBRARY[topicId];
   if (!byLanguage) return null;
 
@@ -76,6 +80,16 @@ export function selectVideo(topicId, locale, { includeUnverified = false } = {})
     video
       ? { video, match, requestedLanguage: requested, spokenLanguage: video.audioLanguage }
       : null;
+
+  /* 0. A language the learner picked explicitly — a German card in the
+        "other languages" section opened from an English UI. Without this,
+        the chain below would look for English, find none for a German-only
+        topic, and show NO video on the very page the card led to. Falls
+        through to the normal chain if that language has nothing playable. */
+  if (audioLanguage) {
+    const chosen = firstPlayable(byLanguage[baseLanguage(audioLanguage)], includeUnverified);
+    if (chosen) return result(chosen, baseLanguage(audioLanguage) === requested ? MATCH_AUDIO : MATCH_CHOSEN);
+  }
 
   /* 1. Spoken in their language. */
   const spoken = firstPlayable(byLanguage[requested], includeUnverified);
@@ -153,7 +167,7 @@ export function topicsWithVideo(locale) {
   return Object.keys(VIDEO_LIBRARY).filter((id) => selectVideo(id, locale) !== null);
 }
 
-/* The order the Home carousel presents courses in. There is no real
+/* The order the Home carousels present courses in. There is no real
    popularity signal (no like counts, no learner counts — and the app will
    not invent them), so "top" is editorial: short, well-licensed, squarely
    on-topic first. Anything not listed comes after, in library order. */
@@ -168,28 +182,45 @@ const FEATURED_ORDER = [
   "proofs",
   "electricity-basics",
   "energy-work",
+  "linear-equations",
+  "functions",
+  "exponents",
+  "angles",
+  "pythagorean-theorem",
+  "circles",
+  "inequalities",
+  "probability-basics",
 ];
 
+const rank = (id) => {
+  const i = FEATURED_ORDER.indexOf(id);
+  return i === -1 ? FEATURED_ORDER.length : i;
+};
+
 /**
- * Courses for the Home carousel: topics with a playable video for this
- * locale, English preferred, in editorial order, at most `limit`. Each
- * item carries the selected video so the card can show its poster,
- * duration and spoken language without a second lookup.
+ * Every playable video in the library, grouped by the language SPOKEN in
+ * it, for the Home carousels: one section of English courses, one of
+ * courses in other languages. Every entry, not a top six — a learner
+ * pages through with the arrows. A topic with videos in two languages
+ * (Pythagoras: German and French) appears once per video, so items are
+ * keyed by the video id, and each carries the language the card was
+ * chosen for so Learn can honour it on arrival.
+ *
+ * "english" is ordered editorially; "other" is grouped by language, then
+ * editorially within a language, so German courses sit together.
  */
-export function featuredCourses(locale, { limit = 6 } = {}) {
-  const rank = (id) => {
-    const i = FEATURED_ORDER.indexOf(id);
-    return i === -1 ? FEATURED_ORDER.length : i;
-  };
-  return Object.keys(VIDEO_LIBRARY)
-    .map((topicId) => ({ topicId, selection: selectVideo(topicId, locale) }))
-    .filter((c) => c.selection !== null)
-    /* Mostly English: a video spoken in the learner's language or English
-       ranks above one only matched by subtitles. */
-    .sort((a, b) => {
-      const subA = a.selection.match === MATCH_SUBTITLES ? 1 : 0;
-      const subB = b.selection.match === MATCH_SUBTITLES ? 1 : 0;
-      return subA - subB || rank(a.topicId) - rank(b.topicId);
-    })
-    .slice(0, limit);
+export function coursesByLanguage() {
+  const english = [];
+  const other = [];
+  for (const [topicId, byLanguage] of Object.entries(VIDEO_LIBRARY)) {
+    for (const [lang, list] of Object.entries(byLanguage)) {
+      const video = firstPlayable(list, false);
+      if (!video) continue;
+      const item = { id: video.id, topicId, video, audioLanguage: video.audioLanguage || lang };
+      (baseLanguage(item.audioLanguage) === ENGLISH ? english : other).push(item);
+    }
+  }
+  english.sort((a, b) => rank(a.topicId) - rank(b.topicId));
+  other.sort((a, b) => a.audioLanguage.localeCompare(b.audioLanguage) || rank(a.topicId) - rank(b.topicId));
+  return { english, other };
 }

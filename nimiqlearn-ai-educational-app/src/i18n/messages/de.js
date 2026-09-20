@@ -893,6 +893,9 @@ export default {
   "footer.developer": "Entwicklung",
   "footer.aria": "Links und Ressourcen",
   "footer.changeLanguage": "Sprache ändern",
+  "courses.english.title": "Top-Kurse auf Englisch",
+  "courses.other.title": "Kurse in anderen Sprachen",
+  "video.spokenIn": "Gesprochen auf {spoken}.",
 
   /* ---------------- Meisterschafts-Coach ---------------- */
   "stage.new": "Nicht begonnen",
@@ -1057,7 +1060,6 @@ export default {
   "profile.editName": "Namen bearbeiten",
   "profile.memberSince": "Mitglied seit {date}",
   "courses.eyebrow": "Videokurse",
-  "courses.title": "Mit einer Lektion lernen, dann beweisen",
   "courses.prev": "Vorherige Kurse",
   "courses.next": "Nächste Kurse",
   "courses.pages": "Kursseiten",

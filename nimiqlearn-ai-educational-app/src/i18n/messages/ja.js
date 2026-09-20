@@ -888,6 +888,9 @@ export default {
   "footer.developer": "開発者",
   "footer.aria": "リンクとリソース",
   "footer.changeLanguage": "言語を変更",
+  "courses.english.title": "英語の人気コース",
+  "courses.other.title": "他の言語のコース",
+  "video.spokenIn": "{spoken}で話されています。",
 
   /* ---------------- 習熟コーチ ---------------- */
   "stage.new": "未着手",
@@ -1052,7 +1055,6 @@ export default {
   "profile.editName": "名前を編集",
   "profile.memberSince": "{date} から参加",
   "courses.eyebrow": "動画コース",
-  "courses.title": "レッスンで学び、そして証明する",
   "courses.prev": "前のコース",
   "courses.next": "次のコース",
   "courses.pages": "コースのページ",

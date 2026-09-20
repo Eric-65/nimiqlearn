@@ -887,6 +887,9 @@ export default {
   "footer.developer": "개발자",
   "footer.aria": "링크 및 자료",
   "footer.changeLanguage": "언어 변경",
+  "courses.english.title": "인기 영어 강의",
+  "courses.other.title": "다른 언어 강의",
+  "video.spokenIn": "{spoken}로 진행됩니다.",
 
   /* ---------------- 마스터리 코치 ---------------- */
   "stage.new": "시작 전",
@@ -1051,7 +1054,6 @@ export default {
   "profile.editName": "이름 편집",
   "profile.memberSince": "{date}부터 회원",
   "courses.eyebrow": "동영상 강의",
-  "courses.title": "강의로 배우고, 직접 증명하세요",
   "courses.prev": "이전 강의",
   "courses.next": "다음 강의",
   "courses.pages": "강의 페이지",

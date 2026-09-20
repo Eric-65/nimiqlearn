@@ -892,6 +892,9 @@ export default {
   "footer.developer": "Développement",
   "footer.aria": "Liens et ressources",
   "footer.changeLanguage": "Changer de langue",
+  "courses.english.title": "Meilleurs cours en anglais",
+  "courses.other.title": "Cours dans d'autres langues",
+  "video.spokenIn": "Parlé en {spoken}.",
 
   /* ---------------- Coach de maîtrise ---------------- */
   "stage.new": "Pas commencé",
@@ -1056,7 +1059,6 @@ export default {
   "profile.editName": "Modifier votre nom",
   "profile.memberSince": "Membre depuis le {date}",
   "courses.eyebrow": "Cours vidéo",
-  "courses.title": "Apprenez avec une leçon, puis prouvez-le",
   "courses.prev": "Cours précédents",
   "courses.next": "Cours suivants",
   "courses.pages": "Pages de cours",

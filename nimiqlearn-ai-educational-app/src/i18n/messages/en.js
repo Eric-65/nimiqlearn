@@ -802,6 +802,9 @@ export default {
   "footer.developer": "Developer",
   "footer.aria": "Links and resources",
   "footer.changeLanguage": "Change language",
+  "courses.english.title": "Top English courses",
+  "courses.other.title": "Courses in other languages",
+  "video.spokenIn": "Spoken in {spoken}.",
 
   /* ---------------- Mastery coach ---------------- */
   "stage.new": "Not started",
@@ -966,7 +969,6 @@ export default {
   "profile.editName": "Edit your name",
   "profile.memberSince": "Member since {date}",
   "courses.eyebrow": "Video courses",
-  "courses.title": "Learn with a lesson, then prove it",
   "courses.prev": "Previous courses",
   "courses.next": "Next courses",
   "courses.pages": "Course pages",

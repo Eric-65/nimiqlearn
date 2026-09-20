@@ -891,6 +891,9 @@ export default {
   "footer.developer": "Desarrollo",
   "footer.aria": "Enlaces y recursos",
   "footer.changeLanguage": "Cambiar idioma",
+  "courses.english.title": "Mejores cursos en inglés",
+  "courses.other.title": "Cursos en otros idiomas",
+  "video.spokenIn": "Hablado en {spoken}.",
 
   /* ---------------- Coach de dominio ---------------- */
   "stage.new": "Sin empezar",
@@ -1055,7 +1058,6 @@ export default {
   "profile.editName": "Editar tu nombre",
   "profile.memberSince": "Miembro desde {date}",
   "courses.eyebrow": "Cursos en vídeo",
-  "courses.title": "Aprende con una lección y luego demuéstralo",
   "courses.prev": "Cursos anteriores",
   "courses.next": "Cursos siguientes",
   "courses.pages": "Páginas de cursos",

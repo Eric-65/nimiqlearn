@@ -5,6 +5,7 @@ import {
   formatDuration,
   MATCH_SUBTITLES,
   MATCH_ENGLISH,
+  MATCH_CHOSEN,
 } from "../../services/videoService.js";
 
 /**
@@ -28,14 +29,15 @@ import {
  * ship with the video rather than in a page the learner will never open.
  */
 /**
- * @param onEnded  called when the video plays to the end — Learn uses it to
- *                 move a learner who arrived from a course on to practice
- *                 without their having to press anything.
+ * @param audioLanguage  a language the learner chose explicitly — the card
+ *                       they tapped on Home. The video in that language is
+ *                       shown even when it is not the UI language.
+ * @param onEnded        called when the video plays to the end.
  */
-export default function TopicVideo({ topicId, onEnded }) {
+export default function TopicVideo({ topicId, audioLanguage = null, onEnded }) {
   const { t, locale } = useI18n();
 
-  const selection = useMemo(() => selectVideo(topicId, locale), [topicId, locale]);
+  const selection = useMemo(() => selectVideo(topicId, locale, { audioLanguage }), [topicId, locale, audioLanguage]);
 
   /* Language names in the learner's own language — "Deutsch" for a German
      reader, "German" for an English one. Intl does this for all ten locales;
@@ -57,7 +59,10 @@ export default function TopicVideo({ topicId, onEnded }) {
   const duration = formatDuration(video.durationSeconds);
 
   let languageLine = null;
-  if (match === MATCH_ENGLISH) {
+  if (match === MATCH_CHOSEN) {
+    /* Their own pick, not the UI language: say what is spoken, plainly. */
+    languageLine = t("video.spokenIn", { spoken: languageName(spokenLanguage) });
+  } else if (match === MATCH_ENGLISH) {
     languageLine = t("video.englishOnly");
   } else if (match === MATCH_SUBTITLES) {
     languageLine = t("video.subtitled", {

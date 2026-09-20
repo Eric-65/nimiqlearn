@@ -892,6 +892,9 @@ export default {
   "footer.developer": "Sviluppo",
   "footer.aria": "Link e risorse",
   "footer.changeLanguage": "Cambia lingua",
+  "courses.english.title": "I migliori corsi in inglese",
+  "courses.other.title": "Corsi in altre lingue",
+  "video.spokenIn": "Parlato in {spoken}.",
 
   /* ---------------- Coach di padronanza ---------------- */
   "stage.new": "Non iniziato",
@@ -1056,7 +1059,6 @@ export default {
   "profile.editName": "Modifica il tuo nome",
   "profile.memberSince": "Membro dal {date}",
   "courses.eyebrow": "Corsi video",
-  "courses.title": "Impara con una lezione, poi dimostralo",
   "courses.prev": "Corsi precedenti",
   "courses.next": "Corsi successivi",
   "courses.pages": "Pagine dei corsi",

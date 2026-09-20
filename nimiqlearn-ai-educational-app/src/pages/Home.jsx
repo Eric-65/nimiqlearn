@@ -8,6 +8,7 @@ import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 import BuiltOnNimiq from "../components/layout/BuiltOnNimiq.jsx";
 import CourseCarousel from "../components/home/CourseCarousel.jsx";
+import { coursesByLanguage } from "../services/videoService.js";
 import Badge from "../components/ui/Badge.jsx";
 import { LEAF_TOPICS, findTopic } from "../data/mockTopics.js";
 import TodaysPlan from "../components/home/TodaysPlan.jsx";
@@ -63,6 +64,7 @@ export default function Home() {
   const unlockedCount = (learner.unlockedPacks || []).length;
   const recentUnlock = [...(learner.unlockedPacks || [])].sort((a, b) => (b.purchasedAt || 0) - (a.purchasedAt || 0))[0];
   const recentPack = recentUnlock ? LEARNING_PACKS.find((p) => p.id === recentUnlock.productId) : null;
+  const courseGroups = coursesByLanguage();
 
   return (
     <div>
@@ -320,7 +322,23 @@ export default function Home() {
       </section>
 
       {/* ================= VIDEO COURSES ================= */}
-      <CourseCarousel />
+      {/* Two identical sections: every English course, then every course in
+          another language (German, French, Spanish …), each paged three at
+          a time. Grouped by the language SPOKEN in the video, not the UI
+          language, so a French reader still finds the German lectures under
+          "other languages" and the English ones under "English". */}
+      <CourseCarousel
+        idBase="courses-en"
+        courses={courseGroups.english}
+        eyebrow={t("courses.eyebrow")}
+        title={t("courses.english.title")}
+      />
+      <CourseCarousel
+        idBase="courses-other"
+        courses={courseGroups.other}
+        eyebrow={t("courses.eyebrow")}
+        title={t("courses.other.title")}
+      />
 
       <section className="reveal" style={{ marginTop: 72, textAlign: "center" }}>
         <Button variant="primary" size="lg" onClick={() => navigate("learn")}>{t("home.finalCta")}</Button>

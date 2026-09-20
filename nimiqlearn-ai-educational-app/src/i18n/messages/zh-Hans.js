@@ -886,6 +886,9 @@ export default {
   "footer.developer": "开发者",
   "footer.aria": "链接与资源",
   "footer.changeLanguage": "更改语言",
+  "courses.english.title": "热门英语课程",
+  "courses.other.title": "其他语言课程",
+  "video.spokenIn": "以{spoken}讲授。",
 
   /* ---------------- 精熟教练 ---------------- */
   "stage.new": "未开始",
@@ -1050,7 +1053,6 @@ export default {
   "profile.editName": "编辑你的名称",
   "profile.memberSince": "{date} 加入",
   "courses.eyebrow": "视频课程",
-  "courses.title": "先看课学习，再动手证明",
   "courses.prev": "上一组课程",
   "courses.next": "下一组课程",
   "courses.pages": "课程分页",
