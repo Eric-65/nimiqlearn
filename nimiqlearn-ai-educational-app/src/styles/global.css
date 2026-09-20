@@ -1719,3 +1719,105 @@ button { font-family: inherit; }
   font-size: 14px;
   color: var(--c-text-dim);
 }
+
+/* ============================================================
+   Official Nimiq video
+   ------------------------------------------------------------
+   Two aspect ratios, because a Short is portrait and a normal
+   video is landscape, and letterboxing one into the other wastes
+   most of a phone screen. The portrait frame is capped so a
+   Short cannot push the rest of the lesson off the page.
+   ============================================================ */
+.nimiq-video { display: grid; gap: 12px; }
+
+.nimiq-video-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nimiq-video-title { margin: 0; font-size: 16px; line-height: 1.35; }
+
+.nimiq-video-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--c-border);
+}
+
+/* A Short is 9:16. Centred and height-capped rather than full width: at
+   390px a true 9:16 frame is 693px tall, which is taller than the viewport
+   and buries everything the lesson does after the video. */
+.nimiq-video-frame.is-short {
+  aspect-ratio: 9 / 16;
+  max-height: 60vh;
+  width: auto;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.nimiq-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.nimiq-video-fallback { margin: 0; }
+.nimiq-video-credit { margin: 0; }
+
+.nimiq-video-credit a,
+.nimiq-video-fallback a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.nimiq-video-credit a:hover,
+.nimiq-video-credit a:focus-visible { color: var(--c-text); }
+
+.nimiq-video-done { justify-self: start; }
+
+/* The click-to-load face of a Nimiq video: a play button on the frame,
+   shown until the learner asks for the player. No thumbnail, because a
+   thumbnail is still a request to YouTube — the point is that scrolling
+   past a lesson costs nothing. */
+.nimiq-video-play {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: #fff;
+  background: radial-gradient(circle at 50% 45%, rgba(31, 35, 72, 0.9), #05070f 78%);
+}
+
+.nimiq-video-play-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  padding-left: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.nimiq-video-play:hover .nimiq-video-play-icon,
+.nimiq-video-play:focus-visible .nimiq-video-play-icon {
+  background: rgba(255, 255, 255, 0.24);
+}

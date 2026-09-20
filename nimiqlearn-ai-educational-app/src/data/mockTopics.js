@@ -121,6 +121,23 @@ export const TOPIC_TREE = [
           { id: "nimiq-blockchain", name: "Nimiq blockchain", description: "A browser-first proof-of-stake chain, and what consensus means for it.", difficulty: 1 },
           { id: "nim-token", name: "NIM", description: "The coin Nimiq runs on, and the Luna it is counted in.", difficulty: 1 },
           { id: "nimiq-pay", name: "Nimiq Pay", description: "The wallet that hosts mini apps, and the sandbox they run in.", difficulty: 2 },
+          { id: "self-custody", name: "Self-custody", description: "Holding your own keys, and what that makes you responsible for.", difficulty: 1 },
+          { id: "sending-nim", name: "Sending & receiving NIM", description: "Addresses, fees and what actually happens when you press send.", difficulty: 2 },
+          { id: "using-nimiq-safely", name: "Using Nimiq safely", description: "The handful of habits that keep self-custody from going wrong.", difficulty: 2 },
+        ],
+      },
+      {
+        /* A second group, not a second app. The brief asks for a builder
+           track that can grow later; grouping it here keeps it inside the
+           one Nimiq learning track rather than becoming a separate
+           academy, and the group is where SDK setup, signing, testnet
+           transactions and deployment will slot in. */
+        id: "nimiq-build",
+        name: "Building on Nimiq",
+        description: "What it takes to put your own app inside the wallet.",
+        children: [
+          { id: "nimiq-mini-apps", name: "Nimiq Mini Apps", description: "Web apps that run inside the wallet, and the providers they talk to.", difficulty: 2 },
+          { id: "building-on-nimiq", name: "Building on Nimiq", description: "From SDK setup to a signed message and a testnet transaction.", difficulty: 3 },
         ],
       },
     ],
@@ -476,6 +493,66 @@ export const TOPIC_CONTENT = {
     misconception: "Learners assume a mini app holds or can spend the user's funds. It can only ask: the wallet and the person decide, and a declined dialog is a normal outcome to handle, not an error.",
     analogy: "A mini app is a market stall inside a bank — it can hand you a bill, but only the teller moves the money, and only once you say yes.",
     example: "NimiqLearn asks Nimiq Pay to send 0.5 NIM for a learning pack. Nimiq Pay shows the recipient and the amount, and nothing moves until the learner approves it.",
+  },
+  "self-custody": {
+    definition:
+      "Self-custody means the private key that controls your coins is held by you, not by a company. Nobody can freeze the account or move funds for you — and nobody can restore it for you either, because there is no account to reset.",
+    keyPoints: [
+      "A wallet does not store coins. It stores the key that proves an address is yours; the balance lives on the chain.",
+      "The recovery words ARE the account. Anyone who reads them controls the funds, permanently.",
+      "No support desk can undo a sent transaction or recover a lost key — that is the cost of nobody being able to freeze your account either.",
+    ],
+    misconception: "Learners treat recovery words like a password that support can reset. A password protects an account somebody else holds; recovery words ARE the account, and there is no one behind them.",
+    analogy: "A custodial exchange is a cloakroom ticket — lose it and staff can still find your coat. Self-custody is owning the coat: nobody else has a copy, and nobody else can lose it for you.",
+    example: "NimiqLearn can ask Nimiq Pay for your address and for a payment. It never sees your key, which is exactly why it cannot spend anything without you approving it.",
+  },
+  "sending-nim": {
+    definition:
+      "Sending NIM means signing a transaction that moves an amount from your address to another, paying a small fee, and waiting for the network to include it in a block. Once included, it cannot be reversed.",
+    keyPoints: [
+      "A Nimiq address starts with NQ and is printed in nine groups of four; the format has a built-in check, so a mistyped address is usually rejected rather than silently wrong.",
+      "Amounts go to the chain in Luna (1 NIM = 100,000 Luna) even though people are shown NIM.",
+      "A confirmed transaction is final. There is no chargeback, so the check happens before you approve, not after.",
+    ],
+    misconception: "Learners expect a sent transaction to be cancellable, as a bank transfer often is for a few hours. It is not: approval is the last moment anything can be changed.",
+    analogy: "Closer to handing over cash than to a card payment — once it is in the other person's hand, getting it back is a new transaction they have to agree to.",
+    example: "Sending 0.5 NIM means signing for 50,000 Luna plus a fee. Nimiq Pay shows the recipient and amount; approving is what makes it real.",
+  },
+  "using-nimiq-safely": {
+    definition:
+      "Using Nimiq safely is a short list of habits rather than a product: guard the recovery words, check what a dialog is actually asking for before approving, and treat urgency as a warning sign.",
+    keyPoints: [
+      "Nobody legitimate ever needs your recovery words — not support, not a giveaway, not an app. A request for them IS the attack.",
+      "Read the approval dialog: it names the recipient and the amount, and it is the last point at which the answer can be no.",
+      "Urgency is the common thread in scams, because thinking clearly is what they need you not to do.",
+    ],
+    misconception: "Learners look for a padlock icon or a familiar-looking site as proof of safety. Appearance is the cheapest thing to fake; what a dialog ASKS FOR is the signal that matters.",
+    analogy: "The same rule as a bank phone call: the real bank never asks you to read your PIN down the line, so being asked at all is the answer.",
+    example: "A site offering free NIM asks you to 'validate your wallet' by entering twenty-four words. There is no validation step in Nimiq — that is a theft in progress.",
+  },
+  "nimiq-mini-apps": {
+    definition:
+      "A Nimiq Mini App is an ordinary web app loaded inside Nimiq Pay's WebView, which talks to the wallet through injected providers: the Mini App SDK for NIM and window.ethereum for EVM chains.",
+    keyPoints: [
+      "The mini app runs in a sandbox. It can ask for account access, a signature or a payment; the wallet and the person decide.",
+      "Reading chain state (block height, consensus) needs no approval; anything touching an account does.",
+      "A declined dialog is a normal outcome to handle gracefully, not an error state to retry in a loop.",
+    ],
+    misconception: "Learners assume a mini app is an extension of the wallet with its permissions. It is a guest: every privileged action is a request the person can refuse.",
+    analogy: "A market stall inside a bank — its own business, its own sign, but the teller still moves the money and only when you say so.",
+    example: "NimiqLearn is a mini app. It asks Nimiq Pay for your address to sign you in, and for a payment to unlock a pack; both are dialogs you can decline.",
+  },
+  "building-on-nimiq": {
+    definition:
+      "Building on Nimiq means installing the Mini App SDK, detecting the provider, requesting account access, and then signing or transacting — each step an explicit request the wallet mediates. Official documentation is the source for the API surface.",
+    keyPoints: [
+      "Detect the provider before using it: the same page also runs in an ordinary browser, where there is no wallet.",
+      "Request account access explicitly; do not assume an address is available on load.",
+      "Test with a signed message before a transaction — signing proves the plumbing works without moving anything.",
+    ],
+    misconception: "Learners build against the provider as if it were always present, so the app breaks in a normal browser instead of degrading to a read-only mode.",
+    analogy: "Writing for a plug-in peripheral: check it is connected before you send it work, and keep the app usable when it is not.",
+    example: "NimiqLearn detects Nimiq Pay on load, falls back to a clearly-labelled demo mode in a plain browser, and only asks for an address when the learner presses sign in.",
   },
 };
 

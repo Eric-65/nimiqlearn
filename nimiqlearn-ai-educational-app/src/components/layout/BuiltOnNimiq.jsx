@@ -1,6 +1,8 @@
 import React from "react";
 import { useI18n } from "../../hooks/useI18n.js";
+import { useNav } from "../../context/NavContext.jsx";
 import NimiqLogo from "../ui/NimiqLogo.jsx";
+import Button from "../ui/Button.jsx";
 
 /* "Meet Nimiq – Crypto made Easy", Nimiq's own introduction to the network.
    The id is the only thing that identifies the video; the watch link and the
@@ -24,6 +26,7 @@ const EMBED_URL = `https://www.youtube-nocookie.com/embed/${NIMIQ_INTRO_VIDEO_ID
  */
 export default function BuiltOnNimiq() {
   const { t } = useI18n();
+  const { navigate } = useNav();
   return (
     <section
       aria-labelledby="built-on-nimiq-title"
@@ -67,6 +70,18 @@ export default function BuiltOnNimiq() {
       <p className="small muted" style={{ margin: "22px auto 0", maxWidth: 440, lineHeight: 1.6 }}>
         {t("home.nimiq.body")}
       </p>
+
+      {/* Into the existing Nimiq concepts in the Learn tab — not a separate
+          Nimiq page. The whole point of the track living in Learn is that
+          learning about Nimiq uses the same loop, the same mastery model
+          and the same review schedule as learning about quadratics. */}
+      <Button
+        variant="nimiq"
+        onClick={() => navigate("learn", { topic: "nimiq-blockchain" })}
+        style={{ marginTop: 20 }}
+      >
+        {t("home.nimiq.cta")}
+      </Button>
     </section>
   );
 }

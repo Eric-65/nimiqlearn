@@ -461,3 +461,97 @@ Below it: the known misconception, and the one demonstration that would
 move the concept up ("Next: explain it, to reach Can explain"). The primary
 action is a sprint, because a sprint performs whichever demonstration is
 missing.
+
+---
+
+# The Nimiq learning track
+
+Nimiq is taught inside the Learn tab like every other subject — same
+sprint, same mastery ladder, same review schedule. There is deliberately
+no separate Nimiq page: the point of the track living in Learn is that
+learning about self-custody works exactly like learning about quadratics.
+
+## Concepts
+
+| Group | Concepts |
+|---|---|
+| Nimiq essentials | Nimiq blockchain · NIM · Nimiq Pay · **Self-custody** · **Sending & receiving NIM** · **Using Nimiq safely** |
+| Building on Nimiq | **Nimiq Mini Apps** · **Building on Nimiq** |
+
+The second group exists so the builder track (SDK setup, provider,
+account access, signing, testnet transaction, testing, deployment) has
+somewhere to grow without becoming a separate app.
+
+## Official videos (`src/data/nimiqVideos.js`)
+
+Videos are **embedded from YouTube, never downloaded or re-uploaded**, on
+`youtube-nocookie.com`, with no autoplay and a "Watch on YouTube" link
+always present.
+
+**Click to load.** The iframe is not rendered until the learner presses
+play, so a lesson they scroll past costs zero bytes to YouTube — no
+thumbnail, no cookie, no player bundle. `loading="lazy"` does not achieve
+this: an in-viewport iframe is not lazy, and the player was being fetched
+on mount. Verified: 0 requests to any Google domain before the press, 1
+after.
+
+### Why every mapping is gated
+
+The risk is not a broken embed — a dead id shows YouTube's own error and
+the fallback link still works. The risk is **mislabelling**: filing a
+video under "Self-custody" that teaches something else, or calling a
+third party's video official.
+
+That risk is concrete. A search for Nimiq payment tutorials returns Trust
+Wallet walkthroughs, exchange ads and "free NIM" clickbait beside the
+official channel, any of which would look plausible as a bare id.
+
+So the same two gates as the Wikimedia course library:
+
+| Gate | Proves | Who |
+|---|---|---|
+| machine | the video exists **and its channel is Nimiq** | `npm run verify:nimiq-videos` (YouTube oEmbed `author_name`) |
+| content | it teaches this concept | a person, then `--confirm` |
+
+Until both pass the lesson has no video and is otherwise unaffected. A
+wrong video is worse than none, because a learner cannot tell.
+
+YouTube is unreachable from the build container, so no mapping could be
+checked there. Each entry records how it was attested — `owner` (already
+shipping in the app), `search` (a web search returned this id with this
+title), `unknown` — so the next person knows what they are confirming.
+
+## Learn by doing (`NimiqPractical.jsx`)
+
+Three concepts get a real wallet interaction, each chosen because its
+worst outcome is nothing happening:
+
+| Concept | Activity | Why it is safe |
+|---|---|---|
+| Nimiq Pay, Mini Apps | read block height + consensus | needs no approval at all — which is the lesson |
+| Self-custody | request account access | the wallet asks; declining is a first-class outcome |
+| Building on Nimiq | sign a harmless message | proves key ownership, moves nothing |
+
+**No payment, and no testnet transaction.** This app is wired to mainnet
+through Nimiq Pay, and a "testnet demo" that is really a mainnet call with
+reassuring copy would be the most dangerous thing on the page. When the
+provider supports testnet, a transaction step belongs here.
+
+**No fake success.** `getBlockNumber()` and `getConsensusStatus()` return
+null rather than throwing when there is no provider, so a plain browser
+initially rendered "✅ read straight from the network" over two
+em-dashes — a success message about a read that never happened. A missing
+height, address or signature is now a failure, and "there is no wallet
+here" is worded differently from "you declined", because telling somebody
+in a desktop browser that declining is valid describes a dialog they never
+saw.
+
+Private keys, seed phrases and recovery words are never requested,
+displayed or accepted, and every activity says so.
+
+## Staleness, again
+
+`calculateNextReview` had the same 30-day fallback as the other two
+scheduling functions and had not been updated with `lastStudiedAt`, so a
+Nimiq concept practised for the first time came out with a next review 29
+days in the *past*. All three now share one chain.

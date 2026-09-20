@@ -17,6 +17,9 @@ import {
 import { selectVideo } from "../services/videoService.js";
 import LearningActivity from "../components/ai/LearningActivity.jsx";
 import TopicVideo from "../components/knowledge/TopicVideo.jsx";
+import NimiqVideo from "../components/knowledge/NimiqVideo.jsx";
+import NimiqPractical, { hasPracticalActivity } from "../components/knowledge/NimiqPractical.jsx";
+import { primaryVideoForTopic } from "../data/nimiqVideos.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import Badge from "../components/ui/Badge.jsx";
@@ -44,7 +47,16 @@ import Badge from "../components/ui/Badge.jsx";
  * completes.
  */
 
-const STEPS = { LESSON: "lesson", ACTIVITY: "activity", EXPLAIN: "explain", DONE: "done" };
+const STEPS = {
+  LESSON: "lesson",
+  ACTIVITY: "activity",
+  EXPLAIN: "explain",
+  /* Only the Nimiq track has one of these today: a safe, real wallet
+     interaction. It sits AFTER the question, not before — doing the thing
+     lands better once you have had to retrieve what it is. */
+  PRACTICAL: "practical",
+  DONE: "done",
+};
 
 export default function StudySprint() {
   const { route, navigate } = useNav();
@@ -72,7 +84,12 @@ export default function StudySprint() {
   }
 
   const needed = nextEvidenceNeeded(entry || {});
-  const hasVideo = Boolean(topicId && selectVideo(topicId, undefined));
+  /* Two libraries, one question: is there a lesson video for this concept?
+     Curriculum topics have Wikimedia ones; Nimiq topics have official
+     Nimiq ones embedded from YouTube. Both are gated on verification, so
+     "no video" is the common case and the sprint is built for it. */
+  const nimiqVideo = topicId ? primaryVideoForTopic(topicId) : null;
+  const hasVideo = Boolean(nimiqVideo || (topicId && selectVideo(topicId, undefined)));
 
   const [step, setStep] = useState(null);
   const [activity, setActivity] = useState(null);
@@ -92,6 +109,7 @@ export default function StudySprint() {
     if (hasVideo && STAGE_RANK[stage] < STAGE_RANK.CAN_RECALL) list.push(STEPS.LESSON);
     list.push(STEPS.ACTIVITY);
     if (needed.kind === "EXPLAIN") list.push(STEPS.EXPLAIN);
+    if (hasPracticalActivity(topicId)) list.push(STEPS.PRACTICAL);
     list.push(STEPS.DONE);
     return list;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,7 +229,10 @@ export default function StudySprint() {
 
       {step === STEPS.LESSON && (
         <div className="sprint-step">
-          <TopicVideo topicId={topicId} />
+          {/* An official Nimiq video when the concept has one, otherwise
+              the curriculum's own. Never both: a lesson opens with one
+              thing to watch. */}
+          {nimiqVideo ? <NimiqVideo topicId={topicId} /> : <TopicVideo topicId={topicId} />}
           <Card>
             <p style={{ margin: "0 0 12px" }}>{t("sprint.lessonBody")}</p>
             <Button variant="teal" onClick={advance}>{t("sprint.lessonDone")}</Button>
@@ -284,6 +305,13 @@ export default function StudySprint() {
         </div>
       )}
 
+      {step === STEPS.PRACTICAL && (
+        <div className="sprint-step">
+          <NimiqPractical topicId={topicId} onDone={advance} />
+          <Button variant="outline" size="sm" onClick={advance}>{t("sprint.skip")}</Button>
+        </div>
+      )}
+
       {step === STEPS.DONE && (
         <SprintSummary
           topicId={topicId}
@@ -310,7 +338,7 @@ export default function StudySprint() {
  * reading the screen.
  */
 function SprintSummary({ topicId, topicName, before, stageNow, entry, explainResult, onAgain, onHome }) {
-  const { t } = useI18n();
+  const { t, tPlural } = useI18n();
   const rose = STAGE_RANK[stageNow] > STAGE_RANK[before?.stage || "NEW"];
   const masteryDelta = (entry?.mastery ?? 0) - (before?.mastery ?? 0);
   const rec = computeReviewRecommendation(entry);
@@ -375,7 +403,9 @@ function SprintSummary({ topicId, topicName, before, stageNow, entry, explainRes
 
       {days !== null && (
         <p className="small muted" style={{ margin: "10px 0 0" }}>
-          ⏳ {days === 0 ? t("sprint.reviewToday") : t("sprint.reviewIn", { days })}
+          {/* Through the plural machinery: "in 1 days" is the giveaway
+              that a count was dropped into a sentence unexamined. */}
+          ⏳ {days === 0 ? t("sprint.reviewToday") : tPlural("sprint.reviewIn", days, { days })}
         </p>
       )}
 

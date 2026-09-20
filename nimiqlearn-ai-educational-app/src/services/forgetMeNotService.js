@@ -122,7 +122,13 @@ export function calculateReviewPriority(entry, now = Date.now()) {
  * interval, further extended by a track record of completed reviews.
  */
 export function calculateNextReview(entry, now = Date.now()) {
-  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
+  /* Same staleness chain as calculateReviewPriority — including
+     lastStudiedAt, without which a concept practised minutes ago anchored
+     its schedule to the 30-day fallback and came out with a next review
+     29 days in the PAST. The three functions have to agree about when the
+     learner last touched something, or the schedule contradicts the
+     priority that produced it. */
+  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || entry?.lastStudiedAt || now - 30 * DAY;
   const baseInterval = masteryToBaseInterval(entry?.mastery ?? 0);
 
   const intervalDays = Math.max(1, Math.round(baseInterval * confidenceFactor(entry?.confidence)));
