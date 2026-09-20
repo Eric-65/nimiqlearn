@@ -223,11 +223,6 @@ function Shell() {
           </button>
 
           <AIStatus />
-          {!nimiq.isConnected && (
-            <span className="badge badge-amber" aria-label={t("status.demo.aria")}>
-              🧪 {t("status.demo")}
-            </span>
-          )}
           {nimiq.isConnected && (
             <span className="badge badge-teal" aria-label={t("status.connectedPay.aria")}>
               ⚡ Nimiq Pay
