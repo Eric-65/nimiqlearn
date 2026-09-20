@@ -555,3 +555,42 @@ displayed or accepted, and every activity says so.
 scheduling functions and had not been updated with `lastStudiedAt`, so a
 Nimiq concept practised for the first time came out with a next review 29
 days in the *past*. All three now share one chain.
+
+
+## The Learn tab loop: one thing on screen at a time
+
+The Learn tab has exactly two phases and never both at once:
+
+```
+watching     the video and its "I've watched it" button, alone
+practising   the question and the ask box, alone
+```
+
+There is no third state. A video and a question on screen together ask
+the learner to do two things at once, and whichever they start, the other
+sits underneath as a distraction — which is what the tab was doing: the
+video, the "Ask about this lesson" box and a generated activity were all
+rendered together.
+
+**Where the video falls depends on how they arrived**, because the two
+entry points mean different things:
+
+| Arrived from | Order |
+|---|---|
+| a course card (`?watch=1`) | video → question → question → … |
+| a topic chip | question → **video** → question → question → … |
+
+Someone who taps a course card came to watch. Someone who taps a chip
+came to practise, so the video arrives after their first answer — as the
+teaching that explains what they were just asked. After it has been shown
+once for a concept it does not interrupt again in that visit.
+
+`handleNext()` is the hinge: after an answer it either swaps in the video
+(clearing the activity in the same moment) or loads the next question.
+No activity is ever requested while watching, so the AI call is not spent
+on a question nobody can answer mid-video.
+
+Verified across eight snapshots — chip flow, course flow and a concept
+with no video — that the video and a question are never on screen
+together, and that one AI call is made per question rather than one per
+phase change.
