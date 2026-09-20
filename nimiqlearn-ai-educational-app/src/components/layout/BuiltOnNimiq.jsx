@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useI18n } from "../../hooks/useI18n.js";
 import { useNav } from "../../context/NavContext.jsx";
 import NimiqLogo from "../ui/NimiqLogo.jsx";
@@ -27,6 +27,7 @@ const EMBED_URL = `https://www.youtube-nocookie.com/embed/${NIMIQ_INTRO_VIDEO_ID
 export default function BuiltOnNimiq() {
   const { t } = useI18n();
   const { navigate } = useNav();
+  const [playing, setPlaying] = useState(false);
   return (
     <section
       aria-labelledby="built-on-nimiq-title"
@@ -42,16 +43,33 @@ export default function BuiltOnNimiq() {
       </p>
 
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <iframe
-          className="video-player"
-          src={EMBED_URL}
-          title={t("home.nimiq.videoTitle")}
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerPolicy="strict-origin-when-cross-origin"
-          allowFullScreen
-          loading="lazy"
-        />
+        {/* Click to load, same as the lesson videos. This block sits on
+            Home, so an eager iframe meant every single visit fetched
+            YouTube's player — several hundred kilobytes, on the first
+            screen, for a video most visitors never press. loading="lazy"
+            does not help: the iframe is in the viewport once you scroll
+            here, and lazy only defers what is off screen. */}
+        <div className="nimiq-video-frame">
+          {playing ? (
+            <iframe
+              src={`${EMBED_URL}?autoplay=1`}
+              title={t("home.nimiq.videoTitle")}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+          ) : (
+            <button
+              type="button"
+              className="nimiq-video-play"
+              onClick={() => setPlaying(true)}
+              aria-label={t("nimiqVideo.play", { title: t("home.nimiq.videoTitle") })}
+            >
+              <span className="nimiq-video-play-icon" aria-hidden="true">▶</span>
+              <span className="tiny">{t("nimiqVideo.tapToLoad")}</span>
+            </button>
+          )}
+        </div>
 
         <p className="strong" style={{ margin: "14px 0 4px", fontSize: 15 }}>
           {t("home.nimiq.videoTitle")}

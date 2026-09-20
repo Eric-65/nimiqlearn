@@ -1009,6 +1009,7 @@ export default {
 
   /* ---------------- Nimiq 学习线：视频与实操 ---------------- */
   "home.nimiq.cta": "了解 Nimiq",
+  "mascot.aria": "让 NimiqLearn 吉祥物跳一下",
   "nimiqVideo.official": "Nimiq 官方视频",
   "nimiqVideo.aria": "本课的 Nimiq 官方视频",
   "nimiqVideo.watchOnYouTube": "在 YouTube 观看",

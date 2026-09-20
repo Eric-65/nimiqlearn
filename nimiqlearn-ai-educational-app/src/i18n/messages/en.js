@@ -925,6 +925,7 @@ export default {
 
   /* ---------------- Nimiq track: videos, practicals ---------------- */
   "home.nimiq.cta": "Learn about Nimiq",
+  "mascot.aria": "Make the NimiqLearn mascot jump",
   "nimiqVideo.official": "Official Nimiq video",
   "nimiqVideo.aria": "Official Nimiq video for this lesson",
   "nimiqVideo.watchOnYouTube": "Watch on YouTube",

@@ -1015,6 +1015,7 @@ export default {
 
   /* ---------------- Percurso Nimiq: vídeos e prática ---------------- */
   "home.nimiq.cta": "Aprender sobre a Nimiq",
+  "mascot.aria": "Fazer a mascote do NimiqLearn saltar",
   "nimiqVideo.official": "Vídeo oficial da Nimiq",
   "nimiqVideo.aria": "Vídeo oficial da Nimiq para esta lição",
   "nimiqVideo.watchOnYouTube": "Ver no YouTube",

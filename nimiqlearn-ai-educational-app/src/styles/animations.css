@@ -153,3 +153,46 @@
   border: 1px solid rgba(52, 224, 180, 0.5);
   animation: pulse-ring-teal 1.8s ease-out infinite;
 }
+
+/* ============================================================
+   The mascot's dance
+   ------------------------------------------------------------
+   One idea per keyframe set, applied to nested elements — see
+   LearnMascot.jsx for why. The durations are deliberately not
+   multiples of one another, so the combined motion takes about
+   fifteen seconds to repeat instead of a visible one-second tick.
+   ============================================================ */
+@keyframes mascot-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-13px); }
+}
+
+@keyframes mascot-sway {
+  0%, 100% { transform: rotate(-3.5deg); }
+  50%      { transform: rotate(3.5deg); }
+}
+
+/* Widest and flattest at the bottom of the bob, narrow at the top.
+   transform-origin at the feet is what makes it read as weight landing
+   rather than the whole character being scaled. */
+@keyframes mascot-squash {
+  0%, 100% { transform: scale(1.06, 0.94); }
+  45%      { transform: scale(0.97, 1.03); }
+  70%      { transform: scale(1.01, 0.99); }
+}
+
+/* The floor. Spreading and darkening as the mascot lands is what tells
+   the eye there is a ground plane at all. */
+@keyframes mascot-shadow {
+  0%, 100% { transform: translateX(-50%) scale(1, 1); opacity: 0.30; }
+  50%      { transform: translateX(-50%) scale(0.72, 1); opacity: 0.16; }
+}
+
+@keyframes mascot-jump {
+  0%   { transform: translateY(0) scale(1, 1); }
+  18%  { transform: translateY(6px) scale(1.12, 0.86); }
+  45%  { transform: translateY(-46px) scale(0.92, 1.12); }
+  70%  { transform: translateY(0) scale(1.1, 0.9); }
+  85%  { transform: translateY(-6px) scale(0.98, 1.02); }
+  100% { transform: translateY(0) scale(1, 1); }
+}

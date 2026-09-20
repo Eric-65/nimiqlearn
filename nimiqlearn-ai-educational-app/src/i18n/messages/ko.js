@@ -1010,6 +1010,7 @@ export default {
 
   /* ---------------- Nimiq 트랙: 영상과 실습 ---------------- */
   "home.nimiq.cta": "Nimiq 배우기",
+  "mascot.aria": "NimiqLearn 마스코트 점프시키기",
   "nimiqVideo.official": "Nimiq 공식 영상",
   "nimiqVideo.aria": "이 레슨의 Nimiq 공식 영상",
   "nimiqVideo.watchOnYouTube": "YouTube 에서 보기",

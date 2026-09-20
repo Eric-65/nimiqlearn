@@ -11,6 +11,7 @@ import CourseCarousel from "../components/home/CourseCarousel.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import { LEAF_TOPICS, findTopic } from "../data/mockTopics.js";
 import TodaysPlan from "../components/home/TodaysPlan.jsx";
+import LearnMascot from "../components/home/LearnMascot.jsx";
 import { LEARNING_PACKS } from "../data/mockLearningPacks.js";
 
 const HERO_IMG =
@@ -156,7 +157,7 @@ export default function Home() {
       </section>
 
       {/* ================= LEARNING DASHBOARD ================= */}
-      <section style={{ marginTop: 48 }}>
+      <section className="reveal" style={{ marginTop: 48 }}>
         <div className="grid grid-2" style={{ marginBottom: 18 }}>
           {/* What should I learn next? */}
           <Card
@@ -230,7 +231,7 @@ export default function Home() {
       </section>
 
       {/* ================= THE LOOP ================= */}
-      <section style={{ marginTop: 64 }}>
+      <section className="reveal" style={{ marginTop: 64 }}>
         <div style={{ textAlign: "center", marginBottom: 26 }}>
           <span className="eyebrow">{t("home.loop.eyebrow")}</span>
           <h2 style={{ fontSize: "clamp(24px, 3vw, 34px)", margin: 0 }}>{t("home.loop.title")}</h2>
@@ -246,7 +247,7 @@ export default function Home() {
       </section>
 
       {/* ================= FEATURES ================= */}
-      <section style={{ marginTop: 64 }}>
+      <section className="reveal" style={{ marginTop: 64 }}>
         <div className="grid grid-4">
           {FEATURES.map((f, i) => (
             <Card key={f.id} hover className={`anim-rise delay-${i + 1}`}>
@@ -259,7 +260,7 @@ export default function Home() {
       </section>
 
       {/* ================= STORY ================= */}
-      <section style={{ marginTop: 72 }}>
+      <section className="reveal" style={{ marginTop: 72 }}>
         <Card style={{ padding: "clamp(26px, 4vw, 44px)", background: "linear-gradient(135deg, var(--c-blue-soft), var(--c-card-base) 55%)" }}>
           <div className="grid grid-2 items-center gap-24">
             <div>
@@ -303,7 +304,7 @@ export default function Home() {
       <BuiltOnNimiq />
 
       {/* ================= CURRICULUM TEASER ================= */}
-      <section style={{ marginTop: 64 }}>
+      <section className="reveal" style={{ marginTop: 64 }}>
         <div style={{ textAlign: "center", marginBottom: 26 }}>
           <span className="eyebrow">{t("home.pick.eyebrow")}</span>
           <h2 style={{ fontSize: "clamp(22px, 2.8vw, 30px)", margin: 0 }}>{t("home.pick.title")}</h2>
@@ -321,8 +322,16 @@ export default function Home() {
       {/* ================= VIDEO COURSES ================= */}
       <CourseCarousel />
 
-      <section style={{ marginTop: 72, textAlign: "center" }}>
+      <section className="reveal" style={{ marginTop: 72, textAlign: "center" }}>
         <Button variant="primary" size="lg" onClick={() => navigate("learn")}>{t("home.finalCta")}</Button>
+
+        {/* Between the last call to action and the footer: the page's
+            closing note rather than a decoration competing with anything.
+            A learner who has read this far has either pressed the button
+            or is deciding — and a character doing a small dance at the
+            bottom of the page is a warmer end than a rule and a link
+            list. */}
+        <LearnMascot />
       </section>
     </div>
   );

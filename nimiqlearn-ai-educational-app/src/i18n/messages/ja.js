@@ -1011,6 +1011,7 @@ export default {
 
   /* ---------------- Nimiq トラック：動画と実習 ---------------- */
   "home.nimiq.cta": "Nimiq について学ぶ",
+  "mascot.aria": "NimiqLearn のマスコットをジャンプさせる",
   "nimiqVideo.official": "Nimiq 公式動画",
   "nimiqVideo.aria": "このレッスンの Nimiq 公式動画",
   "nimiqVideo.watchOnYouTube": "YouTube で見る",
