@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "verify:videos": "node scripts/verify-videos.mjs"
+    "verify:videos": "node scripts/verify-videos.mjs",
+    "verify:nimiq-videos": "node scripts/verify-nimiq-videos.mjs"
   },
   "dependencies": {
     "@nimiq/mini-app-sdk": "^0.1.0",

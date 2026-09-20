@@ -60,9 +60,12 @@ same `learner.knowledge` tree — see the per-service table below.
 ### `assessmentService.js` (ExplainBack assessment, Layer 2)
 - **Input**: `{ topic, referenceAnswer?, learnerExplanation, learnerLevel, preferAI }`
 - **Processing**: deterministic rubric baseline (`computeRubricBaseline`) always
-  runs first; if SmolLM2 is ready, the baseline is fed to it as a compact
-  signal and its prose becomes the natural-language feedback. Mastery is
-  never solely the model's — see "Mastery calculation" below.
+  runs first; the baseline is then fed to NimiqLearn AI (OpenAI, via
+  `/api/assess/feedback`) as a compact signal, and its prose becomes the
+  natural-language feedback. The score itself is NOT the model's: the
+  backend overwrites `masteryEstimate` with the deterministic rubric score
+  server-side, because a prompt instruction is not a guarantee. See
+  "Mastery calculation" below.
 - **Output** (the ExplainBack result contract): `{ conceptId, score,
   masteryEstimate, strengths, missingConcepts, misconceptions, feedback,
   nextAction, nextChallenge, source, confidence: "model"|"heuristic", aiPending, note }`.
@@ -108,8 +111,8 @@ comment in `knowledgeService.js` for the full worked explanation.
   keeps its original return shape so no existing caller had to change.
 - **Output**: `{ priorityScore (0-100), dueNow, intervalDays,
   recommendedReviewAt, nextReviewAt, levelLabel }`. Never decided by the
-  LLM — SmolLM2 only ever generates review *content* (see `ForgetMeNot.jsx`
-  → `generateActivityContent`).
+  LLM — NimiqLearn AI only ever generates review *content* (see
+  `ForgetMeNot.jsx` → `generateActivityContent`).
 
 **Bug found and fixed while extracting `calculateReviewPriority()`**: the
 previous single implementation computed a weighted sum on a 0-100 scale
@@ -227,3 +230,367 @@ pass — the fix that mattered here was making the underlying
   "forget" yet. This is pre-existing behavior (not changed this pass) —
   flagged here because it's the kind of thing this document exists to
   surface, not because it was fixed.
+
+
+---
+
+# The mastery model, the coach, and Study Sprints
+
+Added in the AI Mastery Coach work. Everything above still stands — this
+layer sits on top of it and changes nothing about how mastery, review
+priority or activity selection are computed.
+
+## Mastery stages (`src/services/masteryService.js`)
+
+```
+NEW → LEARNING → CAN_RECALL → CAN_EXPLAIN → CAN_APPLY → MASTERED
+```
+
+A stage says what the learner can DO, and each one has to be unlocked by
+evidence of that specific kind. The mastery *number* cannot unlock a stage
+on its own: four lucky multiple-choice guesses raise it, and no number of
+them shows somebody can explain an idea to another person.
+
+`REVIEW_DUE` is in the product brief's list but is deliberately not a
+stage — it is orthogonal. A concept at CAN_APPLY that is due for review is
+still CAN_APPLY; demoting it would be a claim the evidence contradicts.
+`displayStage()` surfaces "review due" for the UI while the real stage
+stays underneath.
+
+### The evidence ledger
+
+Every knowledge entry carries `evidence[]`, appended by knowledgeService's
+three state transitions so no caller can forget to record one:
+
+| Activity | Evidence kind | Unlocks |
+|---|---|---|
+| MULTIPLE_CHOICE, SHORT_EXPLANATION, ANALOGY, EXAMPLE | `RECALL` | CAN_RECALL |
+| OPEN_RESPONSE, EXPLAIN_BACK | `EXPLAIN` | CAN_EXPLAIN |
+| PRACTICE | `APPLY` | CAN_APPLY |
+| REVIEW | `REVIEW` | MASTERED (2 passed + mastery ≥ 85) |
+
+**Watching a video unlocks nothing.** A video is input, not evidence.
+
+Stages are monotonic: a later wrong answer lowers the mastery estimate and
+can make a review due, which is how forgetting is represented, but "you
+explained this correctly on Tuesday" stays true on Wednesday. MASTERED is
+the one exception, because its definition includes a live mastery
+threshold.
+
+### Migration (v2 → v3)
+
+`upgradeToEvidenceLedger()` in LearnerContext. Old profiles recorded only
+counters — how many attempts were right, not what they demonstrated. The
+migration claims the least the old data supports: each correct attempt
+becomes one `RECALL` marked `inferred`, a stored ExplainBack evaluation
+becomes one `EXPLAIN`. **Nothing is ever inferred as APPLY**, so CAN_APPLY
+has to be re-earned. That is one deliberate, visible demotion in exchange
+for never overstating what somebody has shown.
+
+## The coach (`src/services/coachService.js`)
+
+`recommendNextAction()` answers one question across ALL concepts: which
+concept, which activity, how long, and why. Nothing else in the app chose
+*between* concepts — which is exactly the decision a learner should not
+have to make.
+
+Priority order, and the reason for it:
+
+1. **A review that is due.** Forgetting is the only failure mode with a
+   deadline. Only concepts the learner has actually studied are eligible —
+   the review queue scores unopened entries too, and "you last worked on
+   this yesterday" in front of something never opened is false.
+2. **A misconception to repair.** A wrong idea contradicts what comes
+   next, so it compounds.
+3. **The concept closest to its next stage.** Momentum — a finished
+   concept is worth more than three half-started ones.
+4. **Something new.**
+
+Every branch returns the evidence that triggered it, which is what the
+"Why this?" affordance renders. The activity itself is delegated to
+`learningLoopService.getNextLearningActivity()` → `decideNextActivity()`,
+so no decision is re-implemented here.
+
+### Adaptive difficulty
+
+`difficultyFor(entry)` → `FOUNDATION | STANDARD | CHALLENGE`, from stage,
+mastery and recent correctness together. Two wrong answers in the last
+three force FOUNDATION regardless of mastery; CHALLENGE needs CAN_APPLY,
+mastery ≥ 65 AND a clean recent run. One correct answer never raises it.
+The level maps onto the `beginner|intermediate|advanced` the backend
+prompt already understands.
+
+## Study Sprint (`src/pages/StudySprint.jsx`)
+
+One short, complete pass at a concept: lesson → retrieval → explanation →
+what changed. **What it contains is not fixed** — the sprint includes only
+the steps that serve the demonstration the concept needs next, so a
+learner who can already recall something does not sit through the video,
+and one who has never seen it is not asked to explain it back.
+
+It ends with WHAT CHANGED, read off the ledger. A sprint where nothing
+moved says so: a learner told "great progress!" after a wrong answer
+learns to stop reading the screen.
+
+## AI routes used
+
+Unchanged, and all still server-side:
+
+| Route | Used by | Purpose |
+|---|---|---|
+| `/api/tutor/health` | `useAiBackend` | is the backend up AND keyed |
+| `/api/learn/activity` | Sprint, Learn, ForgetMeNot | generate the practice question |
+| `/api/assess/feedback` | Sprint, ExplainBack | grade an explanation |
+| `/api/tutor/feedback` | AI Tutor panel | critique an explanation |
+| `/api/learn/question` | LessonQuestions | answer a question about a lesson |
+
+`OPENAI_API_KEY` is read only in `api/_lib/openai.js` and `server/index.js`
+(`process.env`). It is never prefixed `VITE_` and never reaches the
+browser — verified against the built bundle.
+
+## Onboarding & diagnostic (`src/services/onboardingService.js`)
+
+Four taps, then an optional check. Every question asked in onboarding is
+asked before the learner has seen anything work — the worst moment to ask
+one — so each has to change what the app does next: goal picks the
+curriculum branch, familiarity sets the starting difficulty, session length
+defines a sprint. There is no name field because a name changes nothing.
+
+Skipping is *recorded* (`onboardingSkippedAt`), because "never answered"
+and "declined" must be different facts or the app asks again every reload.
+A returning learner with real history is never shown it at all.
+
+### Stating a goal ends the demo
+
+An unsigned-in visitor starts on the demo profile "Alex", with invented
+mastery so the app looks alive. The moment a learner states a goal, that
+fiction stops being a showcase and becomes something the coach acts on —
+it outranked a real goal and recommended reviewing a concept the learner
+had never opened. So an untouched demo profile is cleared on `setGoal`,
+exactly as `loadOrCreateWallet` already does for a real wallet. A profile
+with real work on it is never touched.
+
+### What a diagnostic answer means
+
+One question per concept — five questions about quadratics tell you how
+good somebody is at quadratics, which you were going to find out anyway;
+one each across five concepts tells you where to start.
+
+Every question asks twice: the answer, then "how sure were you?". The pair
+is worth far more than the answer:
+
+| Answer | Sure? | Recorded as | Why |
+|---|---|---|---|
+| Right | Yes | `RECALL` passed → **CAN_RECALL** | They know it. Never taught from scratch. |
+| Right | No | mastery only, **no evidence** | A guess is indistinguishable from knowledge here. |
+| Wrong | Yes | `RECALL` failed + **misconception** | The most useful answer in the exercise: a named wrong idea the coach repairs. |
+| Wrong | No | `RECALL` failed | An ordinary gap. |
+
+Written in one commit (`recordDiagnostic`), not one per answer: these are a
+snapshot taken before any teaching, and pushing them through
+`recordActivityResult` would put five activities in the history and award
+XP for something nobody studied.
+
+### Minimum review gap
+
+`reviewableNow()` in coachService refuses to call a concept "due" within 6
+hours of being studied, however the interval arithmetic scores it. Without
+it, finishing the diagnostic produced "you last worked on this yesterday,
+it is due for review" about five concepts answered seconds earlier — the
+first recommendation a new learner ever sees, and plainly false.
+
+## The mastery model in the UI
+
+Both surfaces that answer "what do I know" now read the stage ladder.
+
+### ForgetMeNot: three sections, not one ranked list
+
+`buildReviewSections()` splits the queue:
+
+| Section | What it is | Ordering |
+|---|---|---|
+| **Due now** | `isReviewable()` — studied, past the 6-hour floor, and due | misconception first, then priority |
+| **Coming up** | studied and scheduled, not yet worth asking | soonest first |
+| **Not started** | never opened — named, not listed | — |
+
+The flat list this replaces ranked *every* concept by priority score,
+including ones never opened. That put "review this" in front of material
+the learner had never seen and made the page disagree with Today's Plan
+about how many reviews were due. Both now apply the same `isReviewable()`
+rule, which lives in forgetMeNotService because it owns scheduling.
+
+Each row says **why** it is there — a misconception reads differently from
+a faded memory and is not repaired the same way — and the reason is
+section-aware: "about now is when it starts to fade" only appears under
+Due now, because a row held back by the six-hour floor is in Coming up and
+the section contradicts the sentence.
+
+Prerequisites are **not** a factor. The brief lists "important
+prerequisites" as a priority signal, and the curriculum has no prerequisite
+edges — only sibling ordering. Inferring a dependency graph from ordering
+would be a guess presented as a reason, so it is left out.
+
+### Staleness now includes `lastStudiedAt`
+
+`calculateReviewPriority` and `computeReviewRecommendation` fell back to
+`now - 30 days` when an entry had no `lastReviewedAt` or `lastEvaluatedAt`.
+A concept practised five hours ago has neither — it was not a review and
+not an ExplainBack — so it was scored, and displayed, as a month stale.
+`lastStudiedAt` is now in the chain; the 30-day fallback remains for an
+entry genuinely never touched.
+
+### Knowledge Map: stages, not bands
+
+Nodes and the legend are coloured by `masteryStage`. "Can explain" and
+"Developing" are different claims — one says what the learner
+demonstrated, the other describes a number — and the map is where somebody
+looks to answer "what do I actually know". The mastery percentage shows
+only once something has been demonstrated, so an untouched concept reads
+"Not started" rather than "Not started • 0%".
+
+The clock badge uses the same `buildReviewSections()` output, so a node can
+no longer read "Not started" and "⏳ Review" at once.
+
+### Concept panel: the evidence behind the stage
+
+Tapping a node shows the three demonstrations with ticks, read straight off
+the ledger rather than inferred from the stage — so a concept that was
+explained but never recalled displays honestly. Evidence reconstructed by
+the v2→v3 migration is labelled "from earlier work" rather than counted.
+Below it: the known misconception, and the one demonstration that would
+move the concept up ("Next: explain it, to reach Can explain"). The primary
+action is a sprint, because a sprint performs whichever demonstration is
+missing.
+
+---
+
+# The Nimiq learning track
+
+Nimiq is taught inside the Learn tab like every other subject — same
+sprint, same mastery ladder, same review schedule. There is deliberately
+no separate Nimiq page: the point of the track living in Learn is that
+learning about self-custody works exactly like learning about quadratics.
+
+## Concepts
+
+| Group | Concepts |
+|---|---|
+| Nimiq essentials | Nimiq blockchain · NIM · Nimiq Pay · **Self-custody** · **Sending & receiving NIM** · **Using Nimiq safely** |
+| Building on Nimiq | **Nimiq Mini Apps** · **Building on Nimiq** |
+
+The second group exists so the builder track (SDK setup, provider,
+account access, signing, testnet transaction, testing, deployment) has
+somewhere to grow without becoming a separate app.
+
+## Official videos (`src/data/nimiqVideos.js`)
+
+Videos are **embedded from YouTube, never downloaded or re-uploaded**, on
+`youtube-nocookie.com`, with no autoplay and a "Watch on YouTube" link
+always present.
+
+**Click to load.** The iframe is not rendered until the learner presses
+play, so a lesson they scroll past costs zero bytes to YouTube — no
+thumbnail, no cookie, no player bundle. `loading="lazy"` does not achieve
+this: an in-viewport iframe is not lazy, and the player was being fetched
+on mount. Verified: 0 requests to any Google domain before the press, 1
+after.
+
+### Why every mapping is gated
+
+The risk is not a broken embed — a dead id shows YouTube's own error and
+the fallback link still works. The risk is **mislabelling**: filing a
+video under "Self-custody" that teaches something else, or calling a
+third party's video official.
+
+That risk is concrete. A search for Nimiq payment tutorials returns Trust
+Wallet walkthroughs, exchange ads and "free NIM" clickbait beside the
+official channel, any of which would look plausible as a bare id.
+
+So the same two gates as the Wikimedia course library:
+
+| Gate | Proves | Who |
+|---|---|---|
+| machine | the video exists **and its channel is Nimiq** | `npm run verify:nimiq-videos` (YouTube oEmbed `author_name`) |
+| content | it teaches this concept | a person, then `--confirm` |
+
+Until both pass the lesson has no video and is otherwise unaffected. A
+wrong video is worse than none, because a learner cannot tell.
+
+YouTube is unreachable from the build container, so no mapping could be
+checked there. Each entry records how it was attested — `owner` (already
+shipping in the app), `search` (a web search returned this id with this
+title), `unknown` — so the next person knows what they are confirming.
+
+## Learn by doing (`NimiqPractical.jsx`)
+
+Three concepts get a real wallet interaction, each chosen because its
+worst outcome is nothing happening:
+
+| Concept | Activity | Why it is safe |
+|---|---|---|
+| Nimiq Pay, Mini Apps | read block height + consensus | needs no approval at all — which is the lesson |
+| Self-custody | request account access | the wallet asks; declining is a first-class outcome |
+| Building on Nimiq | sign a harmless message | proves key ownership, moves nothing |
+
+**No payment, and no testnet transaction.** This app is wired to mainnet
+through Nimiq Pay, and a "testnet demo" that is really a mainnet call with
+reassuring copy would be the most dangerous thing on the page. When the
+provider supports testnet, a transaction step belongs here.
+
+**No fake success.** `getBlockNumber()` and `getConsensusStatus()` return
+null rather than throwing when there is no provider, so a plain browser
+initially rendered "✅ read straight from the network" over two
+em-dashes — a success message about a read that never happened. A missing
+height, address or signature is now a failure, and "there is no wallet
+here" is worded differently from "you declined", because telling somebody
+in a desktop browser that declining is valid describes a dialog they never
+saw.
+
+Private keys, seed phrases and recovery words are never requested,
+displayed or accepted, and every activity says so.
+
+## Staleness, again
+
+`calculateNextReview` had the same 30-day fallback as the other two
+scheduling functions and had not been updated with `lastStudiedAt`, so a
+Nimiq concept practised for the first time came out with a next review 29
+days in the *past*. All three now share one chain.
+
+
+## The Learn tab loop: one thing on screen at a time
+
+The Learn tab has exactly two phases and never both at once:
+
+```
+watching     the video and its "I've watched it" button, alone
+practising   the question and the ask box, alone
+```
+
+There is no third state. A video and a question on screen together ask
+the learner to do two things at once, and whichever they start, the other
+sits underneath as a distraction — which is what the tab was doing: the
+video, the "Ask about this lesson" box and a generated activity were all
+rendered together.
+
+**Where the video falls depends on how they arrived**, because the two
+entry points mean different things:
+
+| Arrived from | Order |
+|---|---|
+| a course card (`?watch=1`) | video → question → question → … |
+| a topic chip | question → **video** → question → question → … |
+
+Someone who taps a course card came to watch. Someone who taps a chip
+came to practise, so the video arrives after their first answer — as the
+teaching that explains what they were just asked. After it has been shown
+once for a concept it does not interrupt again in that visit.
+
+`handleNext()` is the hinge: after an answer it either swaps in the video
+(clearing the activity in the same moment) or loads the next question.
+No activity is ever requested while watching, so the AI call is not spent
+on a question nobody can answer mid-video.
+
+Verified across eight snapshots — chip flow, course flow and a concept
+with no video — that the video and a question are never on screen
+together, and that one AI call is made per question rather than one per
+phase change.

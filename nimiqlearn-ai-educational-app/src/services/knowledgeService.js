@@ -7,6 +7,7 @@
    ============================================================ */
 
 import { computeReviewRecommendation, buildReviewQueue } from "./forgetMeNotService.js";
+import { appendEvidence, withMasteryStage, evidenceKindFor, EXPLAIN_PASS_SCORE } from "./masteryService.js";
 
 export const STATUS_ORDER = ["NEW", "LEARNING", "DEVELOPING", "STRONG", "MASTERED"];
 
@@ -179,6 +180,17 @@ export function updateKnowledgeAfterEvaluation(entry, evaluation, now = Date.now
     recentPerformance: [...(entry?.recentPerformance || []), wasPositiveEvidence ? 1 : 0].slice(-8),
   };
   updated = recordEvidence(updated, wasPositiveEvidence, now);
+  /* An ExplainBack evaluation is the one thing that can demonstrate
+     CAN_EXPLAIN, so it is filed as EXPLAIN evidence carrying its score —
+     a 51 and a 95 both pass, and the ledger keeps the difference. */
+  updated = appendEvidence(updated, {
+    kind: "EXPLAIN",
+    passed: aiEstimate >= EXPLAIN_PASS_SCORE,
+    activityType: "EXPLAIN_BACK",
+    score: aiEstimate,
+    at: now,
+  });
+  updated = withMasteryStage(updated);
   return withReviewPriority(updated, now);
 }
 
@@ -193,7 +205,20 @@ export function applyActivityResult(entry, { correct, activityType = "ACTIVITY",
     updated.recentPerformance = [...(updated.recentPerformance || []), correct ? 1 : 0].slice(-8);
   }
   updated.status = statusFromMastery(updated.mastery, !!updated.lastEvaluatedAt || updated.mastery > 0);
-  if (correct === true || correct === false) updated = recordEvidence(updated, correct, now);
+  if (correct === true || correct === false) {
+    updated = recordEvidence(updated, correct, now);
+    /* The ledger records WHAT was demonstrated, not just that something
+       went right: a correct multiple-choice answer is retrieval, a correct
+       practice problem is application, and only the ledger can tell them
+       apart later. See masteryService.js. */
+    updated = appendEvidence(updated, {
+      kind: evidenceKindFor(activityType),
+      passed: correct,
+      activityType,
+      at: now,
+    });
+    updated = withMasteryStage(updated);
+  }
   return withReviewPriority(updated, now);
 }
 
@@ -207,6 +232,10 @@ export function recordReview(entry, { correct = true, optionCount = null, now = 
   };
   updated.status = statusFromMastery(updated.mastery, true);
   updated = recordEvidence(updated, correct, now);
+  /* Spaced reviews are what turn CAN_APPLY into MASTERED — the evidence
+     that the idea survived time, which no single session can show. */
+  updated = appendEvidence(updated, { kind: "REVIEW", passed: correct, activityType: "REVIEW", at: now });
+  updated = withMasteryStage(updated);
   return withReviewPriority(updated, now);
 }
 

@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavProvider, useNav } from "./context/NavContext.jsx";
 import { LearnerProvider } from "./context/LearnerContext.jsx";
 import { useNimiq } from "./hooks/useNimiq.js";
 import { useLearner } from "./hooks/useLearner.js";
 import { useTheme } from "./hooks/useTheme.js";
 import { useI18n } from "./hooks/useI18n.js";
+import { needsOnboarding } from "./services/onboardingService.js";
 import { countNotifications } from "./services/notificationService.js";
 import { computeXp } from "./services/xpService.js";
 import AIStatus from "./components/ai/AIStatus.jsx";
@@ -14,6 +15,9 @@ import SiteFooter from "./components/layout/SiteFooter.jsx";
 import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 import Home from "./pages/Home.jsx";
 import Learn from "./pages/Learn.jsx";
+import StudySprint from "./pages/StudySprint.jsx";
+import Diagnostic from "./pages/Diagnostic.jsx";
+import Onboarding from "./components/onboarding/Onboarding.jsx";
 import ExplainBack from "./pages/ExplainBack.jsx";
 import ForgetMeNot from "./pages/ForgetMeNot.jsx";
 import Knowledge from "./pages/Knowledge.jsx";
@@ -55,6 +59,10 @@ const NAV_GROUPS = ["Study", "Economy", "You"];
 
 const PAGES = {
   home: Home,
+  /* The route Today's Plan opens. Not in the nav: a sprint is something
+     the coach sends you into, not a section you browse to. */
+  sprint: StudySprint,
+  diagnostic: Diagnostic,
   learn: Learn,
   explain: ExplainBack,
   review: ForgetMeNot,
@@ -101,6 +109,12 @@ function Shell() {
   const page = (route.path || "/home").replace(/^\//, "");
   const Page = PAGES[page] || Home;
 
+  /* First run. Held in state rather than derived on every render so that
+     dismissing it is immediate and does not wait on a persisted write —
+     and so a learner who skips is not shown it again when the save is
+     still in flight. */
+  const [showOnboarding, setShowOnboarding] = useState(() => needsOnboarding(learner));
+
   // Real count — the same derivation the Notifications page renders, so the
   // badge can never disagree with what the page actually shows.
   const notificationCount = countNotifications({
@@ -112,6 +126,8 @@ function Shell() {
 
   return (
     <div className="app-shell">
+      {showOnboarding && <Onboarding onClose={() => setShowOnboarding(false)} />}
+
       <aside className="sidebar" aria-label={t("nav.primary")}>
         <Brand />
         {NAV_GROUPS.map((group, groupIndex) => (

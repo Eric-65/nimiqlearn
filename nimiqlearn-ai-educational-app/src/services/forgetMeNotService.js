@@ -89,7 +89,14 @@ function confidenceFactor(confidence) {
  */
 export function calculateReviewPriority(entry, now = Date.now()) {
   const mastery = entry?.mastery ?? 0;
-  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
+  /* lastStudiedAt is in the chain because it is the most accurate answer
+     to "when did they last touch this": a concept practised five hours ago
+     has no lastReviewedAt (it was not a review) and no lastEvaluatedAt (it
+     was not an ExplainBack), and without it fell through to the 30-day
+     fallback — scored, and displayed, as a month stale. The fallback stays
+     for an entry genuinely never touched, where treating it as long
+     overdue is the right default. */
+  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || entry?.lastStudiedAt || now - 30 * DAY;
   const confidence = entry?.confidence ?? 0;
   const recent = entry?.recentPerformance ?? [];
 
@@ -115,7 +122,13 @@ export function calculateReviewPriority(entry, now = Date.now()) {
  * interval, further extended by a track record of completed reviews.
  */
 export function calculateNextReview(entry, now = Date.now()) {
-  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
+  /* Same staleness chain as calculateReviewPriority — including
+     lastStudiedAt, without which a concept practised minutes ago anchored
+     its schedule to the 30-day fallback and came out with a next review
+     29 days in the PAST. The three functions have to agree about when the
+     learner last touched something, or the schedule contradicts the
+     priority that produced it. */
+  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || entry?.lastStudiedAt || now - 30 * DAY;
   const baseInterval = masteryToBaseInterval(entry?.mastery ?? 0);
 
   const intervalDays = Math.max(1, Math.round(baseInterval * confidenceFactor(entry?.confidence)));
@@ -132,7 +145,10 @@ export function calculateNextReview(entry, now = Date.now()) {
  */
 export function computeReviewRecommendation(entry, now = Date.now()) {
   const mastery = entry?.mastery ?? 0;
-  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || now - 30 * DAY;
+  /* Same chain as calculateReviewPriority above — the number shown to a
+     learner and the number the schedule is computed from must come from
+     the same place. */
+  const lastReviewedAt = entry?.lastReviewedAt || entry?.lastEvaluatedAt || entry?.lastStudiedAt || now - 30 * DAY;
 
   const priorityScore = Math.round(calculateReviewPriority(entry, now) * 100);
   const { nextReviewAt, intervalDays } = calculateNextReview(entry, now);
@@ -163,6 +179,109 @@ export function buildReviewQueue(knowledgeEntries, now = Date.now()) {
   return knowledgeEntries
     .map((e) => computeReviewRecommendation(e, now))
     .sort((a, b) => b.priorityScore - a.priorityScore);
+}
+
+/* ------------------ What can actually be reviewed ------------------ */
+
+/**
+ * The shortest gap that can count as a review.
+ *
+ * A review exists to catch a concept before it fades, so something studied
+ * minutes ago cannot be one, however the interval arithmetic scores it.
+ * Without this, finishing the diagnostic produced "due for review" on five
+ * concepts answered seconds earlier. Six hours is the smallest gap over
+ * which "do you still remember it?" is a real question.
+ */
+export const MIN_REVIEW_GAP_MS = 6 * 60 * 60 * 1000;
+
+/** Has the learner ever actually worked on this concept? */
+export function hasBeenStudied(entry) {
+  if (!entry) return false;
+  return (entry.evidence?.length ?? 0) > 0 || (entry.mastery ?? 0) > 0 || Boolean(entry.lastStudiedAt);
+}
+
+/**
+ * Can this concept be reviewed right now?
+ *
+ * Two conditions the interval arithmetic alone cannot express: there has
+ * to be something to review (a never-opened concept is not "overdue", it
+ * is unstarted), and enough time has to have passed for the question to
+ * mean anything.
+ */
+export function isReviewable(entry, now = Date.now()) {
+  if (!hasBeenStudied(entry)) return false;
+  const last = entry.lastStudiedAt || entry.lastReviewedAt || entry.lastEvaluatedAt || null;
+  return !last || now - last >= MIN_REVIEW_GAP_MS;
+}
+
+/* Why a concept is in the queue. Ordered by how much it matters, since a
+   row shows one reason and a concept can be several things at once: a
+   misconception outranks weakness, which outranks simply fading. */
+function reviewReasonKey(entry, rec, section) {
+  if ((entry?.misconceptions?.length ?? 0) > 0) return "review.reason.misunderstood";
+  const recent = entry?.recentPerformance ?? [];
+  if (recent.slice(-2).includes(0)) return "review.reason.weak";
+  /* "About now is when it starts to fade" is only true of a row actually
+     offered as due. A concept can score dueNow and still be held back by
+     the six-hour floor, and printing the fading line under "Coming up"
+     said something the section itself contradicts. */
+  if (section === "due") return "review.reason.fading";
+  return "review.reason.scheduled";
+}
+
+/**
+ * The ForgetMeNot queue, split into what a learner can act on.
+ *
+ * The flat list this replaces ranked EVERY concept by priority score,
+ * including ones never opened — which put "review this" in front of
+ * material the learner had never seen, and made the page disagree with
+ * Today's Plan about how many reviews were due.
+ *
+ * Three sections instead:
+ *
+ *   due       reviewable now, most urgent first, with a misconception
+ *             pushed up: a wrong idea costs more than a faded one, because
+ *             it actively contradicts what comes next.
+ *   upcoming  studied and scheduled, but not yet worth asking about.
+ *             Shown so the schedule is visible, not as work.
+ *   unstarted never opened. Not reviews at all — surfaced only so the
+ *             count is honest about what is missing.
+ */
+export function buildReviewSections(knowledgeEntries = [], now = Date.now()) {
+  const due = [];
+  const upcoming = [];
+  const unstarted = [];
+
+  for (const entry of knowledgeEntries) {
+    const rec = computeReviewRecommendation(entry, now);
+    const section = !hasBeenStudied(entry)
+      ? "unstarted"
+      : rec.dueNow && isReviewable(entry, now)
+        ? "due"
+        : "upcoming";
+    const row = {
+      ...rec,
+      section,
+      reasonKey: reviewReasonKey(entry, rec, section),
+      hasMisconception: (entry?.misconceptions?.length ?? 0) > 0,
+      misconception: entry?.misconceptions?.[0] || null,
+      masteryStage: entry?.masteryStage || null,
+    };
+
+    if (section === "unstarted") unstarted.push(row);
+    else if (section === "due") due.push(row);
+    else upcoming.push(row);
+  }
+
+  due.sort((a, b) => {
+    if (a.hasMisconception !== b.hasMisconception) return a.hasMisconception ? -1 : 1;
+    return (b.priorityScore ?? 0) - (a.priorityScore ?? 0);
+  });
+  /* Soonest first: "upcoming" is a schedule, and a schedule reads in the
+     order things happen, not by how urgent they will eventually be. */
+  upcoming.sort((a, b) => (a.nextReviewAt ?? Infinity) - (b.nextReviewAt ?? Infinity));
+
+  return { due, upcoming, unstarted };
 }
 
 /** After a successful review, the next interval grows — same curve as

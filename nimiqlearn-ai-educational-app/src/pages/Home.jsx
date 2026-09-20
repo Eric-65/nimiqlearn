@@ -11,6 +11,7 @@ import CourseCarousel from "../components/home/CourseCarousel.jsx";
 import { coursesByLanguage } from "../services/videoService.js";
 import Badge from "../components/ui/Badge.jsx";
 import { LEAF_TOPICS, findTopic } from "../data/mockTopics.js";
+import TodaysPlan from "../components/home/TodaysPlan.jsx";
 import { LEARNING_PACKS } from "../data/mockLearningPacks.js";
 
 const HERO_IMG =
@@ -67,6 +68,12 @@ export default function Home() {
   return (
     <div>
       {/* ================= HERO ================= */}
+      {/* Above the hero, deliberately: a returning learner should reach
+          their next step without scrolling past marketing they have already
+          read. The hero still does its job for a first visit, one screen
+          down. */}
+      <TodaysPlan />
+
       <section style={{ position: "relative", overflow: "hidden", padding: "clamp(40px, 7vw, 76px) 0" }}>
         <div
           aria-hidden="true"

@@ -11,6 +11,8 @@ import { makeKnowledgeEntry, INITIAL_LEARNER, LEARNER_STATE_SCHEMA_VERSION, crea
 import { subscribeToWalletChanges, getStoredSession } from "../services/nimiqWalletService.js";
 import { findTopic } from "../data/mockTopics.js";
 import { evaluateExplanation } from "../services/assessmentService.js";
+import { withMasteryStage, appendEvidence } from "../services/masteryService.js";
+import { makeGoal, classifyDiagnosticAnswer } from "../services/onboardingService.js";
 import {
   updateKnowledgeAfterEvaluation,
   applyActivityResult,
@@ -47,6 +49,54 @@ const LearnerContext = createContext(null);
  * values from what the old blob actually recorded. Never breaks an
  * existing user's data by discarding it — only fills gaps.
  */
+/**
+ * v2 -> v3: the evidence ledger (masteryService.js).
+ *
+ * A profile saved before the ledger existed recorded only counters — how
+ * many attempts were right, not WHAT they demonstrated. That cannot be
+ * recovered, and inventing it would put "you explained this" in front of a
+ * learner who never did.
+ *
+ * So the migration claims the least the old data actually supports: each
+ * correct attempt becomes one RECALL, marked `inferred` so it is visibly
+ * reconstructed rather than earned; a stored ExplainBack evaluation
+ * (lastEvaluatedAt with a passing mastery) becomes one EXPLAIN, because
+ * that one IS specifically recorded. Nothing is ever inferred as APPLY:
+ * the old shape has no way to distinguish a practice problem from a quiz
+ * question, so CAN_APPLY has to be re-earned — one deliberate, visible
+ * demotion, in exchange for never overstating what somebody has shown.
+ */
+function upgradeToEvidenceLedger(entry, original) {
+  if (Array.isArray(original?.evidence) && original.evidence.length) {
+    return withMasteryStage({ ...entry, evidence: original.evidence });
+  }
+  const at = entry.lastStudiedAt || entry.lastEvaluatedAt || Date.now();
+  let upgraded = { ...entry, evidence: [] };
+
+  const correct = Math.min(entry.correctAttempts ?? 0, 8);
+  for (let i = 0; i < correct; i++) {
+    upgraded = appendEvidence(upgraded, { kind: "RECALL", passed: true, at, inferred: true });
+  }
+  const incorrect = Math.min(entry.incorrectAttempts ?? 0, 8);
+  for (let i = 0; i < incorrect; i++) {
+    upgraded = appendEvidence(upgraded, { kind: "RECALL", passed: false, at, inferred: true });
+  }
+  if (entry.lastEvaluatedAt && (entry.mastery ?? 0) >= 50) {
+    upgraded = appendEvidence(upgraded, {
+      kind: "EXPLAIN",
+      passed: true,
+      activityType: "EXPLAIN_BACK",
+      score: entry.mastery ?? null,
+      at: entry.lastEvaluatedAt,
+      inferred: true,
+    });
+  }
+  for (let i = 0; i < Math.min(entry.reviewCount ?? 0, 4); i++) {
+    upgraded = appendEvidence(upgraded, { kind: "REVIEW", passed: true, at, inferred: true });
+  }
+  return withMasteryStage(upgraded);
+}
+
 export function migrateLearnerState(persisted) {
   if (!persisted || !Array.isArray(persisted.knowledge)) return null;
   const fromVersion = persisted.version ?? 0;
@@ -67,10 +117,11 @@ export function migrateLearnerState(persisted) {
       attempts: correctAttempts + incorrectAttempts,
       lastStudiedAt,
     };
-    return makeKnowledgeEntry(entry.topicId, entry.topicName, {
+    const withDefaults = makeKnowledgeEntry(entry.topicId, entry.topicName, {
       ...upgraded,
       confidence: entry.confidence ?? calculateConfidence(upgraded),
     });
+    return upgradeToEvidenceLedger(withDefaults, entry);
   });
 
   return { ...persisted, version: LEARNER_STATE_SCHEMA_VERSION, knowledge };
@@ -292,6 +343,119 @@ export function LearnerProvider({ children }) {
     []
   );
 
+  /* ---------------- Onboarding ---------------- */
+
+  const setGoalAction = useCallback((input) => {
+    const goal = makeGoal(input);
+    setLearner((l) => {
+      /* Stating a goal ends the demo.
+         An unsigned-in visitor starts on the demo profile "Alex", whose
+         88% on linear equations and six-day streak exist so the app looks
+         alive before anyone has done anything. The moment a learner says
+         what they want to learn, that invented progress stops being a
+         showcase and starts being a lie the coach acts on — it outranked a
+         learner's actual goal and recommended reviewing a concept they had
+         never opened. So an UNTOUCHED demo profile (no history: nothing
+         has actually been done on it) is cleared here, exactly as
+         loadOrCreateWallet already does when a real wallet signs in.
+         A profile with real work on it is never touched. */
+      if (hasRealProgress(l)) return { ...l, goal };
+      return {
+        ...l,
+        goal,
+        knowledge: [],
+        history: [],
+        xp: 0,
+        level: 1,
+        streakDays: 0,
+        studyMinutes: 0,
+        startedFromDemo: false,
+      };
+    });
+    return goal;
+  }, []);
+
+  const skipOnboardingAction = useCallback(() => {
+    /* Recorded rather than left absent, so "never answered" and "declined"
+       are different facts — the app must not ask again every reload. */
+    setLearner((l) => ({ ...l, onboardingSkippedAt: Date.now() }));
+  }, []);
+
+  /**
+   * Writes a whole diagnostic in one commit.
+   *
+   * One commit rather than one per answer because these are not attempts
+   * at learning — they are a snapshot taken before any teaching happened,
+   * and dribbling them through recordActivityResult would put five
+   * "activities" in the history and five XP awards for a thing the learner
+   * did not study.
+   *
+   * What each answer means is decided by onboardingService (correct AND
+   * confident is knowledge; correct but unsure is a guess; confidently
+   * wrong is a misconception, which is the single most useful answer in
+   * the whole exercise).
+   *
+   * @param {Array<{topicId, correct, confident, question}>} answers
+   */
+  const recordDiagnosticAction = useCallback((answers = []) => {
+    const now = Date.now();
+    const summary = { testedOut: [], misconceptions: [], gaps: [] };
+
+    setLearner((l) => {
+      let knowledge = [...l.knowledge];
+
+      for (const answer of answers) {
+        const { topicId, correct, confident, question = null } = answer;
+        const verdict = classifyDiagnosticAnswer({ correct, confident });
+        const topic = findTopic(topicId);
+        const idx = knowledge.findIndex((k) => k.topicId === topicId);
+        let entry = idx === -1 ? makeKnowledgeEntry(topicId, topic?.name || topicId) : { ...knowledge[idx] };
+
+        /* Mastery moves for every answer, demonstration or not: a correct
+           answer is information about this learner even when it might have
+           been a guess. applyActivityResult owns that calculation, so the
+           diagnostic cannot invent its own scale. */
+        entry = applyActivityResult(entry, { correct, activityType: "DIAGNOSTIC", optionCount: 4, now });
+
+        /* applyActivityResult already filed one RECALL. A confident wrong
+           answer additionally names the misconception, which is what makes
+           it worth more than a blank. */
+        if (verdict.misconception && question) {
+          entry = {
+            ...entry,
+            misconceptions: [...new Set([...(entry.misconceptions || []), question])].slice(0, 4),
+          };
+          summary.misconceptions.push(topicId);
+        } else if (verdict.testedOut) {
+          summary.testedOut.push(topicId);
+        } else if (!correct) {
+          summary.gaps.push(topicId);
+        }
+
+        /* A guess is not a demonstration. Drop the RECALL that
+           applyActivityResult filed, keeping the mastery movement — the
+           concept has to be met again rather than counted as known. */
+        if (correct && !confident) {
+          const ledger = (entry.evidence || []).slice(0, -1);
+          entry = withMasteryStage({ ...entry, evidence: ledger });
+        }
+
+        entry = { ...entry, diagnosedAt: now };
+        if (idx === -1) knowledge.push(entry);
+        else knowledge[idx] = entry;
+      }
+
+      return {
+        ...l,
+        knowledge,
+        goal: l.goal ? { ...l.goal, diagnosticDoneAt: now } : l.goal,
+        history: [{ type: "DIAGNOSTIC", topicId: null, at: now, detail: `${answers.length} questions` }, ...(l.history || [])].slice(0, 60),
+      };
+    });
+
+    return summary;
+  }, []);
+
   const recordActivityResultAction = useCallback(
     ({ topicId, correct, activityType = "ACTIVITY", optionCount = null }) => {
       logEvent({
@@ -444,6 +608,10 @@ export function LearnerProvider({ children }) {
       isWalletProfile: Boolean(learner.walletAddress),
       averageMastery: averageMastery(knowledge),
       getEntry,
+      goal: learner.goal || null,
+      setGoal: setGoalAction,
+      skipOnboarding: skipOnboardingAction,
+      recordDiagnostic: recordDiagnosticAction,
       evaluateExplanation: evaluateExplanationAction,
       recordActivityResult: recordActivityResultAction,
       recordActivityCoverage: recordActivityCoverageAction,
@@ -457,6 +625,9 @@ export function LearnerProvider({ children }) {
     };
   }, [
     learner,
+    setGoalAction,
+    skipOnboardingAction,
+    recordDiagnosticAction,
     evaluateExplanationAction,
     recordActivityResultAction,
     recordActivityCoverageAction,

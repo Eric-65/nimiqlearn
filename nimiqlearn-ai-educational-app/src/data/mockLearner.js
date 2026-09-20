@@ -71,15 +71,40 @@ export function makeKnowledgeEntry(topicId, topicName, overrides = {}) {
        Additive and read with a `|| []` guard, so entries saved before it
        existed need no migration. */
     questions: [],
+    /* What the learner has actually DEMONSTRATED on this concept, newest
+       last — see masteryService.js. The stage below is derived from it,
+       never set directly, so "you can explain this" can always be traced
+       to the attempt that proved it. */
+    evidence: [],
+    masteryStage: "NEW",
     ...overrides,
   };
+}
+
+/* Evidence for the demo learner only. The demo profile already carries
+   invented mastery figures (it is labelled DEMO everywhere it appears);
+   this keeps its ledger consistent with them so the stages it shows are
+   not contradicted by an empty ledger. Real profiles start at [] and earn
+   every entry. A learner who signs in with a wallet never inherits this —
+   see createWalletLearner below. */
+export function demoEvidence(spec, now = Date.now()) {
+  const out = [];
+  let at = now - 10 * DAY;
+  for (const [kind, count] of Object.entries(spec)) {
+    for (let i = 0; i < count; i++) {
+      at += 12 * 60 * 60 * 1000;
+      out.push({ kind, passed: true, activityType: null, score: null, at, demo: true });
+    }
+  }
+  return out;
 }
 
 // Bump when the persisted shape changes in a way that needs migration —
 // see migrateLearnerState() in LearnerContext.jsx, which upgrades any
 // stored blob from an older (or missing) version before use.
 // v2: added coveredQuestions/coveredAngles to each knowledge entry.
-export const LEARNER_STATE_SCHEMA_VERSION = 2;
+// v3: added the evidence ledger + derived masteryStage (masteryService.js).
+export const LEARNER_STATE_SCHEMA_VERSION = 3;
 
 /**
  * A brand-new profile owned by a Nimiq wallet — what a learner gets the
@@ -137,6 +162,7 @@ export const INITIAL_LEARNER = {
       missingConcepts: [],
       misconceptions: [],
       reviewCount: 5, recentPerformance: [1, 1, 1, 1, 1], correctAttempts: 5, incorrectAttempts: 0,
+      masteryStage: "MASTERED", evidence: demoEvidence({ RECALL: 3, EXPLAIN: 1, APPLY: 1, REVIEW: 2 }),
     }),
     makeKnowledgeEntry("quadratics", "Quadratics", {
       mastery: 62, status: "DEVELOPING",
@@ -145,6 +171,7 @@ export const INITIAL_LEARNER = {
       missingConcepts: ["Completing the square", "Using the discriminant"],
       misconceptions: ["Drops the ± when taking square roots"],
       reviewCount: 3, recentPerformance: [1, 0, 1], correctAttempts: 2, incorrectAttempts: 1,
+      masteryStage: "CAN_EXPLAIN", evidence: demoEvidence({ RECALL: 2, EXPLAIN: 1 }),
     }),
     makeKnowledgeEntry("functions", "Functions", {
       mastery: 34, status: "LEARNING",
@@ -153,6 +180,7 @@ export const INITIAL_LEARNER = {
       missingConcepts: ["Domain and range", "Vertical line test"],
       misconceptions: ["Confuses function with its output"],
       reviewCount: 1, recentPerformance: [0], correctAttempts: 0, incorrectAttempts: 1,
+      masteryStage: "LEARNING", evidence: [],
     }),
     makeKnowledgeEntry("angles", "Angles", {
       mastery: 78, status: "STRONG",
@@ -161,6 +189,7 @@ export const INITIAL_LEARNER = {
       missingConcepts: [],
       misconceptions: [],
       reviewCount: 4, recentPerformance: [1, 1, 0, 1], correctAttempts: 3, incorrectAttempts: 1,
+      masteryStage: "CAN_APPLY", evidence: demoEvidence({ RECALL: 2, EXPLAIN: 1, APPLY: 1, REVIEW: 1 }),
     }),
     makeKnowledgeEntry("proofs", "Proofs", {
       mastery: 55, status: "DEVELOPING",
@@ -169,6 +198,7 @@ export const INITIAL_LEARNER = {
       missingConcepts: ["Congruence rules (SSS, SAS)", "Chain reasoning"],
       misconceptions: ["Asserts equality by appearance instead of a rule"],
       reviewCount: 2, recentPerformance: [0, 1], correctAttempts: 1, incorrectAttempts: 1,
+      masteryStage: "CAN_RECALL", evidence: demoEvidence({ RECALL: 1 }),
     }),
     makeKnowledgeEntry("newtons-second-law", "Newton's second law", {
       mastery: 0, status: "NEW",

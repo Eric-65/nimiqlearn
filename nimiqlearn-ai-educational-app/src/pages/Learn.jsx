@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNav } from "../context/NavContext.jsx";
 import { useLearner } from "../hooks/useLearner.js";
 import { useAiBackend } from "../hooks/useAiBackend.js";
@@ -13,6 +13,9 @@ import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import AIStatus from "../components/ai/AIStatus.jsx";
 import TopicVideo from "../components/knowledge/TopicVideo.jsx";
+import NimiqVideo from "../components/knowledge/NimiqVideo.jsx";
+import { selectVideo } from "../services/videoService.js";
+import { primaryVideoForTopic } from "../data/nimiqVideos.js";
 import LessonQuestions from "../components/knowledge/LessonQuestions.jsx";
 
 export default function Learn() {
@@ -28,24 +31,35 @@ export default function Learn() {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  /* Lesson phase, for a learner who opened a course from Home.
-
-       "watching"   — the video, the "watch first" notice and the question
-                      box are on screen; NO activity is requested. The
-                      request is never sent, which is a stronger guarantee
+  /* THE LESSON LOOP — two phases, and never both at once.
+     ------------------------------------------------------------------
+       "watching"   — the video and its "I've watched it" button, alone.
+                      No activity is requested and the question box is not
+                      rendered. Not requesting is a stronger guarantee
                       than asking the model to hold back, and it spends no
                       AI call on a question nobody can answer mid-video.
-       "practising" — the learner tapped "I've watched it — practise". The
-                      lesson UI (video, notice, question box) is cleared
-                      and ONLY THEN is the activity generated and shown.
-                      That tap is the one and only trigger: the video
-                      reaching its end does nothing by itself.
-       null         — the ordinary Learn flow (topic chosen by chip, or
-                      arrived without ?watch): everything shows at once,
-                      exactly as before. Choosing a chip always returns to
-                      this. */
+       "practising" — the activity and the question box, alone. No video.
+
+     There is no third state. A video and a question on screen together
+     ask the learner to do two things at once, and whichever they start
+     the other is a distraction sitting under it — which is exactly what
+     the Learn tab was doing.
+
+     WHERE THE VIDEO FALLS depends on how they arrived, because the two
+     entry points mean different things:
+
+       from a course card (?watch=1) — they came TO watch. Video first,
+         then the loop.
+       from a topic chip             — they came to practise. A question
+         first; the video arrives after the first one is answered, as the
+         teaching that explains what they have just been asked. Then the
+         loop continues.
+
+     After the video has been shown once for a topic it does not
+     interrupt again in this visit; the loop is question → question →
+     question from there. */
   const [lessonPhase, setLessonPhase] = useState(() =>
-    route.params?.watch === "1" && initialTopic ? "watching" : null
+    route.params?.watch === "1" && initialTopic ? "watching" : "practising"
   );
   const watching = lessonPhase === "watching";
   const practising = lessonPhase === "practising";
@@ -53,6 +67,20 @@ export default function Learn() {
      shown here is the one they chose — a German course opened from an
      English UI must not silently become "no video" or an English one. */
   const chosenLanguage = route.params?.lang || null;
+
+  /* Topics whose video has already been shown in this visit. A ref, not
+     state: changing it must never re-render on its own, it only ever
+     answers "has this already interrupted them?" at the moment the
+     learner asks for the next activity. */
+  const videoShown = useRef(new Set());
+  const answered = useRef(0);
+
+  /* Which video, if any, this concept has. Nimiq concepts carry official
+     Nimiq ones; the rest carry the verified Wikimedia library. Both are
+     gated on verification, so most topics have none and the loop is
+     simply question → question. */
+  const nimiqVideo = topicId ? primaryVideoForTopic(topicId) : null;
+  const hasVideo = Boolean(nimiqVideo || (topicId && selectVideo(topicId, undefined)));
 
   const topic = topicId ? findTopic(topicId) : null;
   const entry = topicId ? getEntry(topicId) : null;
@@ -105,16 +133,24 @@ export default function Learn() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId, watching]);
 
-  /* Choosing another topic by chip is the ordinary Learn flow; the lesson
-     phase only ever applied to the course the learner arrived on. */
+  /* A chip is someone choosing to practise a concept, so that is where
+     they land — the video comes after their first answer. The counters
+     reset because this is a new concept's loop, not a continuation. */
   const pickTopic = (id) => {
-    setLessonPhase(null);
+    answered.current = 0;
+    setFeedback(null);
+    setLessonPhase("practising");
     setTopicId(id);
   };
 
-  /* The button. Clears the lesson UI; the effect above then requests the
-     activity, because `watching` has just become false. */
-  const startPractising = () => setLessonPhase("practising");
+  /* "I've watched it — practise". Removes the video immediately and hands
+     the screen back to the loop; the effect above then requests the next
+     activity, because `watching` has just become false. Marking the topic
+     stops the video interrupting again this visit. */
+  const startPractising = () => {
+    if (topicId) videoShown.current.add(topicId);
+    setLessonPhase("practising");
+  };
 
   const handleAnswer = (correct, text) => {
     if (!topicId) return;
@@ -132,8 +168,19 @@ export default function Learn() {
     setFeedback({ correct, text, delta: result?.delta ?? 0, after: result?.after ?? 0 });
   };
 
+  /* The loop's hinge. After an answer, the learner either gets the video
+     (once, and only if the concept has one) or the next question — never
+     the two together. */
   const handleNext = () => {
     setFeedback(null);
+    if (hasVideo && !videoShown.current.has(topicId)) {
+      /* Clearing the activity is what makes the swap total: the question
+         leaves the screen in the same moment the video arrives. */
+      setActivity(null);
+      setDecision(null);
+      setLessonPhase("watching");
+      return;
+    }
     loadActivity(topicId);
   };
 
@@ -201,41 +248,38 @@ export default function Learn() {
             </div>
           </Card>
 
-          {/* Above the activity on purpose: a learner who has one watches it
-              and then answers. Renders nothing for the many topics with no
-              verified video, so their page is unchanged. */}
-          {/* The lesson: video, then (from a course) the watch-first notice,
-              then the question box. All three leave the screen together the
-              moment the learner taps "I've watched it — practise", so the
-              practice question that follows has the page to itself. In the
-              ordinary flow (no lesson phase) they stay, above the activity. */}
-          {!practising && (
+          {/* WATCHING — the video and its button, and nothing else. No
+              activity is requested in this phase and the question box is
+              not rendered, so there is never a second thing on screen
+              competing with the lesson. */}
+          {watching && (
             <>
-              <TopicVideo topicId={topicId} audioLanguage={lessonPhase ? chosenLanguage : null} />
-
-              {watching && (
-                <div className="notice info anim-pop" role="status" style={{ margin: 0 }}>
-                  <span aria-hidden="true">🎬</span>
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <strong>{t("learn.watching.title")}</strong> {t("learn.watching.body")}
-                    {/* Below the text, not beside it: beside it, a phone
-                        squeezed the button into a four-line column. */}
-                    <div style={{ marginTop: 12 }}>
-                      <Button variant="teal" size="sm" onClick={startPractising}>
-                        {t("learn.watching.done")}
-                      </Button>
-                    </div>
-                  </span>
-                </div>
+              {nimiqVideo ? (
+                <NimiqVideo topicId={topicId} />
+              ) : (
+                <TopicVideo topicId={topicId} audioLanguage={chosenLanguage} />
               )}
 
-              {/* A learner who watched and did not follow something asks here.
-                  Present for every topic, video or not — the tutor answers
-                  from the topic's reference content either way. */}
-              <LessonQuestions topicId={topicId} />
+              <div className="notice info anim-pop" role="status" style={{ margin: 0 }}>
+                <span aria-hidden="true">🎬</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <strong>{t("learn.watching.title")}</strong> {t("learn.watching.body")}
+                  {/* Below the text, not beside it: beside it, a phone
+                      squeezed the button into a four-line column. */}
+                  <div style={{ marginTop: 12 }}>
+                    <Button variant="teal" size="sm" onClick={startPractising}>
+                      {t("learn.watching.done")}
+                    </Button>
+                  </div>
+                </span>
+              </div>
             </>
           )}
 
+          {/* PRACTISING — the question, and the place to ask about it.
+              Both belong to the same moment: the learner is working on
+              something and may want to ask about the thing they are
+              working on. Neither is on screen while the video is. */}
           {!watching && decision && activity && (
             <>
               <LearningActivity
@@ -246,6 +290,12 @@ export default function Learn() {
                 aiConfigured={ai.available}
                 onRetryAI={() => loadActivity(topicId)}
               />
+
+              {/* A learner part-way through a question who did not follow
+                  something asks here. Present for every topic, video or
+                  not — the tutor answers from the concept's reference
+                  content either way. */}
+              <LessonQuestions topicId={topicId} />
 
               {feedback && (
                 <div className={`notice ${feedback.correct ? "success" : "warn"} anim-pop`} role="status">
