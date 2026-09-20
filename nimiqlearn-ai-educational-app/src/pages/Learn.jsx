@@ -49,6 +49,10 @@ export default function Learn() {
   );
   const watching = lessonPhase === "watching";
   const practising = lessonPhase === "practising";
+  /* The spoken language of the card the learner came from, so the video
+     shown here is the one they chose — a German course opened from an
+     English UI must not silently become "no video" or an English one. */
+  const chosenLanguage = route.params?.lang || null;
 
   const topic = topicId ? findTopic(topicId) : null;
   const entry = topicId ? getEntry(topicId) : null;
@@ -207,7 +211,7 @@ export default function Learn() {
               ordinary flow (no lesson phase) they stay, above the activity. */}
           {!practising && (
             <>
-              <TopicVideo topicId={topicId} />
+              <TopicVideo topicId={topicId} audioLanguage={lessonPhase ? chosenLanguage : null} />
 
               {watching && (
                 <div className="notice info anim-pop" role="status" style={{ margin: 0 }}>
